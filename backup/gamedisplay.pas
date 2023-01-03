@@ -66,14 +66,26 @@ type
 implementation
 { TCellDisplay }
 
+constructor TCellDisplay.create(aOwner:TComponent;cRow,cCol:integer);
+begin
+  inherited create(aOwner);
+  //Redirect the built in on click and key down events
+  self.OnClick:=@CellClickHandler;
+  self.OnKeyDown:=@CellKeyDownHandler;
+  fPaintBox:=TPaintbox.Create(aOwner);
+  with fPaintBox do
+    begin
+    Parent:=self;
+    OnClick:=@PaintBoxClickHandler;
+    OnPaint:=@DrawCell;
+    end;
+  fRow:=cRow;
+  fColumn:=cCol;
+end;
+
 procedure TCellDisplay.drawCell(sender: TObject);
 var
-  sText:string;
-  textLeft,textTop:integer;
-  textHeight,textWidth:integer;
-  edgeMarkId,centreMarkId:integer;
   gameCell:TCell;
-  leftMargin,topMargin:integer;
 begin
   if sender is TPaintbox then
        with sender as TPaintbox do
@@ -82,18 +94,8 @@ begin
      gameCell:=(self.Parent as TGameDisplay).fGame.getCell(self.row,self.col);
      if (gameCell = nil) then exit;
      //draw the rectangle regardless
-     canvas.brush.Color:=clDefault;
+     canvas.brush.Color:=gameCell.colour;
      canvas.Rectangle(0,0,canvas.Width,canvas.Height);
-     sText:=chr(gameCell.value);
-     if (gameCell.value <> -1) then
-        begin
-        canvas.Font.Height:= (canvas.Height * 8) div 10; //80% of box
-        textHeight:=canvas.TextHeight(sText);
-        textWidth:=canvas.TextWidth(sText);
-        textLeft:=(canvas.Width - textWidth) div 2;
-        textTop:=(canvas.Height - textHeight) div 2;
-        canvas.TextOut(textLeft,textTop,sText);
-        end;
      end;
 end;
 
@@ -111,23 +113,6 @@ end;
 procedure TCellDisplay.PaintboxClickHandler(Sender: TObject);
 begin
 self.SetFocus;
-end;
-
-constructor TCellDisplay.create(aOwner:TComponent;cRow,cCol:integer);
-begin
-  inherited create(aOwner);
-  //Redirect the built in on click and key down events
-  self.OnClick:=@CellClickHandler;
-  self.OnKeyDown:=@CellKeyDownHandler;
-  fPaintBox:=TPaintbox.Create(aOwner);
-  with fPaintBox do
-    begin
-    Parent:=self;
-    OnClick:=@PaintBoxClickHandler;
-    OnPaint:=@DrawCell;
-    end;
-  fRow:=cRow;
-  fColumn:=cCol;
 end;
 
 function TCellDisplay.getName: string;
@@ -168,7 +153,7 @@ begin
     newCd:=TCellDisplay.Create(self, thisCell.Row, thisCell.Col);
     newCd.Parent:= self;
     newCd.OnCellKeyDown:=@gameCellKeyDown;
-    newCd.Name:='R'+thisCell.row.ToString+'C'+thisCell.col.toString+'B'+thisCell.box.toString;
+    newCd.Name:='R'+thisCell.row.ToString+'C'+thisCell.col.toString;
     newCd.Caption:='';
     newCd.Width:=cellWidth;
     newCd.Height:=cellHeight;
