@@ -22,7 +22,6 @@ type
   function getName:string;
   function getRow:integer;
   function getCol:integer;
-  function getBox:integer;
   end;
 
   { IGameDisplay }

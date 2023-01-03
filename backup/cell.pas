@@ -5,7 +5,7 @@ unit cell;
 interface
 
 uses
-  Classes, SysUtils,arrayUtils,customcell;
+  Classes, SysUtils,arrayUtils;
 type
 
   TProcHandler = procedure();
