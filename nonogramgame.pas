@@ -5,7 +5,7 @@ unit nonogramGame;
 interface
 
 uses
-  Classes, SysUtils,arrayUtils,cell,graphics;
+  Classes, SysUtils,arrayUtils,cell,graphics,clickDelegate;
 
 const defaultDimensions: TPoint = (X:9; Y:9);
 const gameVersion: string = '0.0.2';
@@ -23,12 +23,12 @@ type
     fVersion:string;
     fDimensions:TPoint;
     fCells: TCells;
+    fSelectedCell: TCell;
     fStarted:boolean;
     fOnCellStateChanged:TNotifyEvent;
     fSelectedColour:TColor;
     fInputMode: EInputMode;
     fGameMode: EGameMode;
-    function findCell(row,col:integer):TCell;
     procedure setCells(cells: TCells; candidates:TIntArray);
     procedure cellChangedHandler(sender:TObject);
     property version: string read fVersion;
@@ -39,12 +39,15 @@ type
     constructor create(filename:String);
     procedure setCellChangedHandler(handler:TNotifyEvent);
     procedure gameInputKeyPressHandler(Sender: TObject; var Key: Word; Shift: TShiftState);
+    procedure gameInputClickHandler(Sender:TObject);
     procedure modeSwitchKeyPressHandler(Sender: TObject; var Key: Word; Shift: TShiftState);
     procedure saveToFile(filename:string);
     procedure start;
     procedure reset;
     function getCell(row,column:integer):TCell;
+    function getCell(position_:TPoint):TCell;
     property cells:TCells read fCells;
+    property selectedCell:TCell read fSelectedCell write fSelectedCell;
     property name:string read fName;
     property started:boolean read fStarted;
     property dimensions:TPoint read fDimensions;
@@ -69,12 +72,13 @@ begin
   fVersion:=gameVersion;
   fDimensions:=gameDimensions;
   fSelectedColour:=clBlack;
-  for row:=0 to pred(gameDimensions.Y) do
-    for col:=0 to pred(gameDimensions.X) do
+  for col:=0 to pred(gameDimensions.Y) do
+    for row:=0 to pred(gameDimensions.X) do
     //create a cell
     begin
     fCells.push(TCell.create(row,col,@cellChangedHandler));
     end;
+  fSelectedCell:=nil;
 end;
 
 //Load from file. Start in gmSolve. Number cells are not editable
@@ -82,21 +86,6 @@ constructor TNonogramGame.create(filename: String);
 begin
   fGameMode:=gmSolve;
   //loadfrom file
-end;
-
-function TNonogramGame.findCell(row, col: integer): TCell;
-var
-  index:integer;
-begin
-  result:=nil;
-  for index:= 0 to pred(length(fCells)) do
-    begin
-    if (fCells[index].row = row) and (fCells[index].col = col) then
-      begin
-      result:=fCells[index];
-      exit;
-      end;
-    end;
 end;
 
 procedure TNonogramGame.setCells(cells: TCells; candidates: TIntArray);
@@ -119,6 +108,19 @@ procedure TNonogramGame.gameInputKeyPressHandler(Sender: TObject;
   var Key: Word; Shift: TShiftState);
 begin
   //should use clicks
+end;
+
+procedure TNonogramGame.gameInputClickHandler(Sender: TObject);
+begin
+  //Indicates that the cell has been clicked
+  //We need to have a type to pass click information
+  //that is not associated with the display
+  //needs info on which cell was clicked
+  if sender is TClickDelegate then with sender as TClickDelegate do
+    begin
+    selectedCell:= getCell(position);
+    writeln('selected cell now '+selectedCell.col.ToString+' '+selectedCell.row.ToString);
+    end;
 end;
 
 procedure TNonogramGame.modeSwitchKeyPressHandler(Sender: TObject;
@@ -152,7 +154,12 @@ end;
 
 function TNonogramGame.getCell(row, column: integer): TCell;
 begin
-  result:=fCells[(row * fDimensions.X)+column];
+  result:=fCells[column+(row * fDimensions.X)];
+end;
+
+function TNonogramGame.getCell(position_: TPoint): TCell;
+begin
+  result:=getCell(position_.X,position_.Y);
 end;
 
 end.

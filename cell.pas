@@ -10,6 +10,7 @@ uses
 type
   { ECellFillMode }
   ECellFillMode = (cfEmpty,cfFill,cfCross,cfDot);
+
   { TCell }
   TCell = class(TInterfacedObject)
     private

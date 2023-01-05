@@ -11,7 +11,7 @@ uses
   {$ENDIF}
   Interfaces, // this includes the LCL widgetset
   Forms, nonoForm, nonogramGame, cell, gameDisplay, gameDisplayInterface,
-  arrayUtils, anysort
+  arrayUtils, anysort, clickDelegate
   { you can add units after this };
 
 {$R *.res}

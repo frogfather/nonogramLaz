@@ -95,6 +95,7 @@ begin
   fRow:=row;
   fColumn:=column;
   fFill:=cellFill;
+  fColour:=clDefault;
 end;
 
 procedure TCell.setCellFill(fillMode: ECellFillMode);
