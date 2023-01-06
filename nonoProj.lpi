@@ -47,8 +47,9 @@
         <UnitName Value="nonogramGame"/>
       </Unit>
       <Unit>
-        <Filename Value="cell.pas"/>
+        <Filename Value="gamecell.pas"/>
         <IsPartOfProject Value="True"/>
+        <UnitName Value="gameCell"/>
       </Unit>
       <Unit>
         <Filename Value="gamedisplay.pas"/>

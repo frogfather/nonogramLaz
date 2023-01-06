@@ -5,7 +5,7 @@ unit nonogramGame;
 interface
 
 uses
-  Classes, SysUtils,arrayUtils,cell,graphics,clickDelegate;
+  Classes, SysUtils,arrayUtils,gameCell,graphics,clickDelegate;
 
 const defaultDimensions: TPoint = (X:9; Y:9);
 const gameVersion: string = '0.0.2';
@@ -23,7 +23,7 @@ type
     fVersion:string;
     fDimensions:TPoint;
     fCells: TCells;
-    fSelectedCell: TCell;
+    fSelectedCell: TGameCell;
     fStarted:boolean;
     fOnCellStateChanged:TNotifyEvent;
     fSelectedColour:TColor;
@@ -44,10 +44,10 @@ type
     procedure saveToFile(filename:string);
     procedure start;
     procedure reset;
-    function getCell(row,column:integer):TCell;
-    function getCell(position_:TPoint):TCell;
+    function getCell(row,column:integer):TGameCell;
+    function getCell(position_:TPoint):TGameCell;
     property cells:TCells read fCells;
-    property selectedCell:TCell read fSelectedCell write fSelectedCell;
+    property selectedCell:TGameCell read fSelectedCell write fSelectedCell;
     property name:string read fName;
     property started:boolean read fStarted;
     property dimensions:TPoint read fDimensions;
@@ -76,7 +76,7 @@ begin
     for row:=0 to pred(gameDimensions.X) do
     //create a cell
     begin
-    fCells.push(TCell.create(row,col,@cellChangedHandler));
+    fCells.push(TGameCell.create(row,col,@cellChangedHandler));
     end;
   fSelectedCell:=nil;
 end;
@@ -152,12 +152,12 @@ begin
   //and clear the game play after a dire warning
 end;
 
-function TNonogramGame.getCell(row, column: integer): TCell;
+function TNonogramGame.getCell(row, column: integer): TGameCell;
 begin
-  result:=fCells[(row * fDimensions.X)+column];
+  result:=fCells[column+(row * fDimensions.X)];
 end;
 
-function TNonogramGame.getCell(position_: TPoint): TCell;
+function TNonogramGame.getCell(position_: TPoint): TGameCell;
 begin
   result:=getCell(position_.X,position_.Y);
 end;

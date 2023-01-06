@@ -1,4 +1,4 @@
-unit cell;
+unit gameCell;
 
 {$mode objfpc}{$H+}
 {$MODESWITCH ADVANCEDRECORDS}
@@ -32,12 +32,11 @@ type
     property fill: ECellFillMode read fFill;
     property colour:TColor read fColour;
   end;
+  TGameCells = array of TGameCell;
 
-  TCells = array of TGameCell;
+   { TGameCellsArrayHelper }
 
-  { TCellsArrayHelper }
-
-  TCellsArrayHelper = type helper for TCells
+  TGameCellsArrayHelper = type helper for TGameCells
   function size: integer;
   function push(element:TGameCell):integer;
   function indexOf(element:TGameCell):integer;
@@ -47,18 +46,18 @@ implementation
 
 { TCellsArrayHelper }
 
-function TCellsArrayHelper.size: integer;
+function TGameCellsArrayHelper.size: integer;
 begin
   result:=length(self);
 end;
 
-function TCellsArrayHelper.push(element: TGameCell): integer;
+function TGameCellsArrayHelper.push(element: TGameCell): integer;
 begin
   insert(element,self,length(self));
   result:=self.size;
 end;
 
-function TCellsArrayHelper.indexOf(element: TCell): integer;
+function TGameCellsArrayHelper.indexOf(element: TGameCell): integer;
 begin
   for Result := 0 to High(self) do
     if self[Result] = element then

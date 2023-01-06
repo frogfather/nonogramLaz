@@ -1,4 +1,4 @@
-unit cell;
+unit gameCell;
 
 {$mode objfpc}{$H+}
 {$MODESWITCH ADVANCEDRECORDS}
@@ -11,57 +11,53 @@ type
   { ECellFillMode }
   ECellFillMode = (cfEmpty,cfFill,cfCross,cfDot);
 
-  { TCell }
-  TCell = class(TInterfacedObject)
+  { TGameCell }
+  TGameCell = class(TInterfacedObject)
     private
     fCellId: TGUID;
     fRow: integer;
     fColumn: integer;
+    fBlocks: TIntArray;
     fFill: ECellFillMode;
     fColour: TColor;
     fOnCellChanged:TNotifyEvent;
-    protected
-    function getCellFill:ECellFillMode;
-    function getRow:integer;
-    function getCol:integer;
     public
     constructor create(row, column: integer;
       cellChangedHandler:TNotifyEvent;
       cellFill: ECellFillMode=cfEmpty);
     procedure setCellFill(fillMode:ECellFillMode);
     property cellId: TGUID read fCellId;
-    property row: integer read getRow;
-    property col: integer read getCol;
+    property row: integer read fRow;
+    property col: integer read fColumn;
     property fill: ECellFillMode read fFill;
     property colour:TColor read fColour;
   end;
+  TGameCells = array of TGameCell;
 
-  TCells = array of TCell;
+   { TGameCellsArrayHelper }
 
-  { TCellsArrayHelper }
-
-  TCellsArrayHelper = type helper for TCells
+  TGameCellsArrayHelper = type helper for TGameCells
   function size: integer;
-  function push(element:TCell):integer;
-  function indexOf(element:TCell):integer;
+  function push(element:TGameCell):integer;
+  function indexOf(element:TGameCell):integer;
   end;
 
 implementation
 
 { TCellsArrayHelper }
 
-function TCellsArrayHelper.size: integer;
+function TGameCellsArrayHelper.size: integer;
 begin
   result:=length(self);
 end;
 
-function TCellsArrayHelper.push(element: TCell): integer;
+function TGameCellsArrayHelper.push(element: TGameCell): integer;
 begin
   insert(element,self,length(self));
   result:=self.size;
 end;
 
-function TCellsArrayHelper.indexOf(element: TCell): integer;
+function TCellsArrayHelper.indexOf(element: TGameCell): integer;
 begin
   for Result := 0 to High(self) do
     if self[Result] = element then
@@ -69,25 +65,9 @@ begin
   Result := -1;
 end;
 
-function TCell.getCellFill: ECellFillMode;
-begin
-  result:=fFill;
-end;
-
-function TCell.getRow: integer;
-begin
-  result:=fRow;
-end;
-
-function TCell.getCol: integer;
-begin
-  result:=fColumn;
-end;
-
-
-{ TCell }
+{ TGameCell }
 //For new game: cellId is a new GUID
-constructor TCell.create(row, column: integer;
+constructor TGameCell.create(row, column: integer;
   cellChangedHandler:TNotifyEvent;
   cellFill: ECellFillMode);
 begin
@@ -99,7 +79,7 @@ begin
   fColour:=clDefault;
 end;
 
-procedure TCell.setCellFill(fillMode: ECellFillMode);
+procedure TGameCell.setCellFill(fillMode: ECellFillMode);
 begin
   fFill:=fillMode;
   if (fOnCellChanged <> nil) then

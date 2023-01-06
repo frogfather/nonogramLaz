@@ -46,7 +46,7 @@ type
   TGameDisplay = class(TCustomPanel, IGameDisplay)
   private
     fGame: TNonogramGame;
-    fCells: TCellDisplayArray;
+    fGameCells: TCellDisplayArray;
     fOnGameKeyDown: TKeyEvent;
     fOnGameClick:TNotifyEvent;
     procedure initialiseView;
@@ -62,7 +62,7 @@ type
   public
     constructor Create(aOwner: TComponent; dimensions: TPoint); reintroduce;
     procedure setGame(aGame: TNonogramGame);
-    property cells: TCellDisplayArray read fCells;
+    property gameCells: TCellDisplayArray read fGameCells;
   published
     property OnGameKeyDown: TKeyEvent read fOnGameKeyDown write fOnGameKeyDown;
     property OnGameClick: TNotifyEvent read fOnGameClick write fOnGameClick;
@@ -91,7 +91,7 @@ end;
 
 procedure TCellDisplay.drawCell(Sender: TObject);
 var
-  gameCell: TCell;
+  gameCell: TGameCell;
   game:TNonogramGame;
   oldPenColour:TColor;
 begin
@@ -112,11 +112,9 @@ begin
         begin
         oldPenColour:=canvas.Pen.Color;
         canvas.Pen.Color:=clDkGray;
-        canvas.brush.color:=clRed;
         canvas.DrawFocusRect(TRect.Create(0,0,canvas.Width,canvas.Height));
         canvas.Pen.color:=oldPenColour;
         end;
-
     end;
 end;
 
@@ -159,7 +157,7 @@ end;
 procedure TGameDisplay.initialiseView;
 var
   index, numCells: integer;
-  thisCell: TCell;
+  thisCell: TGameCell;
   newCd: TCellDisplay;
   displayWidth, displayHeight: integer;
   cellWidth, cellHeight: integer;
@@ -184,8 +182,8 @@ begin
     newCd.Left := ((index mod fGame.Dimensions.X) * cellWidth);
     newCd.Top := self.Top + ((index div fGame.Dimensions.Y) * cellHeight);
     newCd.Visible := True;
-    setLength(fCells, length(fCells) + 1);
-    fCells[length(fCells) - 1] := newCd;
+    setLength(fGameCells, length(fGameCells) + 1);
+    fGameCells[length(fGameCells) - 1] := newCd;
   end;
 
 end;
@@ -195,7 +193,7 @@ var
   selectedCellDisplay: TCellDisplay;
 begin
   //for changes signalled by the game - triggers redraw of specified cell
-  if Sender is TCell then with Sender as TCell do
+  if Sender is TGameCell then with Sender as TGameCell do
   begin
   selectedCellDisplay := getCell(row, col);
   if (selectedCellDisplay <> nil)
@@ -207,10 +205,10 @@ function TGameDisplay.getCell(row, col: integer): TCellDisplay;
 var
   index: integer;
 begin
-  for index := 0 to pred(length(cells)) do
-    if (cells[index].row = row) and (cells[index].col = col) then
+  for index := 0 to pred(length(gameCells)) do
+    if (gameCells[index].row = row) and (gameCells[index].col = col) then
     begin
-      Result := cells[index];
+      Result := gameCells[index];
       exit;
     end;
 end;
@@ -222,12 +220,12 @@ var
 begin
   //Try to keep aspect ratio
   self.Height := self.Width;
-  //resize all the cells
+  //resize all the gameCells
   if (fGame = nil) then exit;
   cellWidth := self.Width div fGame.dimensions.X;
   cellHeight := self.Height div fGame.dimensions.Y;
-  for index := 0 to pred(length(fCells)) do
-    with fCells[index] do
+  for index := 0 to pred(length(fGameCells)) do
+    with fGameCells[index] do
     begin
       Width := cellWidth;
       Height := cellHeight;
@@ -259,7 +257,7 @@ begin
   inherited Create(aOwner);
   Height := dimensions.Y;
   Width := dimensions.X;
-  fCells := TCellDisplayArray.Create;
+  fGameCells := TCellDisplayArray.Create;
   fGame := nil;
   onResize := @onResizeDisplay;
   Name := 'myGameDisplay';
