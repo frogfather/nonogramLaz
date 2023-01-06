@@ -46,6 +46,27 @@ type
   end;
 implementation
 
+{ TClueCellsArrayHelper }
+
+function TClueCellsArrayHelper.size: integer;
+begin
+  result:=length(self);
+end;
+
+function TClueCellsArrayHelper.push(element: TClueCell): integer;
+begin
+  insert(element,self,length(self));
+  result:=self.size;
+end;
+
+function TClueCellsArrayHelper.indexOf(element: TClueCell): integer;
+begin
+  for Result := 0 to High(self) do
+    if self[Result] = element then
+      Exit;
+  Result := -1;
+end;
+
 { TClueBlockArrayHelper }
 
 function TClueBlockArrayHelper.size: integer;

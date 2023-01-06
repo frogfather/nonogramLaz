@@ -17,7 +17,7 @@ type
     fCellId: TGUID;
     fRow: integer;
     fColumn: integer;
-    fBlocks: TIntArray;
+    fCandidates: TIntArray;//which clues can this cell be?
     fFill: ECellFillMode;
     fColour: TColor;
     fOnCellChanged:TNotifyEvent;
@@ -31,6 +31,7 @@ type
     property col: integer read fColumn;
     property fill: ECellFillMode read fFill;
     property colour:TColor read fColour;
+    property candidates:TIntArray read fCandidates;
   end;
   TGameCells = array of TGameCell; //cells for a row
   TGameBlock = array of TGameCells; //cells for the game

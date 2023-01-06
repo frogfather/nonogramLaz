@@ -18,6 +18,7 @@ type
     fIndex:integer;
     fValue:integer;
     fColour: TColor;
+    fSolved:boolean;
   public
     constructor create(row_,column_,value_,index_:integer;colour_:TColor=clBlack);
     property row:integer read fRow;
@@ -25,6 +26,7 @@ type
     property index:integer read fIndex;
     property value: integer read fValue;
     property colour: TColor read fColour;
+    property solved:boolean read fSolved;
   end;
 
   TClueCells = array of TClueCell; //a single row of clues relating to a row or column
@@ -101,6 +103,7 @@ begin
   fValue:=value_;
   fIndex:= index_;
   fColour:= colour_;
+  fSolved:=false;
 end;
 
 end.

@@ -23,13 +23,14 @@ type
     fVersion:string;
     fDimensions:TPoint;
     fGameBlock: TGameBlock;
+    fRowClues: TClueBlock;
+    fColumnClues:TClueBlock;
     fSelectedCell: TGameCell;
     fStarted:boolean;
     fOnCellStateChanged:TNotifyEvent;
     fSelectedColour:TColor;
     fInputMode: EInputMode;
     fGameMode: EGameMode;
-    procedure setCells(cells: TGameCells; candidates:TIntArray);
     procedure cellChangedHandler(sender:TObject);
     property version: string read fVersion;
     public
@@ -66,8 +67,11 @@ constructor TNonogramGame.create(name: string; gameDimensions: TPoint);
 var
   row,col:integer;
   currentRow:TGameCells;
+  currentClues:TClueCells;
 begin
   fGameBlock:=TGameBlock.create;
+  fRowClues:=TClueBlock.create;
+  fColumnClues:=TClueBlock.create;
   fGameMode:=gmSet;
   fName:=name;
   fVersion:=gameVersion;
@@ -75,6 +79,9 @@ begin
   fSelectedColour:=clBlack;
   for row:=0 to pred(gameDimensions.Y) do
     begin
+    currentClues:=TClueCells.create;
+    currentClues.push(TClueCell.create(row,-1,-1,currentClues.size));
+    fRowClues.push(currentClues);
     currentRow:=TGameCells.create;
     for col:=0 to pred(gameDimensions.X) do
       currentRow.push(TGameCell.create(row,col,@cellChangedHandler));
@@ -90,15 +97,10 @@ begin
   //loadfrom file
 end;
 
-procedure TNonogramGame.setCells(cells: TGameCells; candidates: TIntArray);
-begin
-
-end;
-
 procedure TNonogramGame.cellChangedHandler(sender: TObject);
 begin
   if (fOnCellStateChanged <> nil) then
-    fOnCellStateChanged(sender);//Sending the cell rather than the game
+    fOnCellStateChanged(sender);//Should send a delegate
 end;
 
 procedure TNonogramGame.setCellChangedHandler(handler: TNotifyEvent);
@@ -109,16 +111,13 @@ end;
 procedure TNonogramGame.gameInputKeyPressHandler(Sender: TObject;
   var Key: Word; Shift: TShiftState);
 begin
-  //should use clicks
+  //mostly clicks for this game but let's allow keyboard input too
 end;
 
 procedure TNonogramGame.gameInputClickHandler(Sender: TObject);
 begin
   if sender is TClickDelegate then with sender as TClickDelegate do
-    begin
     selectedCell:= getCell(position);
-    writeln('selected cell now '+selectedCell.col.ToString+' '+selectedCell.row.ToString);
-    end;
 end;
 
 procedure TNonogramGame.modeSwitchKeyPressHandler(Sender: TObject;

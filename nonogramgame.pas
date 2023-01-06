@@ -23,13 +23,14 @@ type
     fVersion:string;
     fDimensions:TPoint;
     fGameBlock: TGameBlock;
+    fRowClues: TClueBlock;
+    fColumnClues:TClueBlock;
     fSelectedCell: TGameCell;
     fStarted:boolean;
     fOnCellStateChanged:TNotifyEvent;
     fSelectedColour:TColor;
     fInputMode: EInputMode;
     fGameMode: EGameMode;
-    procedure setCells(cells: TGameCells; candidates:TIntArray);
     procedure cellChangedHandler(sender:TObject);
     property version: string read fVersion;
     public
@@ -66,8 +67,11 @@ constructor TNonogramGame.create(name: string; gameDimensions: TPoint);
 var
   row,col:integer;
   currentRow:TGameCells;
+  currentClues:TClueCells;
 begin
   fGameBlock:=TGameBlock.create;
+  fRowClues:=TClueBlock.create;
+  fColumnClues:=TClueBlock.create;
   fGameMode:=gmSet;
   fName:=name;
   fVersion:=gameVersion;
@@ -75,9 +79,21 @@ begin
   fSelectedColour:=clBlack;
   for row:=0 to pred(gameDimensions.Y) do
     begin
+    //add a single empty clue
+    currentClues:=TClueCells.create;
+    currentClues.push(TClueCell.create(row,-1,-1,currentClues.size));
+    fRowClues.push(currentClues);
     currentRow:=TGameCells.create;
     for col:=0 to pred(gameDimensions.X) do
+      begin
       currentRow.push(TGameCell.create(row,col,@cellChangedHandler));
+      if (row = 0) then
+        begin
+        currentClues:=TClueCells.create;
+        currentClues.push(TClueCell.create(-1,col,-1,currentClues.size));
+        fColumnClues.push(currentClues);
+        end;
+      end;
     fGameBlock.push(currentRow);
     end;
   fSelectedCell:=nil;
@@ -88,11 +104,6 @@ constructor TNonogramGame.create(filename: String);
 begin
   fGameMode:=gmSolve;
   //loadfrom file
-end;
-
-procedure TNonogramGame.setCells(cells: TGameCells; candidates: TIntArray);
-begin
-
 end;
 
 procedure TNonogramGame.cellChangedHandler(sender: TObject);

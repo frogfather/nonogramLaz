@@ -17,7 +17,11 @@ type
     fCellId: TGUID;
     fRow: integer;
     fColumn: integer;
-    fBlocks: TIntArray;
+    //which clues can this cell be?
+    //If 1 the cell is filled with the clue colour
+    //If 0 the cell has a cross
+    //If more than 1 then we don't know what clue (if any) this cell is part of.
+    fCandidates: TIntArray;
     fFill: ECellFillMode;
     fColour: TColor;
     fOnCellChanged:TNotifyEvent;
@@ -44,7 +48,7 @@ type
   end;
 
   { TGameBlockArrayHelper }
-  TGameBlockArrayHelper = type helper for TGameCells
+  TGameBlockArrayHelper = type helper for TGameBlock
   function size: integer;
   function push(element:TGameCells):integer;
   end;
@@ -64,7 +68,7 @@ begin
   result:=self.size;
 end;
 
-{ TCellsArrayHelper }
+{ TGameCellsArrayHelper }
 
 function TGameCellsArrayHelper.size: integer;
 begin
