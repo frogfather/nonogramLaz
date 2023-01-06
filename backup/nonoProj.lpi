@@ -75,6 +75,11 @@
         <IsPartOfProject Value="True"/>
         <UnitName Value="clickDelegate"/>
       </Unit>
+      <Unit>
+        <Filename Value="cluecell.pas"/>
+        <IsPartOfProject Value="True"/>
+        <UnitName Value="clueCell"/>
+      </Unit>
     </Units>
   </ProjectOptions>
   <CompilerOptions>

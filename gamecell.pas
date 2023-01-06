@@ -32,9 +32,10 @@ type
     property fill: ECellFillMode read fFill;
     property colour:TColor read fColour;
   end;
-  TGameCells = array of TGameCell;
+  TGameCells = array of TGameCell; //cells for a row
+  TGameBlock = array of TGameCells; //cells for the game
 
-   { TGameCellsArrayHelper }
+  { TGameCellsArrayHelper }
 
   TGameCellsArrayHelper = type helper for TGameCells
   function size: integer;
@@ -42,9 +43,28 @@ type
   function indexOf(element:TGameCell):integer;
   end;
 
+  { TGameBlockArrayHelper }
+  TGameBlockArrayHelper = type helper for TGameBlock
+  function size: integer;
+  function push(element:TGameCells):integer;
+  end;
+
 implementation
 
-{ TCellsArrayHelper }
+{ TGameBlockArrayHelper }
+
+function TGameBlockArrayHelper.size: integer;
+begin
+  result:=length(self);
+end;
+
+function TGameBlockArrayHelper.push(element: TGameCells): integer;
+begin
+  insert(element,self,length(self));
+  result:=self.size;
+end;
+
+{ TGameCellsArrayHelper }
 
 function TGameCellsArrayHelper.size: integer;
 begin

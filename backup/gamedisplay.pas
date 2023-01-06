@@ -5,7 +5,7 @@ unit gameDisplay;
 interface
 
 uses
-  Classes, SysUtils, Controls, ExtCtrls, nonogramGame, Graphics, arrayUtils, cell,
+  Classes, SysUtils, Controls, ExtCtrls, nonogramGame, Graphics, arrayUtils, gameCell,
   gameDisplayInterface,clickDelegate;
 
 type
@@ -156,7 +156,7 @@ end;
 
 procedure TGameDisplay.initialiseView;
 var
-  index, numCells: integer;
+  row,column:integer;
   thisCell: TGameCell;
   newCd: TCellDisplay;
   displayWidth, displayHeight: integer;
@@ -167,10 +167,10 @@ begin
   displayHeight := self.Height;
   cellWidth := displayWidth div fGame.dimensions.X;
   cellHeight := displayHeight div fGame.dimensions.Y;
-  numCells := fGame.dimensions.X * fGame.dimensions.Y;
-  for index := 0 to pred(numCells) do
+  for row := 0 to pred(fGame.dimensions.y) do
+    for column:= 0 to pred(fGame.dimensions.X) do
   begin
-    thisCell := fGame.cells[index];
+    thisCell := fGame.block[row][column];
     newCd := TCellDisplay.Create(self, thisCell.Row, thisCell.Col);
     newCd.Parent := self;
     newCd.OnCellKeyDown := @gameCellKeyDown;

@@ -5,7 +5,7 @@ unit nonogramGame;
 interface
 
 uses
-  Classes, SysUtils,arrayUtils,gameCell,graphics,clickDelegate;
+  Classes, SysUtils,arrayUtils,gameCell,clueCell,graphics,clickDelegate;
 
 const defaultDimensions: TPoint = (X:9; Y:9);
 const gameVersion: string = '0.0.2';
@@ -22,14 +22,14 @@ type
     fName:string;
     fVersion:string;
     fDimensions:TPoint;
-    fCells: TCells;
+    fGameBlock: TGameBlock;
     fSelectedCell: TGameCell;
     fStarted:boolean;
     fOnCellStateChanged:TNotifyEvent;
     fSelectedColour:TColor;
     fInputMode: EInputMode;
     fGameMode: EGameMode;
-    procedure setCells(cells: TCells; candidates:TIntArray);
+    procedure setCells(cells: TGameCells; candidates:TIntArray);
     procedure cellChangedHandler(sender:TObject);
     property version: string read fVersion;
     public
@@ -46,7 +46,7 @@ type
     procedure reset;
     function getCell(row,column:integer):TGameCell;
     function getCell(position_:TPoint):TGameCell;
-    property cells:TCells read fCells;
+    property block:TGameBlock read fGameBlock;
     property selectedCell:TGameCell read fSelectedCell write fSelectedCell;
     property name:string read fName;
     property started:boolean read fStarted;
@@ -65,18 +65,21 @@ implementation
 constructor TNonogramGame.create(name: string; gameDimensions: TPoint);
 var
   row,col:integer;
+  currentRow:TGameCells;
+  currentCell:TGameCell;
 begin
-  fCells:=TCells.create;
+  fGameBlock:=TGameBlock.create;
   fGameMode:=gmSet;
   fName:=name;
   fVersion:=gameVersion;
   fDimensions:=gameDimensions;
   fSelectedColour:=clBlack;
-  for col:=0 to pred(gameDimensions.Y) do
-    for row:=0 to pred(gameDimensions.X) do
-    //create a cell
+  for row:=0 to pred(gameDimensions.Y) do
     begin
-    fCells.push(TGameCell.create(row,col,@cellChangedHandler));
+    currentRow:=TGameCells.create;
+    for col:=0 to pred(gameDimensions.X) do
+      currentRow.push(TGameCell.create(row,col,@cellChangedHandler));
+
     end;
   fSelectedCell:=nil;
 end;
@@ -88,7 +91,7 @@ begin
   //loadfrom file
 end;
 
-procedure TNonogramGame.setCells(cells: TCells; candidates: TIntArray);
+procedure TNonogramGame.setCells(cells: TGameCells; candidates: TIntArray);
 begin
 
 end;
@@ -154,7 +157,7 @@ end;
 
 function TNonogramGame.getCell(row, column: integer): TGameCell;
 begin
-  result:=fCells[column+(row * fDimensions.X)];
+  result:=fGameBlock[row][column];
 end;
 
 function TNonogramGame.getCell(position_: TPoint): TGameCell;
