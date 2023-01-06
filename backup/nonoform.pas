@@ -6,7 +6,7 @@ interface
 
 uses
   Classes, SysUtils, Forms, Controls, Graphics, Dialogs, StdCtrls, nonogramGame,
-  gameDisplay, cell;
+  gameDisplay, gameCell;
 
 type
 
@@ -45,7 +45,7 @@ end;
 
 function TfNonogram.createSampleGame: TNonogramGame;
 begin
-  result:=TNonogramGame.create('test',TPoint.Create(10,10));
+  result:=TNonogramGame.create('test',TPoint.Create(80,80));
 end;
 
 end.

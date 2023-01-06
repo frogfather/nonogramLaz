@@ -20,12 +20,9 @@ type
     fCandidates: TIntArray;//which clues can this cell be?
     fFill: ECellFillMode;
     fColour: TColor;
-    fOnCellChanged:TNotifyEvent;
     public
     constructor create(row, column: integer;
-      cellChangedHandler:TNotifyEvent;
       cellFill: ECellFillMode=cfEmpty);
-    procedure setCellFill(fillMode:ECellFillMode);
     property cellId: TGUID read fCellId;
     property row: integer read fRow;
     property col: integer read fColumn;
@@ -87,24 +84,14 @@ begin
 end;
 
 { TGameCell }
-//For new game: cellId is a new GUID
 constructor TGameCell.create(row, column: integer;
-  cellChangedHandler:TNotifyEvent;
   cellFill: ECellFillMode);
 begin
-  fOnCellChanged:=cellChangedHandler;
   createGUID(fCellId);
   fRow:=row;
   fColumn:=column;
   fFill:=cellFill;
   fColour:=clDefault;
-end;
-
-procedure TGameCell.setCellFill(fillMode: ECellFillMode);
-begin
-  fFill:=fillMode;
-  if (fOnCellChanged <> nil) then
-    fOnCellChanged(self);
 end;
 
 end.

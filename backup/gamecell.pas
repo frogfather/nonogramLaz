@@ -17,11 +17,7 @@ type
     fCellId: TGUID;
     fRow: integer;
     fColumn: integer;
-    //which clues can this cell be?
-    //If 1 the cell is filled with the clue colour
-    //If 0 the cell has a cross
-    //If more than 1 then we don't know what clue (if any) this cell is part of.
-    fCandidates: TIntArray;
+    fCandidates: TIntArray;//which clues can this cell be?
     fFill: ECellFillMode;
     fColour: TColor;
     fOnCellChanged:TNotifyEvent;
@@ -29,12 +25,12 @@ type
     constructor create(row, column: integer;
       cellChangedHandler:TNotifyEvent;
       cellFill: ECellFillMode=cfEmpty);
-    procedure setCellFill(fillMode:ECellFillMode);
     property cellId: TGUID read fCellId;
     property row: integer read fRow;
     property col: integer read fColumn;
     property fill: ECellFillMode read fFill;
     property colour:TColor read fColour;
+    property candidates:TIntArray read fCandidates;
   end;
   TGameCells = array of TGameCell; //cells for a row
   TGameBlock = array of TGameCells; //cells for the game
@@ -90,24 +86,16 @@ begin
 end;
 
 { TGameCell }
-//For new game: cellId is a new GUID
 constructor TGameCell.create(row, column: integer;
   cellChangedHandler:TNotifyEvent;
   cellFill: ECellFillMode);
 begin
-  fOnCellChanged:=cellChangedHandler;
+  //fOnCellChanged:=cellChangedHandler;
   createGUID(fCellId);
   fRow:=row;
   fColumn:=column;
   fFill:=cellFill;
   fColour:=clDefault;
-end;
-
-procedure TGameCell.setCellFill(fillMode: ECellFillMode);
-begin
-  fFill:=fillMode;
-  if (fOnCellChanged <> nil) then
-    fOnCellChanged(self);
 end;
 
 end.

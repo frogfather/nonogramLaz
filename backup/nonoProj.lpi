@@ -80,6 +80,11 @@
         <IsPartOfProject Value="True"/>
         <UnitName Value="clueCell"/>
       </Unit>
+      <Unit>
+        <Filename Value="updatedelegate.pas"/>
+        <IsPartOfProject Value="True"/>
+        <UnitName Value="updateDelegate"/>
+      </Unit>
     </Units>
   </ProjectOptions>
   <CompilerOptions>

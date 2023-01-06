@@ -6,7 +6,7 @@ interface
 
 uses
   Classes, SysUtils, Controls, ExtCtrls, nonogramGame, Graphics, arrayUtils, gameCell,
-  gameDisplayInterface,clickDelegate;
+  gameDisplayInterface,clickDelegate,updateDelegate;
 
 type
 
@@ -33,7 +33,7 @@ type
     function getRow: integer;
     function getCol: integer;
   public
-    constructor Create(aOwner: TComponent; cRow, cCol: integer); reintroduce;
+    constructor Create(aOwner: TComponent; cCol,cRow: integer); reintroduce;
     property row: integer read getRow;
     property col: integer read getCol;
   end;
@@ -72,7 +72,7 @@ implementation
 
 { TCellDisplay }
 
-constructor TCellDisplay.Create(aOwner: TComponent; cRow, cCol: integer);
+constructor TCellDisplay.Create(aOwner: TComponent; cCol,cRow: integer);
 begin
   inherited Create(aOwner);
   //Redirect the built in on click and key down events
@@ -102,7 +102,7 @@ begin
       game:=(self.Parent as TGameDisplay).fGame;
       gameCell := game.getCell(self.col, self.row);
       if (gameCell = nil) then exit;
-
+      writeln('paint cell in row '+gameCell.row.toString+' col '+gameCell.col.toString);
       //draw the rectangle regardless
       canvas.brush.Color := gameCell.colour;
       canvas.Rectangle(0, 0, canvas.Width, canvas.Height);
@@ -112,7 +112,7 @@ begin
         begin
         oldPenColour:=canvas.Pen.Color;
         canvas.Pen.Color:=clDkGray;
-        canvas.DrawFocusRect(TRect.Create(0,0,canvas.Width,canvas.Height));
+        canvas.DrawFocusRect(TRect.Create(1,1,canvas.Width-1,canvas.Height-1));
         canvas.Pen.color:=oldPenColour;
         end;
     end;
@@ -171,7 +171,7 @@ begin
     for column:= 0 to pred(fGame.dimensions.X) do
   begin
     thisCell := fGame.block[row][column];
-    newCd := TCellDisplay.Create(self, thisCell.Row, thisCell.Col);
+    newCd := TCellDisplay.Create(self, thisCell.Col, thisCell.Row);
     newCd.Parent := self;
     newCd.OnCellKeyDown := @gameCellKeyDown;
     newCd.OnCellClick:= @gameCellClick;
@@ -179,8 +179,8 @@ begin
     newCd.Caption := '';
     newCd.Width := cellWidth;
     newCd.Height := cellHeight;
-    newCd.Left := ((index mod fGame.Dimensions.X) * cellWidth);
-    newCd.Top := self.Top + ((index div fGame.Dimensions.Y) * cellHeight);
+    newCd.Left := (column * cellWidth);
+    newCd.Top := self.Top + (row * cellHeight);
     newCd.Visible := True;
     setLength(fGameCells, length(fGameCells) + 1);
     fGameCells[length(fGameCells) - 1] := newCd;
@@ -193,9 +193,9 @@ var
   selectedCellDisplay: TCellDisplay;
 begin
   //for changes signalled by the game - triggers redraw of specified cell
-  if Sender is TGameCell then with Sender as TGameCell do
+  if Sender is TUpdateDelegate then with Sender as TUpdateDelegate do
   begin
-  selectedCellDisplay := getCell(row, col);
+  selectedCellDisplay := getCell(position.Y,position.X);
   if (selectedCellDisplay <> nil)
     then selectedCellDisplay.Repaint;
   end;

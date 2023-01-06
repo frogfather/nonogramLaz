@@ -5,7 +5,7 @@ unit nonogramGame;
 interface
 
 uses
-  Classes, SysUtils,arrayUtils,gameCell,clueCell,graphics,clickDelegate;
+  Classes, SysUtils,arrayUtils,gameCell,clueCell,graphics,clickDelegate,updateDelegate;
 
 const defaultDimensions: TPoint = (X:9; Y:9);
 const gameVersion: string = '0.0.2';
@@ -79,12 +79,21 @@ begin
   fSelectedColour:=clBlack;
   for row:=0 to pred(gameDimensions.Y) do
     begin
+    //add a single empty clue
     currentClues:=TClueCells.create;
     currentClues.push(TClueCell.create(row,-1,-1,currentClues.size));
     fRowClues.push(currentClues);
     currentRow:=TGameCells.create;
     for col:=0 to pred(gameDimensions.X) do
+      begin
       currentRow.push(TGameCell.create(row,col,@cellChangedHandler));
+      if (row = 0) then
+        begin
+        currentClues:=TClueCells.create;
+        currentClues.push(TClueCell.create(-1,col,-1,currentClues.size));
+        fColumnClues.push(currentClues);
+        end;
+      end;
     fGameBlock.push(currentRow);
     end;
   fSelectedCell:=nil;
@@ -99,8 +108,9 @@ end;
 
 procedure TNonogramGame.cellChangedHandler(sender: TObject);
 begin
-  if (fOnCellStateChanged <> nil) then
-    fOnCellStateChanged(sender);//Should send a delegate
+  if (fOnCellStateChanged = nil) then exit;
+  if sender is TGameCell then with sender as TGameCell do
+    fOnCellStateChanged(TUpdateDelegate.create(TPoint.Create(col,row)));
 end;
 
 procedure TNonogramGame.setCellChangedHandler(handler: TNotifyEvent);

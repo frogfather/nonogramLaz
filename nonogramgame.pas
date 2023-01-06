@@ -5,7 +5,7 @@ unit nonogramGame;
 interface
 
 uses
-  Classes, SysUtils,arrayUtils,gameCell,clueCell,graphics,clickDelegate;
+  Classes, SysUtils,arrayUtils,gameCell,clueCell,graphics,clickDelegate,updateDelegate;
 
 const defaultDimensions: TPoint = (X:9; Y:9);
 const gameVersion: string = '0.0.2';
@@ -86,7 +86,7 @@ begin
     currentRow:=TGameCells.create;
     for col:=0 to pred(gameDimensions.X) do
       begin
-      currentRow.push(TGameCell.create(row,col,@cellChangedHandler));
+      currentRow.push(TGameCell.create(row,col));
       if (row = 0) then
         begin
         currentClues:=TClueCells.create;
@@ -108,8 +108,9 @@ end;
 
 procedure TNonogramGame.cellChangedHandler(sender: TObject);
 begin
-  if (fOnCellStateChanged <> nil) then
-    fOnCellStateChanged(sender);//Should send a delegate
+  if (fOnCellStateChanged = nil) then exit;
+  if sender is TGameCell then with sender as TGameCell do
+    fOnCellStateChanged(TUpdateDelegate.create(TPoint.Create(col,row)));
 end;
 
 procedure TNonogramGame.setCellChangedHandler(handler: TNotifyEvent);

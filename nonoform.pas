@@ -45,7 +45,7 @@ end;
 
 function TfNonogram.createSampleGame: TNonogramGame;
 begin
-  result:=TNonogramGame.create('test',TPoint.Create(10,10));
+  result:=TNonogramGame.create('test',TPoint.Create(60,60));
 end;
 
 end.
