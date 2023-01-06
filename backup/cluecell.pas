@@ -28,8 +28,47 @@ type
   end;
 
   TClueCells = array of TClueCell; //a single row of clues relating to a row or column
-  TClueBlock = array of TClueCells;
+  TClueBlock = array of TClueCells; //a block of clues for all rows or columns
+
+  { TClueCellsArrayHelper }
+
+  TClueCellsArrayHelper = type helper for TClueCells
+  function size: integer;
+  function push(element:TClueCell):integer;
+  function indexOf(element:TClueCell):integer;
+  end;
+
+  { TClueBlockArrayHelper }
+  TClueBlockArrayHelper = type helper for TClueBlock
+  function size: integer;
+  function push(element:TClueCells):integer;
+  function maxClues:integer;
+  end;
 implementation
+
+{ TClueBlockArrayHelper }
+
+function TClueBlockArrayHelper.size: integer;
+begin
+  result:=length(self);
+end;
+
+function TClueBlockArrayHelper.push(element: TClueCells): integer;
+begin
+  insert(element,self,length(self));
+  result:=self.size;
+end;
+
+function TClueBlockArrayHelper.maxClues: integer;
+var
+  index:integer;
+begin
+  result:=0;
+  //return the length of the longest TClueCells in this array
+  if self.size = 0 then exit;
+  for index:=0 to pred(self.size) do
+    if self[index].size > result then result:= self[index].size;
+end;
 
 { TClueCell }
 

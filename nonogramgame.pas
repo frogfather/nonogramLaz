@@ -66,7 +66,6 @@ constructor TNonogramGame.create(name: string; gameDimensions: TPoint);
 var
   row,col:integer;
   currentRow:TGameCells;
-  currentCell:TGameCell;
 begin
   fGameBlock:=TGameBlock.create;
   fGameMode:=gmSet;
@@ -99,7 +98,7 @@ end;
 procedure TNonogramGame.cellChangedHandler(sender: TObject);
 begin
   if (fOnCellStateChanged <> nil) then
-    fOnCellStateChanged(sender);//Sending the cell rather than the game
+    fOnCellStateChanged(sender);//Should send a delegate
 end;
 
 procedure TNonogramGame.setCellChangedHandler(handler: TNotifyEvent);
@@ -110,20 +109,13 @@ end;
 procedure TNonogramGame.gameInputKeyPressHandler(Sender: TObject;
   var Key: Word; Shift: TShiftState);
 begin
-  //should use clicks
+  //mostly clicks for this game but let's allow keyboard input too
 end;
 
 procedure TNonogramGame.gameInputClickHandler(Sender: TObject);
 begin
-  //Indicates that the cell has been clicked
-  //We need to have a type to pass click information
-  //that is not associated with the display
-  //needs info on which cell was clicked
   if sender is TClickDelegate then with sender as TClickDelegate do
-    begin
     selectedCell:= getCell(position);
-    writeln('selected cell now '+selectedCell.col.ToString+' '+selectedCell.row.ToString);
-    end;
 end;
 
 procedure TNonogramGame.modeSwitchKeyPressHandler(Sender: TObject;

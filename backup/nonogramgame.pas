@@ -66,7 +66,6 @@ constructor TNonogramGame.create(name: string; gameDimensions: TPoint);
 var
   row,col:integer;
   currentRow:TGameCells;
-  currentCell:TGameCell;
 begin
   fGameBlock:=TGameBlock.create;
   fGameMode:=gmSet;
@@ -79,7 +78,7 @@ begin
     currentRow:=TGameCells.create;
     for col:=0 to pred(gameDimensions.X) do
       currentRow.push(TGameCell.create(row,col,@cellChangedHandler));
-
+    fGameBlock.push(currentRow);
     end;
   fSelectedCell:=nil;
 end;
@@ -115,10 +114,6 @@ end;
 
 procedure TNonogramGame.gameInputClickHandler(Sender: TObject);
 begin
-  //Indicates that the cell has been clicked
-  //We need to have a type to pass click information
-  //that is not associated with the display
-  //needs info on which cell was clicked
   if sender is TClickDelegate then with sender as TClickDelegate do
     begin
     selectedCell:= getCell(position);
