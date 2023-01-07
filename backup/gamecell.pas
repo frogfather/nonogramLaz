@@ -20,16 +20,14 @@ type
     fCandidates: TIntArray;//which clues can this cell be?
     fFill: ECellFillMode;
     fColour: TColor;
-    fOnCellChanged:TNotifyEvent;
     public
-    constructor create(row, column: integer;
-      cellChangedHandler:TNotifyEvent;
+    constructor create(column,row: integer;
       cellFill: ECellFillMode=cfEmpty);
     property cellId: TGUID read fCellId;
     property row: integer read fRow;
     property col: integer read fColumn;
-    property fill: ECellFillMode read fFill;
-    property colour:TColor read fColour;
+    property fill: ECellFillMode read fFill write fFill;
+    property colour:TColor read fColour write fColour;
     property candidates:TIntArray read fCandidates;
   end;
   TGameCells = array of TGameCell; //cells for a row
@@ -86,16 +84,14 @@ begin
 end;
 
 { TGameCell }
-constructor TGameCell.create(row, column: integer;
-  cellChangedHandler:TNotifyEvent;
+constructor TGameCell.create(column,row: integer;
   cellFill: ECellFillMode);
 begin
-  //fOnCellChanged:=cellChangedHandler;
   createGUID(fCellId);
   fRow:=row;
   fColumn:=column;
-  fFill:=cellFill;
-  fColour:=clDefault;
+  fFill:=cfFill;
+  if (column > 5) then fColour:=clBlue else if (row > 7) then fColour:= clYellow else fColour:=clDefault;
 end;
 
 end.

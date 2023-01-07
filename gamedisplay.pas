@@ -5,7 +5,7 @@ unit gameDisplay;
 interface
 
 uses
-  Classes, SysUtils, Controls, ExtCtrls, nonogramGame, Graphics, arrayUtils,clickDelegate,gameCell;
+  Classes, SysUtils, Controls, ExtCtrls, nonogramGame, Graphics, arrayUtils,clickDelegate,updateDelegate,gameCell;
 
 type
 
@@ -104,11 +104,15 @@ procedure TGameDisplay.onGameCellChangedHandler(Sender: TObject);
 begin
   //for changes signalled by the game - triggers redraw of specified area
 
+  if sender is TUpdateDelegate then with sender as TUpdateDelegate do
+  fPaintbox.Repaint;
 end;
 
 procedure TGameDisplay.drawCell(Sender: TObject);
 var
   row,column:integer;
+  currentCell: TGameCell;
+  cellCoords:TRect;
 
   function getCellCoords(column,row:integer):TRect;
   var
@@ -130,7 +134,41 @@ begin
     canvas.Brush.color:=clDefault;
     for row:=0 to pred(rows) do
       for column:= 0 to pred(columns) do
-        canvas.Rectangle(getCellCoords(column,row));
+        begin
+        //if fill style is none use default colour
+        //if fill style is solid use the colour of the cell
+        //if fill style is cross, add a cross
+        //if fill style is dot add a dot
+        currentCell:=fGame.getCell(row,column);
+        cellCoords:=getCellCoords(column,row);
+        case currentCell.fill of
+          cfEmpty:
+            begin
+            canvas.Brush.color:=clDefault;
+            canvas.Rectangle(cellCoords);
+            end;
+          cfFill:
+            begin
+            canvas.Brush.color:=currentCell.colour;
+            canvas.Rectangle(cellCoords);
+            end;
+          cfCross:
+            begin
+            canvas.Brush.color:=clDefault;
+            canvas.Rectangle(cellCoords);
+            canvas.MoveTo(cellCoords.TopLeft);
+            canvas.LineTo(cellCoords.BottomRight);
+            canvas.MoveTo(cellCoords.Left,cellCoords.Bottom);
+            canvas.MoveTo(cellCoords.Right,cellCoords.Top);
+            end;
+          cfDot:
+            begin
+            canvas.Brush.color:=clDefault;
+            canvas.Rectangle(cellCoords);
+            canvas.TextOut(cellCoords.Top,cellcoords.Left,'o');
+            end;
+        end;
+      end;
   end;
 end;
 
@@ -150,7 +188,6 @@ end;
 procedure TGameDisplay.PaintboxMouseDownHandler(Sender: TObject;
   Button: TMouseButton; Shift: TShiftState; X, Y: Integer);
 begin
-  writeln('paintbox Mouse down at coords '+X.toString+','+Y.toString);
   if Assigned(fOnGameClick) then fOnGameClick(TClickDelegate.create(getCoords(x,y)));
 end;
 

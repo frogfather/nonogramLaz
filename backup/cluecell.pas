@@ -18,13 +18,15 @@ type
     fIndex:integer;
     fValue:integer;
     fColour: TColor;
+    fSolved:boolean;
   public
-    constructor create(row_,column_,value_,index_:integer;colour_:TColor=clBlack);
+    constructor create(column_,row_,value_,index_:integer;colour_:TColor=clBlack);
     property row:integer read fRow;
     property column: integer read fColumn;
     property index:integer read fIndex;
     property value: integer read fValue;
     property colour: TColor read fColour;
+    property solved:boolean read fSolved;
   end;
 
   TClueCells = array of TClueCell; //a single row of clues relating to a row or column
@@ -93,7 +95,7 @@ end;
 
 { TClueCell }
 
-constructor TClueCell.create(row_, column_, value_, index_: integer; colour_: TColor
+constructor TClueCell.create(column_,row_, value_, index_: integer; colour_: TColor
   );
 begin
   fRow:=row_;
@@ -101,6 +103,7 @@ begin
   fValue:=value_;
   fIndex:= index_;
   fColour:= colour_;
+  fSolved:=false;
 end;
 
 end.

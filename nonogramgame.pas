@@ -86,7 +86,7 @@ begin
     currentRow:=TGameCells.create;
     for col:=0 to pred(gameDimensions.X) do
       begin
-      currentRow.push(TGameCell.create(row,col));
+      currentRow.push(TGameCell.create(col,row));
       if (row = 0) then
         begin
         currentClues:=TClueCells.create;
@@ -127,10 +127,17 @@ end;
 procedure TNonogramGame.gameInputClickHandler(Sender: TObject);
 begin
   if sender is TClickDelegate then with sender as TClickDelegate do
+    begin
     selectedCell:= getCell(position);
+    writeln('Selected cell col and row for x,y '+position.X.toString+','+position.Y.toString+': '+selectedCell.col.ToString+','+selectedCell.row.ToString);
+    end;
   if selectedCell <> Nil then
     begin
-    writeln('Clicked cell '+selectedCell.col.toString+' '+selectedCell.row.toString);
+    //let's do something with this cell
+    selectedcell.fill:=cfFill;
+    if (selectedCell.colour = clRed) then selectedCell.colour:= clDefault else selectedcell.colour:=clRed;
+
+    if Assigned(fOnCellStateChanged) then fOnCellStateChanged(TUpdateDelegate.create(TPoint.Create(selectedCell.col,selectedCell.row)));
     end;
 end;
 
@@ -174,7 +181,7 @@ end;
 
 function TNonogramGame.getCell(position_: TPoint): TGameCell;
 begin
-  result:=getCell(position_.X,position_.Y);
+  result:=getCell(position_.Y,position_.X);
 end;
 
 end.
