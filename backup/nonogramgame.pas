@@ -86,7 +86,7 @@ begin
     currentRow:=TGameCells.create;
     for col:=0 to pred(gameDimensions.X) do
       begin
-      currentRow.push(TGameCell.create(row,col,@cellChangedHandler));
+      currentRow.push(TGameCell.create(row,col));
       if (row = 0) then
         begin
         currentClues:=TClueCells.create;

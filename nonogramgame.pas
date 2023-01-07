@@ -128,6 +128,10 @@ procedure TNonogramGame.gameInputClickHandler(Sender: TObject);
 begin
   if sender is TClickDelegate then with sender as TClickDelegate do
     selectedCell:= getCell(position);
+  if selectedCell <> Nil then
+    begin
+    writeln('Clicked cell '+selectedCell.col.toString+' '+selectedCell.row.toString);
+    end;
 end;
 
 procedure TNonogramGame.modeSwitchKeyPressHandler(Sender: TObject;
@@ -161,6 +165,10 @@ end;
 
 function TNonogramGame.getCell(row, column: integer): TGameCell;
 begin
+  result:=nil;
+  if (row < 0)or(row > pred(dimensions.Y))
+     or (column < 0) or (column > pred(dimensions.X)) then exit;
+
   result:=fGameBlock[row][column];
 end;
 
