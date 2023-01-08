@@ -9,7 +9,7 @@ uses
 type
 
   { TUpdateDelegate }
-
+  //Modify to allow multiple cells
   TUpdateDelegate = class(TInterfacedObject)
     private
     fPosition:TPoint;//which cell to update

@@ -127,14 +127,12 @@ end;
 procedure TNonogramGame.gameInputClickHandler(Sender: TObject);
 var
   index:integer;
-  selCells:TPointArray;
 begin
   if sender is TClickDelegate then with sender as TClickDelegate do
     begin
-    selCells:=selectedCells;
-    for index:=0 to pred(selCells.size) do
+    for index:=0 to pred(selectedCells.size) do
       begin
-      selectedCell:= getCell(selCells[index]);
+      selectedCell:= getCell(selectedCells[index]);
       if selectedCell <> Nil then
         begin
         //let's do something with these cells

@@ -9,7 +9,7 @@ uses
 type
   
   { TClickDelegate }
-  //Should allow multiple cells
+
   TClickDelegate = class(TInterfacedObject)
     private
     fSelectedCells:TPointArray;

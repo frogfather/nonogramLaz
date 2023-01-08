@@ -15,6 +15,8 @@ type
   private
     fGame: TNonogramGame;
     fGameCells: TPaintbox;
+    fRowClues: TPaintbox;
+    fColumnClues: TPaintbox;
     fOnGameKeyDown: TKeyEvent;
     fOnGameClick:TNotifyEvent;
     fSelStart:TPoint;
@@ -24,20 +26,20 @@ type
     function getCellSize:integer;
     function getRows:integer;
     function getColumns:integer;
-    function getMarginLeft:integer;
-    function getMarginTop:integer;
-    function getCoords(x,y:integer):TPoint;
+    function getCellLocation(x,y:integer):TPoint; //Get the column and row of the cell from coordinates
+    function getCellCoords(column,row:integer):TRect; //Get the bounds of the cell on the paintbox
     procedure resetSelection;
+    procedure drawClue(pb:TPaintbox;coords:TRect);
     //receives input from the game regarding changes to the state
     procedure onGameCellChangedHandler(Sender: TObject);
-    procedure drawCell(Sender:TObject);
+    procedure drawGameCell(Sender:TObject);
+    procedure drawRowClues(Sender:TObject);
+    procedure drawColumnClues(Sender:TObject);
     procedure onResizeDisplay(Sender: TObject);
     property cellwidth:integer read getcellSize;
     property cellheight:integer read getCellSize;
     property rows:integer read getRows;
     property columns:integer read getcolumns;
-    property marginLeft:integer read getMarginLeft;
-    property marginTop:integer read getMarginTop;
     property multiSelect:boolean read fMultiSelect write fMultiSelect;
   protected
     //intercepts the onClick event of the paintbox
@@ -58,6 +60,46 @@ type
 implementation
 
 { TGameDisplay }
+
+constructor TGameDisplay.Create(aOwner: TComponent; dimensions: TPoint);
+begin
+  inherited Create(aOwner);
+  Name := 'myGameDisplay';
+  Caption := '';
+  Height := dimensions.Y;
+  Width := dimensions.X;
+  fGame := nil;
+  fSelStart:=TPoint.Create(-1,-1);
+  fSelEnd:= TPoint.Create(-1,-1);
+  fMultiSelect:=false;
+  onResize := @onResizeDisplay;
+  fRowClues:= TPaintbox.Create(aOwner);
+  with fRowClues do
+    begin
+    Parent := self;
+    Align:=alLeft;
+    name:='rowClueCells';
+    OnPaint:=@DrawRowClues;
+    end;
+  fColumnClues:=TPaintbox.Create(aOwner);
+  with fColumnClues do
+    begin
+    Parent := self;
+    Align:=alTop;
+    name:='columnClueCells';
+    OnPaint:=@DrawColumnClues;
+    end;
+  fGameCells := TPaintbox.Create(aOwner);
+  with fGameCells do
+  begin
+    Parent := self;
+    Align:=alClient;
+    name:='gameCells';
+    OnMouseDown := @PaintBoxMouseDownHandler;
+    OnMouseUp:= @PaintBoxMouseUpHandler;
+    OnPaint := @DrawGameCell;
+  end;
+end;
 
 procedure TGameDisplay.initialiseView;
 begin
@@ -85,25 +127,26 @@ begin
   result:=fGame.dimensions.Y
 end;
 
-function TGameDisplay.getMarginLeft: integer;
-begin
-  result:= (fGameCells.Width - (cellWidth * columns)) div 2;
-end;
-
-function TGameDisplay.getMarginTop: integer;
-begin
-  result:=(fGameCells.Height - (cellHeight * rows)) div 2;
-end;
-
-function TGameDisplay.getCoords(x, y: integer): TPoint;
+function TGameDisplay.getCellLocation(x, y: integer): TPoint;
 var
   rowNo,ColNo:integer;
 begin
-  rowNo:= (y-marginTop) div cellHeight;
+  rowNo:= y div cellHeight;
   if (rowNo < 0) or (rowNo > pred(rows)) then rowNo:=-1;
-  colNo:=(x-marginLeft) div cellWidth;
+  colNo:= x div cellWidth;
   if (colNo < 0) or (colNo > pred(columns)) then colNo:=-1;
   result:=TPoint.Create(colNo,rowNo);
+end;
+
+function TGameDisplay.getCellCoords(column, row:integer): TRect;
+var
+    left_,top_,right_,bottom_:integer;
+begin
+  left_:= (cellwidth * column);
+  top_:= (cellHeight * row);
+  right_:= (cellWidth * (column+1));
+  bottom_:= (cellHeight * (row + 1));
+  result:=TRect.Create(left_,top_,right_,bottom_);
 end;
 
 procedure TGameDisplay.resetSelection;
@@ -114,37 +157,28 @@ begin
   fSelEnd.Y:=-1;
 end;
 
+procedure TGameDisplay.drawClue(pb: TPaintbox; coords: TRect);
+begin
+
+end;
+
+//for changes signalled by the game - at the moment it just triggers redraw
 procedure TGameDisplay.onGameCellChangedHandler(Sender: TObject);
 begin
-  //for changes signalled by the game - triggers redraw of specified area
-
   if sender is TUpdateDelegate then with sender as TUpdateDelegate do
   fGameCells.Repaint;
 end;
 
-procedure TGameDisplay.drawCell(Sender: TObject);
+procedure TGameDisplay.drawGameCell(Sender: TObject);
 var
   row,column:integer;
   currentCell: TGameCell;
   cellCoords:TRect;
-
-  function getCellCoords(column,row:integer):TRect;
-  var
-    left,top,right,bottom:integer;
-  begin
-    left:=marginLeft+(cellwidth * column);
-    top:=marginTop+(cellHeight * row);
-    right:=marginLeft+(cellWidth * (column+1));
-    bottom:=marginTop+(cellHeight * (row + 1));
-    result:=TRect.Create(left,top,right,bottom);
-  end;
-
 begin
   if sender is TPaintbox then with sender as TPaintbox do
   begin
+    if (name <> 'gameCells') then exit;
     //draw the cells
-    canvas.Brush.color:=clYellow;
-    canvas.Rectangle(0,0,canvas.Width,canvas.Height);
     canvas.Brush.color:=clDefault;
     for row:=0 to pred(rows) do
       for column:= 0 to pred(columns) do
@@ -186,11 +220,51 @@ begin
   end;
 end;
 
+procedure TGameDisplay.drawRowClues(Sender: TObject);
+var
+  rowNo:integer;
+begin
+  if sender is TPaintbox then with sender as TPaintbox do
+    begin
+    if (name <> 'rowClueCells') then exit;
+    canvas.Brush.Color:=clBlue;
+    canvas.Rectangle(0,0,canvas.Width,canvas.Height);
+    //clues here line up with the grid
+    canvas.pen.color:=clGray;
+    for rowno:=0 to fGame.dimensions.Y do
+      begin
+      canvas.moveTo(0, (cellHeight*rowNo));
+      canvas.lineTo(canvas.Width, (cellHeight*rowNo));
+      //some way of drawing clues
+
+      end;
+    end;
+end;
+
+procedure TGameDisplay.drawColumnClues(Sender: TObject);
+var
+  columnNo:integer;
+begin
+  if sender is TPaintbox then with sender as TPaintbox do
+    begin
+    if (name <> 'columnClueCells') then exit;
+    canvas.Brush.Color:=clRed;
+    canvas.Rectangle(0,0,canvas.Width,canvas.Height);
+    //find the left hand side of the grid
+    canvas.Pen.color:=clGray;
+    for columnNo:=0 to fGame.dimensions.X do
+      begin
+      canvas.MoveTo(fGameCells.Left+ (cellWidth*columnNo),0);
+      canvas.LineTo(fGameCells.Left+ (cellWidth*columnNo), Canvas.Height);
+      end;
+    end;
+end;
+
 procedure TGameDisplay.onResizeDisplay(Sender: TObject);
 begin
-  //Try to keep aspect ratio
-  self.Height := self.Width;
-  //resize all the gameCells
+  fGameCells.Repaint;
+  fColumnClues.Repaint;
+  fRowClues.Repaint;
 end;
 
 procedure TGameDisplay.PaintboxKeyDownHandler(Sender: TObject; var Key: word;
@@ -199,11 +273,13 @@ begin
   if Assigned(fOnGameKeyDown) then fOnGameKeyDown(Sender, key, shift);
 end;
 
+//Instead of on click events we'll use mouse down and mouse up.
+//This allows selection of multiple cells
 procedure TGameDisplay.PaintboxMouseDownHandler(Sender: TObject;
   Button: TMouseButton; Shift: TShiftState; X, Y: Integer);
 begin
   //send delegate on mouse up
-  fSelStart:=getCoords(x,y);
+  fSelStart:=getCellLocation(x,y);
   //writeln('fSelStart '+x.toString+','+y.toString+': '+fSelStart.X.toString+','+fSelStart.Y.ToString);
   if (fSelStart.X = -1)or(fSelStart.Y=-1) then resetSelection;
 end;
@@ -220,8 +296,10 @@ begin
   if (fSelStart.X > -1)and(fSelStart.Y > -1) then
     begin
     if multiSelect
-      then fSelEnd:=getCoords(x,y)
-      else fSelEnd:=fSelStart;
+      then fSelEnd:=getCellLocation(x,y)
+    else if (getCellLocation(x,y) = fSelStart)
+      then fSelEnd:=fSelStart
+    else resetSelection;
     end;
   if (fSelEnd.X = -1) or (fSelEnd.Y = -1) then
     begin
@@ -251,29 +329,6 @@ begin
     for indexY:= startY to endY do
       selectedPoints.push(TPoint.Create(indexX,indexY));
   if Assigned(fOnGameClick) then fOnGameClick(TClickDelegate.create(selectedPoints));
-end;
-
-constructor TGameDisplay.Create(aOwner: TComponent; dimensions: TPoint);
-begin
-  inherited Create(aOwner);
-  Name := 'myGameDisplay';
-  Caption := '';
-  Height := dimensions.Y;
-  Width := dimensions.X;
-  fGame := nil;
-  fSelStart:=TPoint.Create(-1,-1);
-  fSelEnd:= TPoint.Create(-1,-1);
-  onResize := @onResizeDisplay;
-  fGameCells := TPaintbox.Create(aOwner);
-  fMultiSelect:=false;
-  with fGameCells do
-  begin
-    Parent := self;
-    Align:=alClient;
-    OnMouseDown := @PaintBoxMouseDownHandler;
-    OnMouseUp:= @PaintBoxMouseUpHandler;
-    OnPaint := @DrawCell;
-  end;
 end;
 
 procedure TGameDisplay.setGame(aGame: TNonogramGame);

@@ -13,7 +13,6 @@ type
   TUpdateDelegate = class(TInterfacedObject)
     private
     fPosition:TPoint;//which cell to update
-
     public
     property position:TPoint read fPosition;
     constructor create(position_:TPoint);
