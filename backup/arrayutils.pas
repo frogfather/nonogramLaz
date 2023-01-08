@@ -61,14 +61,6 @@ type
   function sort(ascending:Boolean=true):TCharArray;
   end;
 
-  { TGameCellsArrayHelper }
-
-  TGameCellsArrayHelper = type helper for TGameCells
-  function size: integer;
-  function push(element:TGameCell):integer;
-  function indexOf(element:TGameCell):integer;
-  end;
-
 
 function containsCharacters(toSearch,toFind:String):boolean;
 function CSVToIntArray(input:string):TIntArray;
@@ -451,23 +443,7 @@ begin
   result:=output;
 end;
 
-{ TGameCellsArrayHelper }
 
-function TGameCellsArrayHelper.size: integer;
-begin
-  result:=length(self);
-end;
-
-function TGameCellsArrayHelper.push(element: TGameCell): integer;
-begin
-  insert(element,self,length(self));
-  result:=self.size;
-end;
-
-function TGameCellsArrayHelper.indexOf(element: TGameCell): integer;
-begin
-  result:= specialize getIndex<TGameCell>(element,self);
-end;
 
 end.
 

@@ -86,7 +86,7 @@ begin
     currentRow:=TGameCells.create;
     for col:=0 to pred(gameDimensions.X) do
       begin
-      currentRow.push(TGameCell.create(row,col));
+      currentRow.push(TGameCell.create(col,row));
       if (row = 0) then
         begin
         currentClues:=TClueCells.create;
@@ -125,9 +125,25 @@ begin
 end;
 
 procedure TNonogramGame.gameInputClickHandler(Sender: TObject);
+var
+  index:integer;
 begin
   if sender is TClickDelegate then with sender as TClickDelegate do
-    selectedCell:= getCell(position);
+    begin
+    for index:=0 to pred(selectedCells.size) do
+      begin
+      selectedCell:= getCell(selectedCells[index]);
+      if selectedCell <> Nil then
+        begin
+        //let's do something with these cells
+        selectedcell.fill:=cfFill;
+        if (selectedCell.colour = clRed) then selectedCell.colour:= clDefault else selectedcell.colour:=clRed;
+
+        if Assigned(fOnCellStateChanged) then fOnCellStateChanged(TUpdateDelegate.create(TPoint.Create(selectedCell.col,selectedCell.row)));
+        end;
+      end;
+    end;
+
 end;
 
 procedure TNonogramGame.modeSwitchKeyPressHandler(Sender: TObject;
@@ -161,12 +177,16 @@ end;
 
 function TNonogramGame.getCell(row, column: integer): TGameCell;
 begin
+  result:=nil;
+  if (row < 0)or(row > pred(dimensions.Y))
+     or (column < 0) or (column > pred(dimensions.X)) then exit;
+
   result:=fGameBlock[row][column];
 end;
 
 function TNonogramGame.getCell(position_: TPoint): TGameCell;
 begin
-  result:=getCell(position_.X,position_.Y);
+  result:=getCell(position_.Y,position_.X);
 end;
 
 end.

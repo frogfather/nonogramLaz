@@ -21,13 +21,13 @@ type
     fFill: ECellFillMode;
     fColour: TColor;
     public
-    constructor create(row, column: integer;
+    constructor create(column,row: integer;
       cellFill: ECellFillMode=cfEmpty);
     property cellId: TGUID read fCellId;
     property row: integer read fRow;
     property col: integer read fColumn;
-    property fill: ECellFillMode read fFill;
-    property colour:TColor read fColour;
+    property fill: ECellFillMode read fFill write fFill;
+    property colour:TColor read fColour write fColour;
     property candidates:TIntArray read fCandidates;
   end;
   TGameCells = array of TGameCell; //cells for a row
@@ -84,7 +84,7 @@ begin
 end;
 
 { TGameCell }
-constructor TGameCell.create(row, column: integer;
+constructor TGameCell.create(column,row: integer;
   cellFill: ECellFillMode);
 begin
   createGUID(fCellId);

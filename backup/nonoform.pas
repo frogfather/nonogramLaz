@@ -5,8 +5,8 @@ unit nonoForm;
 interface
 
 uses
-  Classes, SysUtils, Forms, Controls, Graphics, Dialogs, StdCtrls, nonogramGame,
-  gameDisplay, gameCell;
+  Classes, SysUtils, Form, Controls, Graphics, Dialogs, StdCtrls, ExtCtrls,
+  nonogramGame, gameDisplay, gameCell;
 
 type
 
@@ -45,7 +45,7 @@ end;
 
 function TfNonogram.createSampleGame: TNonogramGame;
 begin
-  result:=TNonogramGame.create('test',TPoint.Create(80,80));
+  result:=TNonogramGame.create('test',TPoint.Create(30,30));
 end;
 
 end.

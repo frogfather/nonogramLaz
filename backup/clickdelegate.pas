@@ -9,22 +9,22 @@ uses
 type
   
   { TClickDelegate }
-
+  //Should allow multiple cells
   TClickDelegate = class(TInterfacedObject)
     private
     fPosition:TPoint;
     public
     property position:TPoint read fPosition;
-    constructor create(position:TPoint);
+    constructor create(position_:TPoint);
   end;
 
 implementation
 
 { TClickDelegate }
 
-constructor TClickDelegate.create(position: TPoint);
+constructor TClickDelegate.create(position_: TPoint);
 begin
-  fPosition := position;
+  fPosition := position_;
 end;
 
 end.

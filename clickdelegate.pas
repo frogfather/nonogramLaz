@@ -5,26 +5,26 @@ unit clickDelegate;
 interface
 
 uses
-  Classes, SysUtils;
+  Classes, SysUtils,arrayUtils;
 type
   
   { TClickDelegate }
-
+  //Should allow multiple cells
   TClickDelegate = class(TInterfacedObject)
     private
-    fPosition:TPoint;
+    fSelectedCells:TPointArray;
     public
-    property position:TPoint read fPosition;
-    constructor create(position_:TPoint);
+    property selectedCells:TPointArray read fSelectedCells;
+    constructor create(cells_:TPointArray);
   end;
 
 implementation
 
 { TClickDelegate }
 
-constructor TClickDelegate.create(position_: TPoint);
+constructor TClickDelegate.create(cells_: TPointArray);
 begin
-  fPosition := position_;
+  fSelectedCells := cells_;
 end;
 
 end.

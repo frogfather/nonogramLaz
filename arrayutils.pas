@@ -20,6 +20,7 @@ type
   T3DIntMap = array of array of array of integer;
   T2DStringArray = array of array of string;
   TColours = array of TColor;
+  TPointArray = array of TPoint;
 
   { TIntArrayHelper }
 
@@ -59,6 +60,13 @@ type
   function indexOf(element:char):integer;
   function splice(index:integer; deleteCount: integer=0; newItems: TCharArray=nil):TCharArray;
   function sort(ascending:Boolean=true):TCharArray;
+  end;
+  { TPointArrayHelper }
+  TPointArrayHelper = type helper for TPointArray
+  function size: integer;
+  function push(element: TPoint):integer;
+  function indexOf(element:TPoint):integer;
+  function splice(index:integer; deleteCount: integer=0; newItems: TPointArray=nil):TPointArray;
   end;
 
 
@@ -442,7 +450,29 @@ begin
     end;
   result:=output;
 end;
+{ TPointArrayHelper }
 
+function TPointArrayHelper.size: integer;
+begin
+  result:=length(self);
+end;
+
+function TPointArrayHelper.push(element: TPoint): integer;
+begin
+  insert(element,self,length(self));
+  result:=self.size;
+end;
+
+function TPointArrayHelper.indexOf(element: TPoint): integer;
+begin
+  result:= specialize getIndex<TPoint>(element,self);
+end;
+
+function TPointArrayHelper.splice(index: integer; deleteCount: integer;
+  newItems: TPointArray): TPointArray;
+begin
+  result:= specialize splice<TPoint>(self,index,deleteCount,newItems);
+end;
 
 
 end.
