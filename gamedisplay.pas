@@ -14,12 +14,12 @@ type
   TGameDisplay = class(TCustomPanel)
   private
     fGame: TNonogramGame;
-    fPaintBox: TPaintbox;
-    //fGameCells: TCellDisplayArray;
+    fGameCells: TPaintbox;
     fOnGameKeyDown: TKeyEvent;
     fOnGameClick:TNotifyEvent;
     fSelStart:TPoint;
     fSelEnd:TPoint;
+    fMultiSelect:boolean;
     procedure initialiseView;
     function getCellSize:integer;
     function getRows:integer;
@@ -38,6 +38,7 @@ type
     property columns:integer read getcolumns;
     property marginLeft:integer read getMarginLeft;
     property marginTop:integer read getMarginTop;
+    property multiSelect:boolean read fMultiSelect write fMultiSelect;
   protected
     //intercepts the onClick event of the paintbox
     procedure PaintboxMouseDownHandler(Sender: TObject; Button: TMouseButton;
@@ -67,8 +68,8 @@ function TGameDisplay.getCellSize: integer;
 var
   cWidth,cHeight:integer;
 begin
-  cWidth:=fPaintbox.Width div fGame.dimensions.Y;
-  cHeight:=fPaintbox.Height div fGame.dimensions.X;
+  cWidth:=fGameCells.Width div fGame.dimensions.Y;
+  cHeight:=fGameCells.Height div fGame.dimensions.X;
   if cWidth < cHeight
     then result:= cWidth
   else result:=cHeight;
@@ -86,12 +87,12 @@ end;
 
 function TGameDisplay.getMarginLeft: integer;
 begin
-  result:= (fPaintbox.Width - (cellWidth * columns)) div 2;
+  result:= (fGameCells.Width - (cellWidth * columns)) div 2;
 end;
 
 function TGameDisplay.getMarginTop: integer;
 begin
-  result:=(fPaintbox.Height - (cellHeight * rows)) div 2;
+  result:=(fGameCells.Height - (cellHeight * rows)) div 2;
 end;
 
 function TGameDisplay.getCoords(x, y: integer): TPoint;
@@ -118,7 +119,7 @@ begin
   //for changes signalled by the game - triggers redraw of specified area
 
   if sender is TUpdateDelegate then with sender as TUpdateDelegate do
-  fPaintbox.Repaint;
+  fGameCells.Repaint;
 end;
 
 procedure TGameDisplay.drawCell(Sender: TObject);
@@ -216,8 +217,14 @@ var
 begin
   selectedPoints:=TPointArray.create;
   //if start is set then set end and send delegate
-  if (fSelStart.X > -1)and(fSelStart.Y > -1)
-    then fSelEnd:=getCoords(x,y);
+  if (fSelStart.X > -1)and(fSelStart.Y > -1) then
+    begin
+    if multiSelect
+      then fSelEnd:=getCoords(x,y)
+    else if (getCoords(x,y) = fSelStart)
+      then fSelEnd:=fSelStart
+    else resetSelection;
+    end;
   if (fSelEnd.X = -1) or (fSelEnd.Y = -1) then
     begin
     resetSelection;
@@ -259,8 +266,9 @@ begin
   fSelStart:=TPoint.Create(-1,-1);
   fSelEnd:= TPoint.Create(-1,-1);
   onResize := @onResizeDisplay;
-  fPaintBox := TPaintbox.Create(aOwner);
-  with fPaintBox do
+  fGameCells := TPaintbox.Create(aOwner);
+  fMultiSelect:=false;
+  with fGameCells do
   begin
     Parent := self;
     Align:=alClient;
