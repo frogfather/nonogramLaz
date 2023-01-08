@@ -125,20 +125,25 @@ begin
 end;
 
 procedure TNonogramGame.gameInputClickHandler(Sender: TObject);
+var
+  index:integer;
 begin
   if sender is TClickDelegate then with sender as TClickDelegate do
     begin
-    selectedCell:= getCell(position);
-    writeln('Selected cell col and row for x,y '+position.X.toString+','+position.Y.toString+': '+selectedCell.col.ToString+','+selectedCell.row.ToString);
-    end;
-  if selectedCell <> Nil then
-    begin
-    //let's do something with this cell
-    selectedcell.fill:=cfFill;
-    if (selectedCell.colour = clRed) then selectedCell.colour:= clDefault else selectedcell.colour:=clRed;
+    for index:=0 to pred(selectedCells.size) do
+      begin
+      selectedCell:= getCell(selectedCells[index]);
+      if selectedCell <> Nil then
+        begin
+        //let's do something with these cells
+        selectedcell.fill:=cfFill;
+        if (selectedCell.colour = clRed) then selectedCell.colour:= clDefault else selectedcell.colour:=clRed;
 
-    if Assigned(fOnCellStateChanged) then fOnCellStateChanged(TUpdateDelegate.create(TPoint.Create(selectedCell.col,selectedCell.row)));
+        if Assigned(fOnCellStateChanged) then fOnCellStateChanged(TUpdateDelegate.create(TPoint.Create(selectedCell.col,selectedCell.row)));
+        end;
+      end;
     end;
+
 end;
 
 procedure TNonogramGame.modeSwitchKeyPressHandler(Sender: TObject;

@@ -5,7 +5,7 @@ unit nonoForm;
 interface
 
 uses
-  Classes, SysUtils, Forms, Controls, Graphics, Dialogs, StdCtrls, ExtCtrls,
+  Classes, SysUtils, Form, Controls, Graphics, Dialogs, StdCtrls, ExtCtrls,
   nonogramGame, gameDisplay, gameCell;
 
 type
