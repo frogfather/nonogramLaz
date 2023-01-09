@@ -104,7 +104,7 @@ begin
     newRowClueBlock.push(newRowClues);
     end;
 
-  fGameState:=TGameState.create(newGameBlock,newRowClues,newColumnClues);
+  fGameState:=TGameState.create(newGameBlock,newRowClueBlock,newColumnClueBlock);
   fSelectedCell:=nil;
 end;
 
