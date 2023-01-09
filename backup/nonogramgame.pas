@@ -81,7 +81,7 @@ begin
     begin
     //add a single empty clue
     currentClues:=TClueCells.create;
-    currentClues.push(TClueCell.create(row,-1,-1,currentClues.size));
+    currentClues.push(TClueCell.create(row,-1,-1,currentClues.size)); //initially 0
     fRowClues.push(currentClues);
     currentRow:=TGameCells.create;
     for col:=0 to pred(gameDimensions.X) do

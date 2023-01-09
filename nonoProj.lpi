@@ -85,6 +85,11 @@
         <IsPartOfProject Value="True"/>
         <UnitName Value="updateDelegate"/>
       </Unit>
+      <Unit>
+        <Filename Value="gameblock.pas"/>
+        <IsPartOfProject Value="True"/>
+        <UnitName Value="gameBlock"/>
+      </Unit>
     </Units>
   </ProjectOptions>
   <CompilerOptions>

@@ -5,7 +5,7 @@ unit nonogramGame;
 interface
 
 uses
-  Classes, SysUtils,arrayUtils,gameCell,clueCell,graphics,clickDelegate,updateDelegate;
+  Classes, SysUtils,arrayUtils,gameCell,gameBlock,clueCell,graphics,clickDelegate,updateDelegate;
 
 const defaultDimensions: TPoint = (X:9; Y:9);
 const gameVersion: string = '0.0.2';
