@@ -20,7 +20,7 @@ type
     fColour: TColor;
     fSolved:boolean;
   public
-    constructor create(column_,row_,value_,index_:integer;colour_:TColor=clBlack);
+    constructor create(row_,column_,value_,index_:integer;colour_:TColor=clBlack);
     property row:integer read fRow;
     property column: integer read fColumn;
     property index:integer read fIndex;
@@ -95,7 +95,7 @@ end;
 
 { TClueCell }
 
-constructor TClueCell.create(column_,row_, value_, index_: integer; colour_: TColor
+constructor TClueCell.create(row_, column_, value_, index_: integer; colour_: TColor
   );
 begin
   fRow:=row_;

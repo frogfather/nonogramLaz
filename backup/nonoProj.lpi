@@ -90,6 +90,24 @@
         <IsPartOfProject Value="True"/>
         <UnitName Value="gameBlock"/>
       </Unit>
+      <Unit>
+        <Filename Value="gamestate.pas"/>
+        <IsPartOfProject Value="True"/>
+        <UnitName Value="gameState"/>
+      </Unit>
+      <Unit>
+        <Filename Value="gamestatechange.pas"/>
+        <IsPartOfProject Value="True"/>
+      </Unit>
+      <Unit>
+        <Filename Value="enums.pas"/>
+        <IsPartOfProject Value="True"/>
+      </Unit>
+      <Unit>
+        <Filename Value="gamestatechanges.pas"/>
+        <IsPartOfProject Value="True"/>
+        <UnitName Value="gameStateChanges"/>
+      </Unit>
     </Units>
   </ProjectOptions>
   <CompilerOptions>

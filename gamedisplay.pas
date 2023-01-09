@@ -5,7 +5,7 @@ unit gameDisplay;
 interface
 
 uses
-  Classes, SysUtils, Controls, ExtCtrls, nonogramGame, Graphics, arrayUtils,clickDelegate,updateDelegate,gameCell;
+  Classes, SysUtils, Controls, ExtCtrls, nonogramGame, Graphics, arrayUtils,clickDelegate,updateDelegate,gameCell,enums;
 
 type
 

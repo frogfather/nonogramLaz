@@ -5,32 +5,30 @@ unit nonogramGame;
 interface
 
 uses
-  Classes, SysUtils,arrayUtils,gameCell,gameBlock,clueCell,graphics,clickDelegate,updateDelegate;
+  Classes, SysUtils,arrayUtils,gameCell,gameBlock,gameState,clueCell,graphics,clickDelegate,updateDelegate,enums;
 
 const defaultDimensions: TPoint = (X:9; Y:9);
 const gameVersion: string = '0.0.2';
 
 type
-  { EInputMode }
-  EInputMode = (imFill, imCross, imDot);
-  { EGameMode }
-  EGameMode = (gmSet, gmSolve);
   { TNonogramGame }
 
   TNonogramGame = class(TinterfacedObject)
     private
+      fGameBlock: TGameBlock;
     fName:string;
     fVersion:string;
     fDimensions:TPoint;
-    fGameBlock: TGameBlock;
-    fRowClues: TClueBlock;
-    fColumnClues:TClueBlock;
+    fGameState: TGameState;
     fSelectedCell: TGameCell;
     fStarted:boolean;
     fOnCellStateChanged:TNotifyEvent;
     fSelectedColour:TColor;
     fInputMode: EInputMode;
     fGameMode: EGameMode;
+    function getGameBlock:TGameBlock;
+    function getRowClues: TClueBlock;
+    function getColumnClues: TClueBlock;
     procedure cellChangedHandler(sender:TObject);
     property version: string read fVersion;
     public
@@ -47,7 +45,9 @@ type
     procedure reset;
     function getCell(row,column:integer):TGameCell;
     function getCell(position_:TPoint):TGameCell;
-    property block:TGameBlock read fGameBlock;
+    property block:TGameBlock read getGameBlock;
+    property rowClues:TClueBlock read getRowClues;
+    property columnClues:TClueBlock read getColumnClues;
     property selectedCell:TGameCell read fSelectedCell write fSelectedCell;
     property name:string read fName;
     property started:boolean read fStarted;
@@ -66,36 +66,45 @@ implementation
 constructor TNonogramGame.create(name: string; gameDimensions: TPoint);
 var
   row,col:integer;
-  currentRow:TGameCells;
-  currentClues:TClueCells;
+  newGameRow:TGameCells;
+  newGameBlock:TGameBlock;
+  newRowClues:TClueCells;
+  newRowClueBlock:TClueBlock;
+  newColumnClues:TClueCells;
+  newColumnClueBlock:TClueBlock;
+  newGameState:TGameState;
 begin
-  fGameBlock:=TGameBlock.create;
-  fRowClues:=TClueBlock.create;
-  fColumnClues:=TClueBlock.create;
   fGameMode:=gmSet;
   fName:=name;
   fVersion:=gameVersion;
   fDimensions:=gameDimensions;
   fSelectedColour:=clBlack;
+
+  newGameBlock:=TGameBlock.create;
+  newRowClueBlock:=TClueBlock.create;
+  newColumnClueBlock:=TClueBlock.create;
+
   for row:=0 to pred(gameDimensions.Y) do
     begin
     //add a single empty clue
-    currentClues:=TClueCells.create;
-    currentClues.push(TClueCell.create(row,-1,-1,currentClues.size)); //initially 0
-    fRowClues.push(currentClues);
-    currentRow:=TGameCells.create;
+    newRowClues:=TClueCells.create;
+    newRowClues.push(TClueCell.create(row,-1,-1,newRowClues.size)); //initially 0
+    newGameRow:=TGameCells.create;
     for col:=0 to pred(gameDimensions.X) do
       begin
-      currentRow.push(TGameCell.create(col,row));
+      newGameRow.push(TGameCell.create(col,row));
       if (row = 0) then
         begin
-        currentClues:=TClueCells.create;
-        currentClues.push(TClueCell.create(-1,col,-1,currentClues.size));
-        fColumnClues.push(currentClues);
+        newColumnClues:=TClueCells.create;
+        newColumnClues.push(TClueCell.create(-1,col,-1,newColumnClues.size));
+        newColumnClueBlock.push(newColumnClues);
         end;
       end;
-    fGameBlock.push(currentRow);
+    newGameBlock.push(newGameRow);
+    newRowClueBlock.push(newRowClues);
     end;
+
+  fGameState:=TGameState.create(newGameBlock,newRowClueBlock,newColumnClueBlock);
   fSelectedCell:=nil;
 end;
 
@@ -104,6 +113,21 @@ constructor TNonogramGame.create(filename: String);
 begin
   fGameMode:=gmSolve;
   //loadfrom file
+end;
+
+function TNonogramGame.getGameBlock: TGameBlock;
+begin
+  result:=fGameState.gameBlock;
+end;
+
+function TNonogramGame.getRowClues: TClueBlock;
+begin
+  result:=fGameState.rowClues;
+end;
+
+function TNonogramGame.getColumnClues: TClueBlock;
+begin
+  result:=fGameState.columnClues;
 end;
 
 procedure TNonogramGame.cellChangedHandler(sender: TObject);

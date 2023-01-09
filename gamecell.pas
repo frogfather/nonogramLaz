@@ -4,10 +4,8 @@ unit gameCell;
 interface
 
 uses
-  Classes, SysUtils,arrayUtils,graphics;
+  Classes, SysUtils,arrayUtils,graphics,enums;
 type
-  { ECellFillMode }
-  ECellFillMode = (cfEmpty,cfFill,cfCross,cfDot);
 
   { TGameCell }
   TGameCell = class(TInterfacedObject)

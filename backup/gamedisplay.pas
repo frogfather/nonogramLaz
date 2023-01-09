@@ -5,7 +5,7 @@ unit gameDisplay;
 interface
 
 uses
-  Classes, SysUtils, Controls, ExtCtrls, nonogramGame, Graphics, arrayUtils,clickDelegate,updateDelegate,gameCell;
+  Classes, SysUtils, Controls, ExtCtrls, nonogramGame, Graphics, arrayUtils,clickDelegate,updateDelegate,gameCell,enumns;
 
 type
 
@@ -227,10 +227,10 @@ begin
   if sender is TPaintbox then with sender as TPaintbox do
     begin
     if (name <> 'rowClueCells') then exit;
-    canvas.Brush.Color:=clBlue;
+    canvas.Brush.Color:=clGray;
     canvas.Rectangle(0,0,canvas.Width,canvas.Height);
     //clues here line up with the grid
-    canvas.pen.color:=clGray;
+    canvas.pen.color:=clBlack;
     for rowno:=0 to fGame.dimensions.Y do
       begin
       canvas.moveTo(0, (cellHeight*rowNo));
@@ -248,10 +248,10 @@ begin
   if sender is TPaintbox then with sender as TPaintbox do
     begin
     if (name <> 'columnClueCells') then exit;
-    canvas.Brush.Color:=clRed;
+    canvas.Brush.Color:=clGray;
     canvas.Rectangle(0,0,canvas.Width,canvas.Height);
     //find the left hand side of the grid
-    canvas.Pen.color:=clGray;
+    canvas.Pen.color:=clBlack;
     for columnNo:=0 to fGame.dimensions.X do
       begin
       canvas.MoveTo(fGameCells.Left+ (cellWidth*columnNo),0);
