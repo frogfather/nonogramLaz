@@ -5,7 +5,8 @@ unit nonogramGame;
 interface
 
 uses
-  Classes, SysUtils,arrayUtils,gameCell,gameBlock,gameState,clueCell,graphics,clickDelegate,updateDelegate,enums;
+  Classes, SysUtils,arrayUtils,gameCell,gameBlock,gameState,gameStates,
+  gameStateChange,gameStateChanges,clueCell,graphics,clickDelegate,updateDelegate,enums;
 
 const defaultDimensions: TPoint = (X:9; Y:9);
 const gameVersion: string = '0.0.2';
@@ -15,7 +16,7 @@ type
 
   TNonogramGame = class(TinterfacedObject)
     private
-      fGameBlock: TGameBlock;
+    fHistory:TGameStates;
     fName:string;
     fVersion:string;
     fDimensions:TPoint;
@@ -72,7 +73,6 @@ var
   newRowClueBlock:TClueBlock;
   newColumnClues:TClueCells;
   newColumnClueBlock:TClueBlock;
-  newGameState:TGameState;
 begin
   fGameMode:=gmSet;
   fName:=name;
@@ -103,8 +103,9 @@ begin
     newGameBlock.push(newGameRow);
     newRowClueBlock.push(newRowClues);
     end;
-
+  fHistory:=TGameStates.create;
   fGameState:=TGameState.create(newGameBlock,newRowClueBlock,newColumnClueBlock);
+  fHistory.push(fGameState);
   fSelectedCell:=nil;
 end;
 
@@ -145,29 +146,43 @@ end;
 procedure TNonogramGame.gameInputKeyPressHandler(Sender: TObject;
   var Key: Word; Shift: TShiftState);
 begin
-  //mostly clicks for this game but let's allow keyboard input too
+  WriteLn('key '+chr(key));
+  case key of
+    66:
+      begin
+      //move back if possible
+      end;
+    70:
+      begin
+      //move forward if possible
+      end;
+  end;
 end;
 
 procedure TNonogramGame.gameInputClickHandler(Sender: TObject);
 var
   index:integer;
+  gameStateChanges:TGameStateChanges;
+  testFill:ECellFillMode;
 begin
   if sender is TClickDelegate then with sender as TClickDelegate do
     begin
+    if (selectedCells.size = 0) then exit;
+    gameStateChanges:=TGameStateChanges.create;
     for index:=0 to pred(selectedCells.size) do
       begin
       selectedCell:= getCell(selectedCells[index]);
       if selectedCell <> Nil then
         begin
         //let's do something with these cells
-        selectedcell.fill:=cfFill;
-        if (selectedCell.colour = clRed) then selectedCell.colour:= clDefault else selectedcell.colour:=clRed;
-
+        //TODO: instead of changing the state of the cell, generate a gamestatechange object
+        //add this gameState object to the history and generate a new one
+        if (selectedCell.fill = cfFill) then testFill:=cfEmpty else testFill:=cfFill;
+        gameStateChanges.push(TGameStateChange.create(ctGame,selectedCell.col,selectedCell.row,testFill,selectedCell.fill,fSelectedColour,selectedCell.colour));
         if Assigned(fOnCellStateChanged) then fOnCellStateChanged(TUpdateDelegate.create(TPoint.Create(selectedCell.col,selectedCell.row)));
         end;
       end;
     end;
-
 end;
 
 procedure TNonogramGame.modeSwitchKeyPressHandler(Sender: TObject;
@@ -205,7 +220,7 @@ begin
   if (row < 0)or(row > pred(dimensions.Y))
      or (column < 0) or (column > pred(dimensions.X)) then exit;
 
-  result:=fGameBlock[row][column];
+  result:=fGameState.gameBlock[row][column];
 end;
 
 function TNonogramGame.getCell(position_: TPoint): TGameCell;

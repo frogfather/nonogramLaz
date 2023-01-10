@@ -5,7 +5,7 @@ unit gameDisplay;
 interface
 
 uses
-  Classes, SysUtils, Controls, ExtCtrls, nonogramGame, Graphics, arrayUtils,clickDelegate,updateDelegate,gameCell,enumns;
+  Classes, SysUtils, Controls,StdCtrls, ExtCtrls, nonogramGame, Graphics, arrayUtils,clickDelegate,updateDelegate,gameCell,enums;
 
 type
 
@@ -17,6 +17,9 @@ type
     fGameCells: TPaintbox;
     fRowClues: TPaintbox;
     fColumnClues: TPaintbox;
+    fControls:TPanel;
+    fBack:TButton;
+    fForward:TButton;
     fOnGameKeyDown: TKeyEvent;
     fOnGameClick:TNotifyEvent;
     fSelStart:TPoint;
@@ -47,7 +50,7 @@ type
       Shift: TShiftState; X, Y: Integer);
     procedure PaintboxMouseUpHandler(Sender: TObject; Button: TMouseButton;
   Shift: TShiftState; X, Y: Integer);
-    procedure PaintboxKeyDownHandler(Sender: TObject; var Key: word; Shift: TShiftState);
+    procedure ButtonClickHandler(sender:TObject);
   public
     constructor Create(aOwner: TComponent; dimensions: TPoint); reintroduce;
     procedure setGame(aGame: TNonogramGame);
@@ -73,6 +76,38 @@ begin
   fSelEnd:= TPoint.Create(-1,-1);
   fMultiSelect:=false;
   onResize := @onResizeDisplay;
+  fControls:=TPanel.Create(aOwner);
+  with fControls do
+    begin
+    Parent:=self;
+    name:='pControls';
+    caption:='';
+    align:=alBottom;
+    height:=parent.Height div 10;
+    visible:=true;
+    end;
+  fBack:=TButton.create(self);
+  with fBack do
+    begin
+    parent:=fControls;
+    name:='bBack';
+    left:=10;
+    onClick:=@ButtonClickHandler;
+    visible:=true;
+    default:=false;
+    caption:='<';
+    end;
+  fForward:=TButton.create(self);
+  with fForward do
+    begin
+    parent:=fControls;
+    name:='bForward';
+    left:=fBack.Left+ fBack.Width + 2;
+    onClick:=@ButtonClickHandler;
+    visible:=true;
+    default:=false;
+    caption:='>';
+    end;
   fRowClues:= TPaintbox.Create(aOwner);
   with fRowClues do
     begin
@@ -267,12 +302,6 @@ begin
   fRowClues.Repaint;
 end;
 
-procedure TGameDisplay.PaintboxKeyDownHandler(Sender: TObject; var Key: word;
-  Shift: TShiftState);
-begin
-  if Assigned(fOnGameKeyDown) then fOnGameKeyDown(Sender, key, shift);
-end;
-
 //Instead of on click events we'll use mouse down and mouse up.
 //This allows selection of multiple cells
 procedure TGameDisplay.PaintboxMouseDownHandler(Sender: TObject;
@@ -329,6 +358,20 @@ begin
     for indexY:= startY to endY do
       selectedPoints.push(TPoint.Create(indexX,indexY));
   if Assigned(fOnGameClick) then fOnGameClick(TClickDelegate.create(selectedPoints));
+end;
+
+procedure TGameDisplay.ButtonClickHandler(sender: TObject);
+var
+  key:Word;
+begin
+  if sender is TButton then with sender as TButton do
+    begin
+    case name of
+      'bBack': key:=66;
+      'bForward': key:=70;
+    end;
+    if Assigned(fOnGameKeyDown) then fOnGameKeyDown(Sender, key, []);
+    end;
 end;
 
 procedure TGameDisplay.setGame(aGame: TNonogramGame);
