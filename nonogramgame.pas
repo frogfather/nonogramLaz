@@ -17,6 +17,7 @@ type
   TNonogramGame = class(TinterfacedObject)
     private
     fHistory:TGameStates;
+    fHistoryIndex:Integer;
     fName:string;
     fVersion:string;
     fDimensions:TPoint;
@@ -106,6 +107,7 @@ begin
   fHistory:=TGameStates.create;
   fGameState:=TGameState.create(newGameBlock,newRowClueBlock,newColumnClueBlock);
   fHistory.push(fGameState);
+  fHistoryIndex:=0;
   fSelectedCell:=nil;
 end;
 
@@ -133,6 +135,7 @@ end;
 
 procedure TNonogramGame.cellChangedHandler(sender: TObject);
 begin
+  //update delegate should be a list of TPoint
   if (fOnCellStateChanged = nil) then exit;
   if sender is TGameCell then with sender as TGameCell do
     fOnCellStateChanged(TUpdateDelegate.create(TPoint.Create(col,row)));
@@ -150,11 +153,21 @@ begin
   case key of
     66:
       begin
+      if (fHistoryIndex > 0) then
+        begin
+        fHistoryIndex:=fHistoryIndex - 1;
+        fGameState:=fHistory[fHistoryIndex];
+        end;
       //move back if possible
       end;
     70:
       begin
       //move forward if possible
+      if (fHistoryIndex < pred(fHistory.size)) then
+        begin
+        fHistoryIndex:=fHistoryIndex + 1;
+        fGameState:=fHistory[fHistoryIndex];
+        end;
       end;
   end;
 end;
@@ -171,6 +184,7 @@ begin
     gameStateChanges:=TGameStateChanges.create;
     for index:=0 to pred(selectedCells.size) do
       begin
+      //Generate a stateChange object for each cell that's changed
       selectedCell:= getCell(selectedCells[index]);
       if selectedCell <> Nil then
         begin
@@ -179,11 +193,14 @@ begin
         //add this gameState object to the history and generate a new one
         if (selectedCell.fill = cfFill) then testFill:=cfEmpty else testFill:=cfFill;
         gameStateChanges.push(TGameStateChange.create(ctGame,selectedCell.col,selectedCell.row,testFill,selectedCell.fill,fSelectedColour,selectedCell.colour));
-        fHistory.push(fGameState);
-        fGameState:=TGameState.create(fGameState,gameStateChanges);
-        if Assigned(fOnCellStateChanged) then fOnCellStateChanged(TUpdateDelegate.create(TPoint.Create(selectedCell.col,selectedCell.row)));
         end;
       end;
+    if (fHistoryIndex < pred(fHistory.size))
+       then fHistory.deleteAfter(fHistoryIndex);
+    fHistory.push(fGameState);
+    fHistoryIndex:=fHistoryIndex + 1;
+    fGameState:=TGameState.create(fGameState,gameStateChanges);
+    if Assigned(fOnCellStateChanged) then fOnCellStateChanged(TUpdateDelegate.create(TPoint.Create(0,0))); //change to list
     end;
 end;
 
