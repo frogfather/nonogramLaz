@@ -12,8 +12,7 @@ uses
   Interfaces, // this includes the LCL widgetset
   Forms, nonoForm, nonogramGame, gameCell, gameDisplay, gameDisplayInterface,
   arrayUtils, anysort, clickDelegate, clueCell, updateDelegate, gameBlock, 
-gameState, gamestatechange, enums, gameStateChanges, gameStates
-  { you can add units after this };
+gameState, gamestatechange, enums, gameStateChanges;
 
 {$R *.res}
 

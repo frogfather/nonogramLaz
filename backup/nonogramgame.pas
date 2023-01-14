@@ -5,7 +5,7 @@ unit nonogramGame;
 interface
 
 uses
-  Classes, SysUtils,arrayUtils,gameCell,gameBlock,gameState,gameStates,
+  Classes, SysUtils,arrayUtils,gameCell,gameBlock,gameState,
   gameStateChange,gameStateChanges,clueCell,graphics,clickDelegate,updateDelegate,enums;
 
 const defaultDimensions: TPoint = (X:9; Y:9);
@@ -16,7 +16,7 @@ type
 
   TNonogramGame = class(TinterfacedObject)
     private
-    fHistory:TGameStates;
+    fHistory:TGameStateChangesList;
     fHistoryIndex:Integer;
     fName:string;
     fVersion:string;
@@ -32,6 +32,7 @@ type
     function getRowClues: TClueBlock;
     function getColumnClues: TClueBlock;
     procedure cellChangedHandler(sender:TObject);
+    procedure applyChanges(changes:TGameStateChanges; forward: boolean=true);
     property version: string read fVersion;
     public
     constructor create(
@@ -104,10 +105,9 @@ begin
     newGameBlock.push(newGameRow);
     newRowClueBlock.push(newRowClues);
     end;
-  fHistory:=TGameStates.create;
+  fHistory:=TGameStateChangesList.create;
   fGameState:=TGameState.create(newGameBlock,newRowClueBlock,newColumnClueBlock);
-  fHistory.push(fGameState);
-  fHistoryIndex:=0;
+  fHistoryIndex:=-1;
   fSelectedCell:=nil;
 end;
 
@@ -141,6 +141,31 @@ begin
     fOnCellStateChanged(TUpdateDelegate.create(TPoint.Create(col,row)));
 end;
 
+procedure TNonogramGame.applyChanges(changes: TGameStateChanges;
+  forward: boolean);
+var
+  index:integer;
+  change:TGameStateChange;
+begin
+  //update the game object with the changes
+  for index:=0 to pred(changes.size) do
+    begin
+    change:=changes[index];
+    if (change.cellType = ctGame) then
+      begin
+      if forward then
+         begin
+         fGameState.gameBlock[change.row][change.column].fill:=change.cellFillMode;
+         fGameState.gameBlock[change.row][change.column].colour:=change.colour;
+         end else
+         begin
+         fGameState.gameBlock[change.row][change.column].fill:=change.oldCellFillMode;
+         fGameState.gameBlock[change.row][change.column].colour:=change.oldColour;
+         end;
+      end; //todo: clues
+    end;
+end;
+
 procedure TNonogramGame.setCellChangedHandler(handler: TNotifyEvent);
 begin
   fOnCellStateChanged:=handler;
@@ -153,20 +178,20 @@ begin
   case key of
     66:
       begin
-      if (fHistoryIndex > 0) then
+      if (fHistoryIndex > -1) then
         begin
         fHistoryIndex:=fHistoryIndex - 1;
-        fGameState:=fHistory[fHistoryIndex];
+        applyChanges(fHistory[fHistoryIndex],false);
+        if Assigned(fOnCellStateChanged) then fOnCellStateChanged(TUpdateDelegate.create(TPoint.Create(0,0))); //change to list
         end;
-      //move back if possible
       end;
     70:
       begin
-      //move forward if possible
       if (fHistoryIndex < pred(fHistory.size)) then
         begin
         fHistoryIndex:=fHistoryIndex + 1;
-        fGameState:=fHistory[fHistoryIndex];
+        applyChanges(fHistory[fHistoryIndex]);
+        if Assigned(fOnCellStateChanged) then fOnCellStateChanged(TUpdateDelegate.create(TPoint.Create(0,0))); //change to list
         end;
       end;
   end;
@@ -197,8 +222,10 @@ begin
       end;
     if (fHistoryIndex < pred(fHistory.size))
        then fHistory.deleteAfter(fHistoryIndex);
-    fHistory.push(fGameState);
-    fGameState:=TGameState.create(fGameState,gameStateChanges);
+    fHistory.push(gameStateChanges);
+    fHistoryIndex:=fHistoryIndex + 1;
+    applyChanges(gameStateChanges);
+    //apply the changes
     if Assigned(fOnCellStateChanged) then fOnCellStateChanged(TUpdateDelegate.create(TPoint.Create(0,0))); //change to list
     end;
 end;

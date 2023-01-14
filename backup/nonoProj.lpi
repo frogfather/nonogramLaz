@@ -108,11 +108,6 @@
         <IsPartOfProject Value="True"/>
         <UnitName Value="gameStateChanges"/>
       </Unit>
-      <Unit>
-        <Filename Value="gamestates.pas"/>
-        <IsPartOfProject Value="True"/>
-        <UnitName Value="gameStates"/>
-      </Unit>
     </Units>
   </ProjectOptions>
   <CompilerOptions>

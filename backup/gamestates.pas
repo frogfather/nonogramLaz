@@ -34,6 +34,7 @@ begin
   result:=self.size;
 end;
 
+//never deletes first item as this is the original game state
 function TGameStatesHelper.deleteAfter(index: Integer): integer;
 begin
   if (index < 0) or (index >= self.size) then exit;
