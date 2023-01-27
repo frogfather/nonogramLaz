@@ -35,7 +35,8 @@ type
     procedure drawClue(pb:TPaintbox;coords:TRect);
     //receives input from the game regarding changes to the state
     procedure onGameCellChangedHandler(Sender: TObject);
-    procedure drawGameCell(Sender:TObject);
+    procedure drawSingleGameCell(canvas_:TCanvas;location:TRect;fillColour,borderColour:TColor);
+    procedure drawGameCells(Sender:TObject);
     procedure drawRowClues(Sender:TObject);
     procedure drawColumnClues(Sender:TObject);
     procedure onResizeDisplay(Sender: TObject);
@@ -132,7 +133,7 @@ begin
     name:='gameCells';
     OnMouseDown := @PaintBoxMouseDownHandler;
     OnMouseUp:= @PaintBoxMouseUpHandler;
-    OnPaint := @DrawGameCell;
+    OnPaint := @DrawGameCells;
   end;
 end;
 
@@ -177,10 +178,10 @@ function TGameDisplay.getCellCoords(column, row:integer): TRect;
 var
     left_,top_,right_,bottom_:integer;
 begin
-  left_:= (cellwidth * column);
-  top_:= (cellHeight * row);
-  right_:= (cellWidth * (column+1));
-  bottom_:= (cellHeight * (row + 1));
+  left_:= (cellwidth * column)+1;
+  top_:= (cellHeight * row)+1;
+  right_:= (cellWidth * (column+1)+1);
+  bottom_:= (cellHeight * (row + 1)+1);
   result:=TRect.Create(left_,top_,right_,bottom_);
 end;
 
@@ -204,7 +205,25 @@ begin
   fGameCells.Repaint;
 end;
 
-procedure TGameDisplay.drawGameCell(Sender: TObject);
+procedure TGameDisplay.drawSingleGameCell(canvas_: TCanvas; location: TRect;
+  fillColour, borderColour: TColor);
+begin
+  with canvas_ do
+  begin
+  Pen.Color:=borderColour;
+  Brush.Color:=fillColour;
+  Pen.Style:=psClear;
+  rectangle(location);
+  Pen.Style:=psSolid;
+  MoveTo(location.TopLeft);
+  lineTo(location.Left,location.Bottom);
+  lineTo(location.BottomRight);
+  lineTo(location.Right,location.Top);
+  lineTo(location.TopLeft);
+  end;
+end;
+
+procedure TGameDisplay.drawGameCells(Sender: TObject);
 var
   row,column:integer;
   currentCell: TGameCell;
@@ -225,20 +244,11 @@ begin
         currentCell:=fGame.getCell(row,column);
         cellCoords:=getCellCoords(column,row);
         case currentCell.fill of
-          cfEmpty:
-            begin
-            canvas.Brush.color:=clDefault;
-            canvas.Rectangle(cellCoords);
-            end;
-          cfFill:
-            begin
-            canvas.Brush.color:=currentCell.colour;
-            canvas.Rectangle(cellCoords);
-            end;
+          cfEmpty: drawSingleGameCell(canvas,cellCoords,clDefault,clBlack);
+          cfFill:  drawSingleGameCell(canvas,cellCoords,currentCell.colour,clBlack);
           cfCross:
             begin
-            canvas.Brush.color:=clDefault;
-            canvas.Rectangle(cellCoords);
+            drawSingleGameCell(canvas,cellCoords,clDefault,clBlack);
             canvas.MoveTo(cellCoords.TopLeft);
             canvas.LineTo(cellCoords.BottomRight);
             canvas.MoveTo(cellCoords.Left,cellCoords.Bottom);
@@ -246,8 +256,8 @@ begin
             end;
           cfDot:
             begin
-            canvas.Brush.color:=clDefault;
-            canvas.Rectangle(cellCoords);
+            drawSingleGameCell(canvas,cellCoords,clDefault,clBlack);
+            //Temporary
             canvas.TextOut(cellCoords.Top,cellcoords.Left,'o');
             end;
         end;
@@ -258,18 +268,24 @@ end;
 procedure TGameDisplay.drawRowClues(Sender: TObject);
 var
   rowNo:integer;
+  clueAreaWidth:integer;
 begin
+  clueAreaWidth:=(cellHeight * fGame.dimensions.Y)+1;
   if sender is TPaintbox then with sender as TPaintbox do
     begin
     if (name <> 'rowClueCells') then exit;
-    canvas.Brush.Color:=clGray;
-    canvas.Rectangle(0,0,canvas.Width,canvas.Height);
+    canvas.Brush.Color:=$CACBD7;
+    canvas.Pen.Style:=psClear;
+    canvas.Rectangle(0,0,canvas.Width,clueAreaWidth);
     //clues here line up with the grid
+    canvas.pen.style:=psSolid;
     canvas.pen.color:=clBlack;
+    canvas.MoveTo(0,0);
+    canvas.LineTo(0,clueAreaWidth);
     for rowno:=0 to fGame.dimensions.Y do
       begin
-      canvas.moveTo(0, (cellHeight*rowNo));
-      canvas.lineTo(canvas.Width, (cellHeight*rowNo));
+      canvas.moveTo(0, (cellHeight*rowNo)+1);
+      canvas.lineTo(canvas.Width, (cellHeight*rowNo)+1);
       //some way of drawing clues
 
       end;
@@ -279,14 +295,21 @@ end;
 procedure TGameDisplay.drawColumnClues(Sender: TObject);
 var
   columnNo:integer;
+  clueAreaWidth:integer;
 begin
+  clueAreaWidth:= fRowClues.Width + (cellWidth * fGame.dimensions.X)+1
   if sender is TPaintbox then with sender as TPaintbox do
     begin
     if (name <> 'columnClueCells') then exit;
-    canvas.Brush.Color:=clGray;
-    canvas.Rectangle(0,0,canvas.Width,canvas.Height);
+    canvas.Brush.Color:=$CACBD7;
+    canvas.Pen.Style:=psClear;
+    canvas.Rectangle(0,0,clueAreaWidth,canvas.Height);
     //find the left hand side of the grid
+    canvas.pen.style:=psSolid;
     canvas.Pen.color:=clBlack;
+    canvas.MoveTo(0,canvas.height);
+    canvas.LineTo(0,0);
+    canvas.LineTo(clueAreaWidth,0);
     for columnNo:=0 to fGame.dimensions.X do
       begin
       canvas.MoveTo(fGameCells.Left+ (cellWidth*columnNo),0);
@@ -309,7 +332,6 @@ procedure TGameDisplay.PaintboxMouseDownHandler(Sender: TObject;
 begin
   //send delegate on mouse up
   fSelStart:=getCellLocation(x,y);
-  //writeln('fSelStart '+x.toString+','+y.toString+': '+fSelStart.X.toString+','+fSelStart.Y.ToString);
   if (fSelStart.X = -1)or(fSelStart.Y=-1) then resetSelection;
 end;
 

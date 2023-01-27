@@ -32,7 +32,7 @@ implementation
 
 procedure TfNonogram.FormCreate(Sender: TObject);
 begin
-  gameDisplay_:=TGameDisplay.create(self,TPoint.create(500,500));
+  gameDisplay_:=TGameDisplay.create(self,TPoint.create(self.Width,self.Height));
   gameDisplay_.Parent:=self;
   gameDisplay_.Top:=20;
   gameDisplay_.Left:=30;
