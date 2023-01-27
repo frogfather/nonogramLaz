@@ -180,8 +180,8 @@ begin
       begin
       if (fHistoryIndex > -1) then
         begin
-        fHistoryIndex:=fHistoryIndex - 1;
         applyChanges(fHistory[fHistoryIndex],false);
+        fHistoryIndex:=fHistoryIndex - 1;
         if Assigned(fOnCellStateChanged) then fOnCellStateChanged(TUpdateDelegate.create(TPoint.Create(0,0))); //change to list
         end;
       end;

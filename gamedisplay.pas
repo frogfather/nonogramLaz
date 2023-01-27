@@ -5,7 +5,9 @@ unit gameDisplay;
 interface
 
 uses
-  Classes, SysUtils, Controls,StdCtrls, ExtCtrls, nonogramGame, Graphics, arrayUtils,clickDelegate,updateDelegate,gameCell,enums;
+  Classes, SysUtils, Controls,StdCtrls, ExtCtrls, nonogramGame,
+  Graphics, arrayUtils,clickDelegate,updateDelegate,gameCell,
+  clueCell,enums,drawingUtils;
 
 type
 
@@ -214,12 +216,7 @@ begin
   Brush.Color:=fillColour;
   Pen.Style:=psClear;
   rectangle(location);
-  Pen.Style:=psSolid;
-  MoveTo(location.TopLeft);
-  lineTo(location.Left,location.Bottom);
-  lineTo(location.BottomRight);
-  lineTo(location.Right,location.Top);
-  lineTo(location.TopLeft);
+  drawFrame(canvas_,location);
   end;
 end;
 
@@ -229,7 +226,6 @@ var
   currentCell: TGameCell;
   cellCoords:TRect;
 begin
-  writeln('game');
   if sender is TPaintbox then with sender as TPaintbox do
   begin
     if (name <> 'gameCells') then exit;
@@ -269,21 +265,20 @@ end;
 procedure TGameDisplay.drawRowClues(Sender: TObject);
 var
   rowNo:integer;
-  clueAreaWidth:integer;
+  clueAreaHeight:integer;
 begin
-  writeln('row');
   if sender is TPaintbox then with sender as TPaintbox do
     begin
     if (name <> 'rowClueCells') then exit;
-    clueAreaWidth:=(cellHeight * fGame.dimensions.Y)+1;
+    clueAreaHeight:=(cellHeight * fGame.dimensions.Y)+1;
     canvas.Brush.Color:=$CACBD7;
     canvas.Pen.Style:=psClear;
-    canvas.Rectangle(0,0,canvas.Width,clueAreaWidth);
+    canvas.Rectangle(0,0,canvas.Width,clueAreaHeight);
     //clues here line up with the grid
     canvas.pen.style:=psSolid;
     canvas.pen.color:=clBlack;
     canvas.MoveTo(0,0);
-    canvas.LineTo(0,clueAreaWidth);
+    canvas.LineTo(0,clueAreaHeight);
     for rowno:=0 to fGame.dimensions.Y do
       begin
       canvas.moveTo(0, (cellHeight*rowNo)+1);
@@ -299,7 +294,6 @@ var
   columnNo:integer;
   clueAreaWidth:integer;
 begin
-  writeln('col');
   if sender is TPaintbox then with sender as TPaintbox do
     begin
     if (name <> 'columnClueCells') then exit;
