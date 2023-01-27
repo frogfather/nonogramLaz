@@ -57,11 +57,6 @@
         <UnitName Value="gameDisplay"/>
       </Unit>
       <Unit>
-        <Filename Value="gamedisplayinterface.pas"/>
-        <IsPartOfProject Value="True"/>
-        <UnitName Value="gameDisplayInterface"/>
-      </Unit>
-      <Unit>
         <Filename Value="arrayutils.pas"/>
         <IsPartOfProject Value="True"/>
         <UnitName Value="arrayUtils"/>
@@ -112,6 +107,10 @@
         <Filename Value="drawingutils.pas"/>
         <IsPartOfProject Value="True"/>
         <UnitName Value="drawingUtils"/>
+      </Unit>
+      <Unit>
+        <Filename Value="nonosolver.pas"/>
+        <IsPartOfProject Value="True"/>
       </Unit>
     </Units>
   </ProjectOptions>

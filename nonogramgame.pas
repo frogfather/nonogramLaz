@@ -21,6 +21,7 @@ type
     fName:string;
     fVersion:string;
     fDimensions:TPoint;
+    //Originally intended to be immutable but now using GameStateChange objects
     fGameState: TGameState;
     fSelectedCell: TGameCell;
     fStarted:boolean;
