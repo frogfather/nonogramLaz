@@ -109,6 +109,16 @@ begin
     default:=false;
     caption:='>';
     end;
+  fGameCells := TPaintbox.Create(aOwner);
+  with fGameCells do
+  begin
+    Parent := self;
+    Align:=alClient;
+    name:='gameCells';
+    OnMouseDown := @PaintBoxMouseDownHandler;
+    OnMouseUp:= @PaintBoxMouseUpHandler;
+    OnPaint := @DrawGameCells;
+  end;
   fRowClues:= TPaintbox.Create(aOwner);
   with fRowClues do
     begin
@@ -125,16 +135,6 @@ begin
     name:='columnClueCells';
     OnPaint:=@DrawColumnClues;
     end;
-  fGameCells := TPaintbox.Create(aOwner);
-  with fGameCells do
-  begin
-    Parent := self;
-    Align:=alClient;
-    name:='gameCells';
-    OnMouseDown := @PaintBoxMouseDownHandler;
-    OnMouseUp:= @PaintBoxMouseUpHandler;
-    OnPaint := @DrawGameCells;
-  end;
 end;
 
 procedure TGameDisplay.initialiseView;
@@ -229,6 +229,7 @@ var
   currentCell: TGameCell;
   cellCoords:TRect;
 begin
+  writeln('game');
   if sender is TPaintbox then with sender as TPaintbox do
   begin
     if (name <> 'gameCells') then exit;
@@ -270,10 +271,11 @@ var
   rowNo:integer;
   clueAreaWidth:integer;
 begin
-  clueAreaWidth:=(cellHeight * fGame.dimensions.Y)+1;
+  writeln('row');
   if sender is TPaintbox then with sender as TPaintbox do
     begin
     if (name <> 'rowClueCells') then exit;
+    clueAreaWidth:=(cellHeight * fGame.dimensions.Y)+1;
     canvas.Brush.Color:=$CACBD7;
     canvas.Pen.Style:=psClear;
     canvas.Rectangle(0,0,canvas.Width,clueAreaWidth);
@@ -286,7 +288,7 @@ begin
       begin
       canvas.moveTo(0, (cellHeight*rowNo)+1);
       canvas.lineTo(canvas.Width, (cellHeight*rowNo)+1);
-      //some way of drawing clues
+      //some way of drawing clues - preferably taking an array of clues
 
       end;
     end;
@@ -297,14 +299,14 @@ var
   columnNo:integer;
   clueAreaWidth:integer;
 begin
-  clueAreaWidth:= fRowClues.Width + (cellWidth * fGame.dimensions.X)+1;
+  writeln('col');
   if sender is TPaintbox then with sender as TPaintbox do
     begin
     if (name <> 'columnClueCells') then exit;
+    clueAreaWidth:= fRowClues.Width + (cellWidth * fGame.dimensions.X)+1;
     canvas.Brush.Color:=$CACBD7;
     canvas.Pen.Style:=psClear;
     canvas.Rectangle(0,0,clueAreaWidth,canvas.Height);
-    //find the left hand side of the grid
     canvas.pen.style:=psSolid;
     canvas.Pen.color:=clBlack;
     canvas.MoveTo(0,canvas.height);

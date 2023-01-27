@@ -231,6 +231,7 @@ var
 begin
   if sender is TPaintbox then with sender as TPaintbox do
   begin
+  writeln('drawGameCells');
     if (name <> 'gameCells') then exit;
     //draw the cells
     canvas.Brush.color:=clDefault;
@@ -270,10 +271,11 @@ var
   rowNo:integer;
   clueAreaWidth:integer;
 begin
-  clueAreaWidth:=(cellHeight * fGame.dimensions.Y)+1;
+writeln('drawRowClues');
   if sender is TPaintbox then with sender as TPaintbox do
     begin
     if (name <> 'rowClueCells') then exit;
+    clueAreaWidth:=(cellHeight * fGame.dimensions.Y)+1;
     canvas.Brush.Color:=$CACBD7;
     canvas.Pen.Style:=psClear;
     canvas.Rectangle(0,0,canvas.Width,clueAreaWidth);
@@ -286,7 +288,7 @@ begin
       begin
       canvas.moveTo(0, (cellHeight*rowNo)+1);
       canvas.lineTo(canvas.Width, (cellHeight*rowNo)+1);
-      //some way of drawing clues
+      //some way of drawing clues - preferably taking an array of clues
 
       end;
     end;
@@ -297,14 +299,14 @@ var
   columnNo:integer;
   clueAreaWidth:integer;
 begin
-  clueAreaWidth:= fRowClues.Width + (cellWidth * fGame.dimensions.X)+1
+  writeln('drawColClues');
   if sender is TPaintbox then with sender as TPaintbox do
     begin
     if (name <> 'columnClueCells') then exit;
+    clueAreaWidth:= fRowClues.Width + (cellWidth * fGame.dimensions.X)+1;
     canvas.Brush.Color:=$CACBD7;
     canvas.Pen.Style:=psClear;
     canvas.Rectangle(0,0,clueAreaWidth,canvas.Height);
-    //find the left hand side of the grid
     canvas.pen.style:=psSolid;
     canvas.Pen.color:=clBlack;
     canvas.MoveTo(0,canvas.height);
@@ -320,6 +322,7 @@ end;
 
 procedure TGameDisplay.onResizeDisplay(Sender: TObject);
 begin
+  writeln('display resize called');
   fGameCells.Repaint;
   fColumnClues.Repaint;
   fRowClues.Repaint;
