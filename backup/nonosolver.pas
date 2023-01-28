@@ -126,11 +126,11 @@ begin
     for cellIndex:=0 to pred(initialState.columnClues[blockIndex].size) do
       begin
       row:=initialState.columnClues[blockIndex][cellIndex].row;
-      column:=initialState.columnClues[blockIndex][cellIndex].column;
+      col:=initialState.columnClues[blockIndex][cellIndex].column;
       clueIndex:=initialState.columnClues[blockIndex][cellIndex].index;
       clueValue:=initialState.columnClues[blockIndex][cellIndex].value;
       clueColour:=initialState.columnClues[blockIndex][cellIndex].colour;
-      clueCells.push(TClueCell.create(row,column,clueValue,clueIndex,clueColour));
+      clueCells.push(TClueCell.create(row,col,clueValue,clueIndex,clueColour));
       end;
     columnClueBlock.push(clueCells);
     end;

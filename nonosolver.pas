@@ -134,6 +134,7 @@ begin
       end;
     columnClueBlock.push(clueCells);
     end;
+  result:=TGameState.create(gameBlock,rowClueBlock,columnClueBlock);
 end;
 
 
