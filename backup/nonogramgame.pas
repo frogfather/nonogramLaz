@@ -21,7 +21,12 @@ type
     fName:string;
     fVersion:string;
     fDimensions:TPoint;
+    //Originally intended to be immutable but now using GameStateChange objects
     fGameState: TGameState;
+    //Initially the same as fGameState. Used for autosolving the game
+    fInitialGameState: TGameState;
+    //The result of the solving operation
+    fSolvedGameState: TGameState;
     fSelectedCell: TGameCell;
     fStarted:boolean;
     fOnCellStateChanged:TNotifyEvent;
@@ -32,6 +37,7 @@ type
     function getRowClues: TClueBlock;
     function getColumnClues: TClueBlock;
     procedure cellChangedHandler(sender:TObject);
+    //adjusts the game state and updates the history
     procedure applyChanges(changes:TGameStateChanges; forward: boolean=true);
     property version: string read fVersion;
     public
@@ -107,6 +113,8 @@ begin
     end;
   fHistory:=TGameStateChangesList.create;
   fGameState:=TGameState.create(newGameBlock,newRowClueBlock,newColumnClueBlock);
+  fInitialGameState:=TGameState.create(newGameBlock,newRowClueBlock,newColumnClueBlock);
+  fSolvedGameState:=TGameState.create(newGameBlock,newRowClueBlock,newColumnClueBlock);
   fHistoryIndex:=-1;
   fSelectedCell:=nil;
 end;

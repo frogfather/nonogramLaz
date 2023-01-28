@@ -4,10 +4,8 @@ unit gameCell;
 interface
 
 uses
-  Classes, SysUtils,arrayUtils,graphics;
+  Classes, SysUtils,arrayUtils,graphics,enums;
 type
-  { ECellFillMode }
-  ECellFillMode = (cfEmpty,cfFill,cfCross,cfDot);
 
   { TGameCell }
   TGameCell = class(TInterfacedObject)
@@ -20,6 +18,8 @@ type
     fColour: TColor;
     public
     constructor create(column,row: integer;
+      cellFill: ECellFillMode=cfEmpty);
+    constructor create(column,row:integer; cellId:TGuid;
       cellFill: ECellFillMode=cfEmpty);
     property cellId: TGUID read fCellId;
     property row: integer read fRow;
