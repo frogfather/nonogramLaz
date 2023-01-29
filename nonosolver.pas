@@ -18,8 +18,8 @@ type
     fChanges:TGameStateChanges;
     function overlapRow(rowId:integer):TGameStateChanges;
     function overlapColumn(columnId:integer):TGameStateChanges;
-    function overlapRows:TGameStateChanges;
-    function overlapColumns:TGameStateChanges;
+    function overlapRows:integer;
+    function overlapColumns:integer;
     function processStepResult(stepResult:TGameStateChanges):integer;
     function copyGameState(initialState: TGameState):TGameState;
     public
@@ -37,28 +37,53 @@ begin
 end;
 
 { Solve methods to be run repeatedly until there are no changes}
+
 function TNonogramSolver.overlapRow(rowId: integer): TGameStateChanges;
+var
+  clues:TClueCells;
 begin
+  clues:=fSolvedGameState.rowClues[rowId];
   result:=TGameStateChanges.create;
+  //process this row to look for overlaps
+
 end;
 
 function TNonogramSolver.overlapColumn(columnId: integer): TGameStateChanges;
-begin
-  result:=TGameStateChanges.create;
-end;
-
-function TNonogramSolver.overlapRows: TGameStateChanges;
 var
+  cells:TGameCells;
+  clues:TClueCells;
   rowIndex:integer;
 begin
+  cells:=TGameCells.create;
+  //get the cells in a format we can process more easily
+  for rowIndex:= 0 to pred(fSolvedGameState.gameBlock.size) do
+    cells.push(fSolvedGameState.gameBlock[rowIndex][columnId]);
+  //get the clues for this column
+  clues:=fSolvedGameState.columnClues[columnId];
   result:=TGameStateChanges.create;
+  //process this column to look for overlaps
+
 end;
 
-function TNonogramSolver.overlapColumns: TGameStateChanges;
+function TNonogramSolver.overlapRows: integer;
+var
+  rowIndex:integer;
+  clues:TClueCells;
+begin
+  result:=0;
+  //each row of the game block is a row of the puzzle
+  for rowIndex:=0 to pred(fSolvedGameState.gameBlock.size) do
+    result:= result + processStepResult(overlapRow(rowIndex));
+end;
+
+function TNonogramSolver.overlapColumns: integer;
 var
   colIndex:integer;
 begin
-  result:=TGameStateChanges.create;
+  result:=0;
+  if fSolvedGameState.gameBlock.size = 0 then exit;
+  for colIndex:=0 to pred(fSolvedGameState.gameBlock[0].size) do
+    result:= result + processStepResult(overlapColumn(colIndex));
 end;
 
 function TNonogramSolver.processStepResult(stepResult:TGameStateChanges): integer;
@@ -143,13 +168,14 @@ function TNonogramSolver.solve: TGameState;
 var
   changesOnCurrentLoop:integer;
 begin
-  //need to create a new gameState object with the initial settings
   fSolvedGameState:=copyGameState(fInitialState);
-  changesOnCurrentLoop:=0;
     repeat
-    changesOnCurrentLoop:=changesOnCurrentLoop + processStepResult(overlapRows);
-    changesOnCurrentLoop:=changesOnCurrentLoop + processStepResult(overlapColumns);
-    until changesOnCurrentLoop.size = 0;
+    changesOnCurrentLoop:=0;
+    changesOnCurrentLoop:=changesOnCurrentLoop + overlapRows;
+    changesOnCurrentLoop:=changesOnCurrentLoop + overlapColumns;
+    until changesOnCurrentLoop = 0;
+  //now update fSolvedGame with the stored stateChanges
+
   result:=fSolvedGameState;
 end;
 

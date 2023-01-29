@@ -7,7 +7,7 @@ interface
 uses
   Classes, SysUtils,arrayUtils,gameCell,gameBlock,gameState,
   gameStateChange,gameStateChanges,clueCell,graphics,clickDelegate,
-  updateDelegate,enums,nonosolver;
+  updateDelegate,enums,nonosolver,nonoDocHandler;
 
 const defaultDimensions: TPoint = (X:9; Y:9);
 const gameVersion: string = '0.0.2';
@@ -20,6 +20,7 @@ type
     fHistory:TGameStateChangesList;
     fHistoryIndex:Integer;
     fName:string;
+    fId:TGUID;
     fVersion:string;
     fDimensions:TPoint;
     //Originally intended to be immutable but now using GameStateChange objects
@@ -83,9 +84,12 @@ var
   newRowClueBlock:TClueBlock;
   newColumnClues:TClueCells;
   newColumnClueBlock:TClueBlock;
+  //for testing
+  nonoDocHandler:TNonogramDocumentHandler;
 begin
   fGameMode:=gmSet;
   fName:=name;
+  CreateGuid(fId);
   fVersion:=gameVersion;
   fDimensions:=gameDimensions;
   fSelectedColour:=clBlack;
@@ -121,6 +125,10 @@ begin
   fSolvedGameState:= fSolver.solve;
   fHistoryIndex:=-1;
   fSelectedCell:=nil;
+
+  //For testing
+  nonoDocHandler:=TNonogramDocumentHandler.Create;
+  nonoDocHandler.saveToFile('/Users/cloudsoft/Desktop/testFile','myTestGame',fId);
 end;
 
 //Load from file. Start in gmSolve. Number cells are not editable
@@ -257,7 +265,7 @@ end;
 
 procedure TNonogramGame.saveToFile(filename: string);
 begin
-
+  //write to JSON or XML? Hmmm
 end;
 
 procedure TNonogramGame.start;
