@@ -5,7 +5,7 @@ unit nonoDocHandler;
 interface
 
 uses
-  Classes, SysUtils,xml_doc_handler,gameBlock,gameCell,clueCell;
+  Classes, SysUtils,xml_doc_handler,gameBlock,gameCell,clueCell,graphics,typinfo,enums;
 type
   
   { TNonogramDocumentHandler }
@@ -51,23 +51,32 @@ implementation
 //Public methods
 procedure TNonogramDocumentHandler.saveToFile(filename,gameName:string;gameId:TGuid);
 var
-  attributes:TStringArray;
+  attributes,gameCellsAttributes,gameCellAttributes:TStringArray;
+  row,col:integer;
+  gameCell:TGameCell;
+  fillStr:string;
 begin
-  //Add the game root with name and Id as attributes
-
+  if fGameBlock.size = 0 then exit;
   attributes:=TStringArray.create('name',gameName,'id',GuidToString(gameId));
   addSection('nonogram-game-v1',attributes);
   addNode('nonogram-game-v1','game-block');
-  addNode('game-block','game-cells','',TStringArray.create('row','0'));
-  addNode('game-cells','game-cell','',TStringArray.create('col',0));
-  addNode('game-cell','row','0');
-  addNode('game-cell','col','0');
-  addNode('game-cell','colour','#000000');
-  addNode('game-cells','game-cell','',TStringArray.create('col',1));
-  addNode('game-cell','row','0');
-  addNode('game-cell','col','1');
-  addNode('game-cell','colour','#000000');
-
+  for row:=0 to pred(fGameBlock.size) do
+    begin
+    gameCellsAttributes:=TStringArray.create('row',row.ToString);
+    addNode('game-block','game-cells','',gameCellsAttributes);
+    for col:=0 to pred(fGameBlock[0].size) do
+      begin
+      gameCell:=fGameBlock[row][col];
+      gameCellAttributes:=TStringArray.create('row',row.ToString,'col',col.ToString);
+      addNode('game-cells','game-cell','',gameCellAttributes,gameCellsAttributes);
+      addNode('game-cell','row',gameCell.row.ToString,nil,gameCellAttributes);
+      addNode('game-cell','col',gameCell.col.ToString,nil,gameCellAttributes);
+      addNode('game-cell','colour',colorToString(gameCell.colour),nil,gameCellAttributes);
+      WriteStr(fillStr, gameCell.fill);
+      writeLn('fill: '+GetEnumName(TypeInfo(ECellFillMode), ord(gameCell.fill)));
+      addNode('game-cell','fill-mode',fillStr,nil,gameCellAttributes)
+      end;
+    end;
   save(fileName);
 end;
 

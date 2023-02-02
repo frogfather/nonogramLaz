@@ -128,6 +128,9 @@ begin
 
   //For testing
   nonoDocHandler:=TNonogramDocumentHandler.Create;
+  nonoDocHandler.gameBlock:=newGameBlock;
+  nonoDocHandler.rowClueBlock:=newRowClueBlock;
+  nonoDocHandler.columnClueBlock:=newColumnClueBlock;
   nonoDocHandler.saveToFile('/Users/cloudsoft/Desktop/testFile','myTestGame',fId);
 end;
 

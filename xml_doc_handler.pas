@@ -79,6 +79,9 @@ function TXMLDocumentHandler.findInXML(startNode: TDomNode; nodeName: string;
 var
   Count: integer;
   currentNodeName: string;
+  attributeId:integer;
+  attributeKey,attributeValue:string;
+  nodeMatches:boolean;
 begin
   if document = nil then initializeDocument;
   Result := nil;
@@ -88,8 +91,28 @@ begin
   else
     currentNodeName := startNode.NodeName;
   if currentNodeName = nodeName then
-    Result := startNode
-  else if startNode.ChildNodes.Count > 0 then
+    begin
+    if (length(attributes)>0) then
+      begin
+      if (startNode.HasAttributes)
+      and (startNode.Attributes.Length = length(attributes) div 2) then
+        begin
+        nodeMatches:=true;
+        for attributeId:=0 to pred(length(attributes))do
+          begin
+          //every second entry in attributes will be the key
+          if (attributeId mod 2 = 0) then attributeKey:=attributes[attributeId] else
+            begin
+            attributeValue:=attributes[attributeId];
+            if (startNode.Attributes.GetNamedItem(attributeKey).TextContent <> attributeValue)
+              then nodeMatches:=false;
+            end;
+          end;
+        end;
+      end else nodeMatches:=true;
+    end else nodeMatches:= false;
+  if nodeMatches then result:=startNode
+    else if startNode.ChildNodes.Count > 0 then
     for Count := 0 to pred(startNode.ChildNodes.Count) do
     begin
       Result := findInXml(startNode.ChildNodes[Count], nodeName, attributes,findTextValue);
@@ -106,7 +129,7 @@ begin
   if document = nil then initializeDocument;
   if parent <> '#document' then
     begin
-    parentNode := getNode(parent);
+    parentNode := getNode(parent,parentAttributes);
     if parentNode = nil then exit;
     end else parentNode:= nil;
   childNode := document.CreateElement(child);

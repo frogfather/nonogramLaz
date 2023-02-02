@@ -128,7 +128,7 @@ begin
 
   //For testing
   nonoDocHandler:=TNonogramDocumentHandler.Create;
-  nonoDocHandler.saveToFile('/Users/cloudsoft/Documents/testFile','myTestGame',fId);
+  nonoDocHandler.saveToFile('/Users/cloudsoft/Desktop/testFile','myTestGame',fId);
 end;
 
 //Load from file. Start in gmSolve. Number cells are not editable
