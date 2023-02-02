@@ -17,6 +17,8 @@ type
     private
     fDocument:TXMLDocument;
     protected
+    function createNode(name:string;text:string=''):TDomNode;
+    function createTextNode(name:string):TDomNode;
     function findInXML(
       startNode: TDomNode;
       nodeName: string;
@@ -39,7 +41,7 @@ type
     procedure initializeDocument;
     public
     procedure setDocument(doc:TXMLDocument);
-    procedure addSection(sectionName: string;attributes:TStringArray=nil; path:string = ''; value:string = '');
+    function addSection(sectionName: string;attributes:TStringArray=nil; path:string = ''; value:string = ''):TDomNode;
     function getNode(
       nodeName: string;
       nodeAttributes:TStringArray = nil;
@@ -72,6 +74,19 @@ procedure TXMLDocumentHandler.save(filename: string);
 begin
   if fDocument = nil then exit;
   writeXMLFile(fDocument, filename);
+end;
+
+function TXMLDocumentHandler.createNode(name: string;text:string): TDomNode;
+begin
+  if document = nil then initializeDocument;
+  result:=document.CreateElement(name);
+  if (text <> '') then result.AppendChild(createTextNode(text));
+end;
+
+function TXMLDocumentHandler.createTextNode(name: string): TDomNode;
+begin
+  if document = nil then initializeDocument;
+  result:=document.CreateTextNode(name);
 end;
 
 function TXMLDocumentHandler.findInXML(startNode: TDomNode; nodeName: string;
@@ -121,8 +136,8 @@ begin
     end;
 end;
 
-function TXMLDocumentHandler.addNode(parent,child: string;
-  text:string; attributes: TStringArray; parentAttributes:TStringArray): TDOMNode;
+function TXMLDocumentHandler.addNode(parent, child: string; Text: string;
+  attributes: TStringArray; parentAttributes: TStringArray): TDOMNode;
 var
   parentNode, childNode: TDOMNode;
 begin
@@ -132,7 +147,7 @@ begin
     parentNode := getNode(parent,parentAttributes);
     if parentNode = nil then exit;
     end else parentNode:= nil;
-  childNode := document.CreateElement(child);
+  childNode := createNode(child);
   result:= addNode(parentNode,childNode,text,attributes);
 end;
 
@@ -148,7 +163,7 @@ begin
 
   if (Text <> '') then
     begin
-    textNode := document.CreateTextNode(Text);
+    textNode:= CreateTextNode(Text);
     child.AppendChild(textNode);
     end;
 
@@ -213,7 +228,7 @@ begin
   fDocument:=doc;
 end;
 
-procedure TXMLDocumentHandler.addSection(sectionName: string; attributes:TStringArray=nil; path:string = ''; value:string = '');
+function TXMLDocumentHandler.addSection(sectionName: string; attributes:TStringArray=nil; path:string = ''; value:string = ''):TDomNode;
 var
   pathParts:TStringArray;
   currentNode:TDOMNode;
@@ -228,7 +243,7 @@ begin
     for pathIndex:= 0 to pred(length(pathParts)) do
       currentNode:= getNode(pathParts[pathIndex],attributes,False,currentNode,true);
     end;
-  addNode(currentNode.NodeName,sectionName,value,attributes);
+  result:= addNode(currentNode.NodeName,sectionName,value,attributes);
 end;
 
 

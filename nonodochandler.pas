@@ -5,7 +5,7 @@ unit nonoDocHandler;
 interface
 
 uses
-  Classes, SysUtils,xml_doc_handler,gameBlock,gameCell,clueCell,graphics,typinfo,enums;
+  Classes, SysUtils,xml_doc_handler,gameBlock,gameCell,clueCell,graphics,typinfo,enums,laz2_DOM;
 type
   
   { TNonogramDocumentHandler }
@@ -34,19 +34,6 @@ type
 implementation
 
 { TNonogramDocumentHandler }
-//XML structure
-//<root>
-//<gameBlock> represents the game
-//<gameCells> represents a row of the game
-//<gameCell > represents an element of the game
-//<id>
-//<row>
-//<column>
-//<candidates>
-//<candidate>
-//<fillMode>
-//<colour>
-//</gameCell>
 
 //Public methods
 procedure TNonogramDocumentHandler.saveToFile(filename,gameName:string;gameId:TGuid);
@@ -55,28 +42,29 @@ var
   row,col:integer;
   gameCell:TGameCell;
   fillStr:string;
+  gameNode,gameBlockNode,gameCellsNode,gameCellNode:TDomNode;
 begin
   if fGameBlock.size = 0 then exit;
   attributes:=TStringArray.create('name',gameName,'id',GuidToString(gameId));
-  addSection('nonogram-game-v1',attributes);
-  addNode('nonogram-game-v1','game-block');
+  gameNode:= addSection('nonogram-game-v1',attributes);
+  gameBlockNode:=createNode('game-block');
   for row:=0 to pred(fGameBlock.size) do
     begin
-    gameCellsAttributes:=TStringArray.create('row',row.ToString);
-    addNode('game-block','game-cells','',gameCellsAttributes);
+    gameCellsNode:=createNode('game-cells');
     for col:=0 to pred(fGameBlock[0].size) do
       begin
       gameCell:=fGameBlock[row][col];
-      gameCellAttributes:=TStringArray.create('row',row.ToString,'col',col.ToString);
-      addNode('game-cells','game-cell','',gameCellAttributes,gameCellsAttributes);
-      addNode('game-cell','row',gameCell.row.ToString,nil,gameCellAttributes);
-      addNode('game-cell','col',gameCell.col.ToString,nil,gameCellAttributes);
-      addNode('game-cell','colour',colorToString(gameCell.colour),nil,gameCellAttributes);
-      //rather convoluted way of converting an enum to a string
+      gameCellNode:=createNode('game-cell');
+      gameCellNode.AppendChild(createNode('row',gameCell.row.ToString));
+      gameCellNode.AppendChild(createNode('col',gameCell.col.ToString));
+      gameCellNode.AppendChild(createNode('colour',colorToString(gameCell.colour)));
       writeStr(fillStr, GetEnumName(TypeInfo(ECellFillMode), ord(gameCell.fill)));
-      addNode('game-cell','fill-mode',fillStr,nil,gameCellAttributes)
+      gameCellNode.AppendChild(createNode('fill-mode',fillStr));
+      addNode(gameCellsNode,gameCellNode);
       end;
+    addNode(gameBlockNode,gameCellsNode);
     end;
+  addNode(gameNode,gameBlockNode);
   save(fileName);
 end;
 
