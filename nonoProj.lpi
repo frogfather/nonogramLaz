@@ -112,6 +112,19 @@
         <Filename Value="nonosolver.pas"/>
         <IsPartOfProject Value="True"/>
       </Unit>
+      <Unit>
+        <Filename Value="xml_doc_handler.pas"/>
+        <IsPartOfProject Value="True"/>
+      </Unit>
+      <Unit>
+        <Filename Value="nonodochandler.pas"/>
+        <IsPartOfProject Value="True"/>
+        <UnitName Value="nonoDocHandler"/>
+      </Unit>
+      <Unit>
+        <Filename Value="gamemodechangeddelegate.pas"/>
+        <IsPartOfProject Value="True"/>
+      </Unit>
     </Units>
   </ProjectOptions>
   <CompilerOptions>

@@ -20,7 +20,7 @@ type
     constructor create(column,row: integer;
       cellFill: ECellFillMode=cfEmpty);
     constructor create(column,row:integer; cellId:TGuid;
-      cellFill: ECellFillMode=cfEmpty);
+      cellFill: ECellFillMode=cfEmpty;cellColour:TColor=nil);
     property cellId: TGUID read fCellId;
     property row: integer read fRow;
     property col: integer read fColumn;
@@ -40,6 +40,17 @@ begin
   fColumn:=column;
   fFill:=cellFill;
   fColour:=clDefault;
+end;
+
+//used for copying existing cell
+constructor TGameCell.create(column, row: integer; cellId: TGuid;
+  cellFill: ECellFillMode);
+begin
+  fRow:=row;
+  fColumn:=column;
+  fFill:=cellFill;
+  fColour:=clDefault;
+  fCellId:=cellId;
 end;
 
 end.

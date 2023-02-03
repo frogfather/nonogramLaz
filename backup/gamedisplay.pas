@@ -5,7 +5,9 @@ unit gameDisplay;
 interface
 
 uses
-  Classes, SysUtils, Controls,StdCtrls, ExtCtrls, nonogramGame, Graphics, arrayUtils,clickDelegate,updateDelegate,gameCell,clueCell,enums;
+  Classes, SysUtils, Controls,StdCtrls, ExtCtrls, nonogramGame,
+  Graphics, arrayUtils,clickDelegate,updateDelegate,gameModeChangedDelegate,gameCell,
+  clueCell,enums,drawingUtils;
 
 type
 
@@ -20,6 +22,7 @@ type
     fControls:TPanel;
     fBack:TButton;
     fForward:TButton;
+    fMode:TButton;
     fOnGameKeyDown: TKeyEvent;
     fOnGameClick:TNotifyEvent;
     fSelStart:TPoint;
@@ -35,7 +38,9 @@ type
     procedure drawClue(pb:TPaintbox;coords:TRect);
     //receives input from the game regarding changes to the state
     procedure onGameCellChangedHandler(Sender: TObject);
-    procedure drawSingleGameCell(canvas_:TCanvas;location:TRect;fillColour,borderColour:TColor);
+    procedure onGameModeChangedHandler(Sender:TObject);
+    procedure drawSingleGameCell(canvas_:TCanvas;location:TRect;
+      fillColour,borderColour:TColor;withCross:boolean=False;withDot:boolean=False);
     procedure drawGameCells(Sender:TObject);
     procedure drawRowClues(Sender:TObject);
     procedure drawColumnClues(Sender:TObject);
@@ -109,6 +114,17 @@ begin
     default:=false;
     caption:='>';
     end;
+  fMode:=TButton.create(self);
+  with fMode do
+    begin
+    parent:=fControls;
+    name:='bMode';
+    left:=fForward.Left+ fForward.Width + 2;
+    onClick:=@ButtonClickHandler;
+    visible:=true;
+    default:=false;
+    caption:='';
+    end;
   fGameCells := TPaintbox.Create(aOwner);
   with fGameCells do
   begin
@@ -139,7 +155,7 @@ end;
 
 procedure TGameDisplay.initialiseView;
 begin
-
+  if fGame.gameMode = gmSet then fMode.Caption:='Set' else fMode.Caption:='Solve';
 end;
 
 function TGameDisplay.getCellSize: integer;
@@ -205,8 +221,18 @@ begin
   fGameCells.Repaint;
 end;
 
+procedure TGameDisplay.onGameModeChangedHandler(Sender: TObject);
+begin
+  if sender is TGameModeChangedDelegate then with sender as TGameModeChangedDelegate do
+    begin
+    if (gameMode = gmSet) then fMode.caption:='Set' else fMode.caption:='Solve';
+    end;
+end;
+
 procedure TGameDisplay.drawSingleGameCell(canvas_: TCanvas; location: TRect;
-  fillColour, borderColour: TColor);
+  fillColour, borderColour: TColor;withCross:boolean=False;withDot:boolean=False);
+var
+    dotDimensions:TRect;
 begin
   with canvas_ do
   begin
@@ -214,12 +240,21 @@ begin
   Brush.Color:=fillColour;
   Pen.Style:=psClear;
   rectangle(location);
-  Pen.Style:=psSolid;
-  MoveTo(location.TopLeft);
-  lineTo(location.Left,location.Bottom);
-  lineTo(location.BottomRight);
-  lineTo(location.Right,location.Top);
-  lineTo(location.TopLeft);
+  drawFrame(canvas_,location);
+  if withCross then
+    begin
+    canvas.MoveTo(cellCoords.TopLeft);
+    canvas.LineTo(cellCoords.BottomRight);
+    canvas.MoveTo(cellCoords.Left,cellCoords.Bottom);
+    canvas.MoveTo(cellCoords.Right,cellCoords.Top);
+    end;
+  if withDot then
+    begin
+    //draw circle in middle of cell
+    dotDimensions.Left:=cellCoords.Left+((cellCoords.Right - cellCoords.Left)div3);
+    dotDimensions.Right:=dotDimensions.Left+((cellCoords.Right - cellCoords.Left)div3);
+    canvas.Ellipse();
+    end;
   end;
 end;
 
@@ -237,23 +272,12 @@ begin
     for row:=0 to pred(rows) do
       for column:= 0 to pred(columns) do
         begin
-        //if fill style is none use default colour
-        //if fill style is solid use the colour of the cell
-        //if fill style is cross, add a cross
-        //if fill style is dot add a dot
         currentCell:=fGame.getCell(row,column);
         cellCoords:=getCellCoords(column,row);
         case currentCell.fill of
           cfEmpty: drawSingleGameCell(canvas,cellCoords,clDefault,clBlack);
           cfFill:  drawSingleGameCell(canvas,cellCoords,currentCell.colour,clBlack);
-          cfCross:
-            begin
-            drawSingleGameCell(canvas,cellCoords,clDefault,clBlack);
-            canvas.MoveTo(cellCoords.TopLeft);
-            canvas.LineTo(cellCoords.BottomRight);
-            canvas.MoveTo(cellCoords.Left,cellCoords.Bottom);
-            canvas.MoveTo(cellCoords.Right,cellCoords.Top);
-            end;
+          cfCross: drawSingleGameCell(canvas,cellCoords,clDefault,clBlack,true);
           cfDot:
             begin
             drawSingleGameCell(canvas,cellCoords,clDefault,clBlack);
@@ -287,7 +311,6 @@ begin
       canvas.moveTo(0, (cellHeight*rowNo)+1);
       canvas.lineTo(canvas.Width, (cellHeight*rowNo)+1);
       //some way of drawing clues - preferably taking an array of clues
-
       end;
     end;
 end;
@@ -390,6 +413,7 @@ begin
     case name of
       'bBack': key:=66;
       'bForward': key:=70;
+      'bMode': key:=83;
     end;
     if Assigned(fOnGameKeyDown) then fOnGameKeyDown(Sender, key, []);
     end;
@@ -401,6 +425,7 @@ begin
   //assign onGameCellChangedHandler method in this class to the notify event
   //in the game to allow the game to signal that something has changed
   fGame.setCellChangedHandler(@onGameCellChangedHandler);
+  fGame.setGameModeChangedHandler(@onGameModeChangedHandler);
   //assigns the notify event for a key press in this class to the handler in the game
   onGameKeyDown := @fGame.gameInputKeyPressHandler;
   onGameClick:= @fGame.gameInputClickHandler;

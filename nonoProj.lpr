@@ -10,9 +10,10 @@ uses
   athreads,
   {$ENDIF}
   Interfaces, // this includes the LCL widgetset
-  Forms, nonoForm, nonogramGame, gameCell, gameDisplay,
-  arrayUtils, anysort, clickDelegate, clueCell, updateDelegate, gameBlock, 
-gameState, gamestatechange, enums, gameStateChanges, drawingUtils, nonosolver;
+  Forms, nonoForm, nonogramGame, gameCell, gameDisplay, arrayUtils, anysort,
+  clickDelegate, clueCell, updateDelegate, gameBlock, gameState,
+  gamestatechange, enums, gameStateChanges, drawingUtils, nonosolver,
+  xml_doc_handler, nonodochandler, gamemodechangeddelegate;
 
 {$R *.res}
 

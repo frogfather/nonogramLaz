@@ -68,7 +68,12 @@ type
   function indexOf(element:TPoint):integer;
   function splice(index:integer; deleteCount: integer=0; newItems: TPointArray=nil):TPointArray;
   end;
-
+  { TColoursHelper }
+  TColoursHelper = type helper for TColours
+  function size: integer;
+  function push(element: TColor):integer;
+  function indexOf(element:TColor):integer;
+  end;
 
 function containsCharacters(toSearch,toFind:String):boolean;
 function CSVToIntArray(input:string):TIntArray;
@@ -299,6 +304,24 @@ begin
       output[index]:= strArray[index].ToInteger;
     result:=output;
     end;
+end;
+
+{ TColoursHelper }
+
+function TColoursHelper.size: integer;
+begin
+  result:=length(self);
+end;
+
+function TColoursHelper.push(element: TColor): integer;
+begin
+  insert(element,self,length(self));
+  result:=self.size;
+end;
+
+function TColoursHelper.indexOf(element: TColor): integer;
+begin
+  result:= specialize getIndex<TColor>(element,self);
 end;
 
 { TCharArrayHelper }

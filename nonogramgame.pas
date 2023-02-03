@@ -7,10 +7,10 @@ interface
 uses
   Classes, SysUtils,arrayUtils,gameCell,gameBlock,gameState,
   gameStateChange,gameStateChanges,clueCell,graphics,clickDelegate,
-  updateDelegate,enums,nonosolver;
+  updateDelegate,gameModeChangedDelegate,enums,nonosolver,nonoDocHandler;
 
 const defaultDimensions: TPoint = (X:9; Y:9);
-const gameVersion: string = '0.0.2';
+const gameVersion = 'nonogram-game-v1';
 
 type
   { TNonogramGame }
@@ -20,8 +20,10 @@ type
     fHistory:TGameStateChangesList;
     fHistoryIndex:Integer;
     fName:string;
+    fId:TGUID;
     fVersion:string;
     fDimensions:TPoint;
+    fColours:TColours;
     //Originally intended to be immutable but now using GameStateChange objects
     fGameState: TGameState;
     //Initially the same as fGameState. Used for autosolving the game
@@ -32,6 +34,7 @@ type
     fSelectedCell: TGameCell;
     fStarted:boolean;
     fOnCellStateChanged:TNotifyEvent;
+    fOnGameModeChanged:TNotifyEvent;
     fSelectedColour:TColor;
     fInputMode: EInputMode;
     fGameMode: EGameMode;
@@ -45,9 +48,11 @@ type
     public
     constructor create(
         name:string;
-        gameDimensions:TPoint);
+        gameDimensions:TPoint;
+        colours:TColours=nil);
     constructor create(filename:String);
     procedure setCellChangedHandler(handler:TNotifyEvent);
+    procedure setGameModeChangedHandler(handler:TNotifyEvent);
     procedure gameInputKeyPressHandler(Sender: TObject; var Key: Word; Shift: TShiftState);
     procedure gameInputClickHandler(Sender:TObject);
     procedure modeSwitchKeyPressHandler(Sender: TObject; var Key: Word; Shift: TShiftState);
@@ -56,6 +61,7 @@ type
     procedure reset;
     function getCell(row,column:integer):TGameCell;
     function getCell(position_:TPoint):TGameCell;
+    property colours:TColours read fColours write fColours;
     property block:TGameBlock read getGameBlock;
     property rowClues:TClueBlock read getRowClues;
     property columnClues:TClueBlock read getColumnClues;
@@ -72,9 +78,8 @@ implementation
 
 { TNonogramGame }
 
-//Start in gmSet. Create empty cells according to the dimensions
-//Create number cells that are editable
-constructor TNonogramGame.create(name: string; gameDimensions: TPoint);
+//Create empty game with specified dimensions
+constructor TNonogramGame.create(name: string; gameDimensions: TPoint;colours:TColours);
 var
   row,col:integer;
   newGameRow:TGameCells;
@@ -83,12 +88,17 @@ var
   newRowClueBlock:TClueBlock;
   newColumnClues:TClueCells;
   newColumnClueBlock:TClueBlock;
+  //for testing
+  nonoDocHandler:TNonogramDocumentHandler;
 begin
   fGameMode:=gmSet;
   fName:=name;
+  CreateGuid(fId);
   fVersion:=gameVersion;
   fDimensions:=gameDimensions;
-  fSelectedColour:=clBlack;
+  if colours = nil then colours:=TColours.create(clBlack);
+  if (colours.indexOf(clBlack) > -1) then fSelectedColour:=clBlack
+    else fSelectedColour:=colours[0];
 
   newGameBlock:=TGameBlock.create;
   newRowClueBlock:=TClueBlock.create;
@@ -121,13 +131,45 @@ begin
   fSolvedGameState:= fSolver.solve;
   fHistoryIndex:=-1;
   fSelectedCell:=nil;
+
+  //For testing
+  nonoDocHandler:=TNonogramDocumentHandler.Create(newGameBlock,newRowClueBlock,newColumnClueBlock);
+  nonoDocHandler.version:=fVersion;
+  nonoDocHandler.colours:=fColours;
+  nonoDocHandler.selectedColour:=fSelectedColour;
+  nonoDocHandler.id:=fId;
+  nonoDocHandler.name:=fName;
+  nonoDocHandler.saveToFile('/Users/cloudsoft/Downloads/test.txt',fName,fId);
 end;
 
 //Load from file. Start in gmSolve. Number cells are not editable
 constructor TNonogramGame.create(filename: String);
+var
+  nonoDocHandler:TNonogramDocumentHandler;
+  newGameBlock:TGameBlock;
+  newRowClueBlock:TClueBlock;
+  newColumnClueBlock:TClueBlock;
 begin
   fGameMode:=gmSolve;
-  //loadfrom file
+  nonoDocHandler:=TNonogramDocumentHandler.Create;
+  nonoDocHandler.loadFromFile(filename);
+  fHistory:=TGameStateChangesList.create;
+  newGameBlock:=nonoDocHandler.gameBlock;
+  newRowClueBlock:=nonoDocHandler.rowClueBlock;
+  newColumnClueBlock:=nonoDocHandler.columnClueBlock;
+  fGameState:=TGameState.create(newGameBlock,newRowClueBlock,newColumnClueBlock);
+  fInitialGameState:=TGameState.create(newGameBlock,newRowClueBlock,newColumnClueBlock);
+  fSolvedGameState:=TGameState.create(newGameBlock,newRowClueBlock,newColumnClueBlock);
+  fName:=nonoDocHandler.name;
+  fId:=nonoDocHandler.id;
+  fVersion:=nonoDocHandler.version;
+  fDimensions:=nonoDocHandler.dimensions;
+  fColours:=nonoDocHandler.colours;
+  fSelectedColour:=nonoDocHandler.selectedColour;
+  //fSolver:=TNonogramSolver.create(fInitialGameState);
+  //fSolvedGameState:= fSolver.solve;
+  fHistoryIndex:=-1;
+  fSelectedCell:=nil;
 end;
 
 function TNonogramGame.getGameBlock: TGameBlock;
@@ -150,7 +192,7 @@ begin
   //update delegate should be a list of TPoint
   if (fOnCellStateChanged = nil) then exit;
   if sender is TGameCell then with sender as TGameCell do
-    fOnCellStateChanged(TUpdateDelegate.create(TPoint.Create(col,row)));
+  fOnCellStateChanged(TUpdateDelegate.create(TPoint.Create(col,row)));
 end;
 
 procedure TNonogramGame.applyChanges(changes: TGameStateChanges;
@@ -183,12 +225,17 @@ begin
   fOnCellStateChanged:=handler;
 end;
 
+procedure TNonogramGame.setGameModeChangedHandler(handler: TNotifyEvent);
+begin
+  fOnGameModeChanged:=handler;
+end;
+
 procedure TNonogramGame.gameInputKeyPressHandler(Sender: TObject;
   var Key: Word; Shift: TShiftState);
 begin
   WriteLn('key '+chr(key));
   case key of
-    66:
+    66://b
       begin
       if (fHistoryIndex > -1) then
         begin
@@ -197,7 +244,7 @@ begin
         if Assigned(fOnCellStateChanged) then fOnCellStateChanged(TUpdateDelegate.create(TPoint.Create(0,0))); //change to list
         end;
       end;
-    70:
+    70: //f
       begin
       if (fHistoryIndex < pred(fHistory.size)) then
         begin
@@ -205,6 +252,11 @@ begin
         applyChanges(fHistory[fHistoryIndex]);
         if Assigned(fOnCellStateChanged) then fOnCellStateChanged(TUpdateDelegate.create(TPoint.Create(0,0))); //change to list
         end;
+      end;
+    83://s (set/solve toggle)
+      begin
+      if (fGameMode = gmSolve) then fGameMode:=gmSet else fGameMode:=gmSolve;
+      if Assigned(fOnGameModeChanged) then fOnGameModeChanged(TGameModeChangedDelegate.Create(fGameMode));
       end;
   end;
 end;
@@ -257,7 +309,7 @@ end;
 
 procedure TNonogramGame.saveToFile(filename: string);
 begin
-
+  //write to JSON or XML? Hmmm
 end;
 
 procedure TNonogramGame.start;
@@ -276,7 +328,6 @@ begin
   result:=nil;
   if (row < 0)or(row > pred(dimensions.Y))
      or (column < 0) or (column > pred(dimensions.X)) then exit;
-
   result:=fGameState.gameBlock[row][column];
 end;
 
