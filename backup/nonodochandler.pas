@@ -15,7 +15,11 @@ type
     fGameBlock:TGameBlock;
     fRowClueBlock:TClueBlock;
     fColumnClueBlock:TClueBlock;
-
+    fId:TGUID;
+    fName:string;
+    fVersion:string;
+    fDimensions:TPoint;
+    fSelectedColour:TColor;
     procedure addGameCells(cells:TGameCells;rowNo:integer);
     procedure addGameCell(cell:TGameCell;colNo:integer);
     procedure addRowClues(clues:TClueCells;rowNo:integer);
@@ -26,19 +30,25 @@ type
     property gameBlock:TGameBlock read fGameBlock write fGameBlock;
     property rowClueBlock:TClueBlock read fRowClueBlock write fRowClueBlock;
     property columnClueBlock:TClueBlock read fColumnClueBlock write fColumnClueBlock;
+    property id:TGUID read fId write fId;
+    property name: string read fName write fName;
+    property version: string read fVersion write fVersion;
+    property dimensions: TPoint read fDimensions write fDimensions;
+    property selectedColour: TColor read fSelectedColour write fSelectedColour;
     procedure saveToFile(filename,gameName:string;gameId:TGuid);
     procedure loadFromFile(filename:string);
   end;
 
 
 implementation
+const version = 'nonogram-game-v1';
 
 { TNonogramDocumentHandler }
 
 //Public methods
 procedure TNonogramDocumentHandler.saveToFile(filename,gameName:string;gameId:TGuid);
 var
-  attributes,gameCellsAttributes,gameCellAttributes:TStringArray;
+  attributes:TStringArray;
   row,col:integer;
   gameCell:TGameCell;
   fillStr:string;
@@ -46,7 +56,7 @@ var
 begin
   if fGameBlock.size = 0 then exit;
   attributes:=TStringArray.create('name',gameName,'id',GuidToString(gameId));
-  gameNode:= addSection('nonogram-game-v1',attributes);
+  gameNode:= addSection(version,attributes);
   gameBlockNode:=createNode('game-block');
   for row:=0 to pred(fGameBlock.size) do
     begin
@@ -62,13 +72,57 @@ begin
       gameCellNode.AppendChild(createNode('fill-mode',fillStr));
       addNode(gameCellsNode,gameCellNode);
       end;
+    addNode(gameBlockNode,gameCellsNode);
     end;
+  addNode(gameNode,gameBlockNode);
   save(fileName);
 end;
 
 procedure TNonogramDocumentHandler.loadFromFile(filename: string);
+var
+  gameNode,gameBlockNode,gameCellsNode,gameCellNode,gameCellChildNode:TDomNode;
+  rowIndex,colIndex,propIndex:integer;
+  rowId,colId: integer;
+  fillMode: ECellfillMode;
+  cellColour:TColor;
+  cellId:TGUID;
+  newGameCells:TGameCells;
 begin
-
+  load(filename); //creates document from file
+  gameNode:=getNode('');//get first child node which should be the game node
+  if not assigned(gameNode) then exit;
+  fVersion:=gameNode.NodeName;
+  fName:=gameNode.Attributes.GetNamedItem('name').TextContent;
+  tryStringToGuid(gameNode.Attributes.GetNamedItem('id').TextContent,fId);
+  gameBlockNode:=getNode('game-block',nil,false,gameNode);
+  fDimensions.Y:=gameBlockNode.GetChildCount;
+  if (fDimensions.Y = 0) then exit; //should raise exception
+  fDimensions.X:= gameBlockNode.ChildNodes.Item[0].GetChildCount;
+  fGameBlock:=TGameBlock.create;
+  for rowIndex:=0 to pred(gameBlockNode.GetChildCount) do
+    begin
+    newGameCells:=TGameCells.create;
+    gameCellsNode:= gameBlockNode.ChildNodes.Item[rowIndex];
+    for colIndex:= 0 to pred(gameCellsNode.GetChildCount) do
+      begin
+      gameCellNode:=gameCellsNode.ChildNodes.Item[colIndex];
+      tryStringToGuid(gameCellNode.Attributes.GetNamedItem('cell-id'),cellId);
+      for propIndex:=0 to pred(gameCellNode.GetChildCount) do
+        begin
+        gameCellChildNode:=gameCellNode.ChildNodes.Item[propIndex];
+        if (gameCellChildNode.NodeName = 'row')
+          then rowId:=gameCellChildNode.TextContent.ToInteger else
+        if (gameCellChildNode.NodeName = 'col')
+          then colId:=gameCellChildNode.TextContent.ToInteger else
+        if (gameCellChildNode.NodeName = 'colour')
+          then cellColour:=StringToColor(gameCellChildNode.TextContent) else
+        if (gameCellChildNode.NodeName = 'fill-colour')
+          then fillMode:= ECellFillMode(GetEnumValue(TypeInfo(ECellFillMode), gameCellChildNode.TextContent));
+        end;
+      newGameCells.push(TGameCell.create(colId,rowId,cellId,cellColour,fillMode));
+      end;
+    fGameBlock.push(newGameCells);
+    end;
 end;
 
 //Private methods

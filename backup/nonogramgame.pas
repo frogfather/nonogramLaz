@@ -7,7 +7,7 @@ interface
 uses
   Classes, SysUtils,arrayUtils,gameCell,gameBlock,gameState,
   gameStateChange,gameStateChanges,clueCell,graphics,clickDelegate,
-  updateDelegate,enums,nonosolver,nonoDocHandler;
+  updateDelegate,gameModeChangedDelegate,enums,nonosolver,nonoDocHandler;
 
 const defaultDimensions: TPoint = (X:9; Y:9);
 const gameVersion: string = '0.0.2';
@@ -33,6 +33,7 @@ type
     fSelectedCell: TGameCell;
     fStarted:boolean;
     fOnCellStateChanged:TNotifyEvent;
+    fOnGameModeChanged:TNotifyEvent;
     fSelectedColour:TColor;
     fInputMode: EInputMode;
     fGameMode: EGameMode;
@@ -49,6 +50,7 @@ type
         gameDimensions:TPoint);
     constructor create(filename:String);
     procedure setCellChangedHandler(handler:TNotifyEvent);
+    procedure setGameModeChangedHandler(handler:TNotifyEvent);
     procedure gameInputKeyPressHandler(Sender: TObject; var Key: Word; Shift: TShiftState);
     procedure gameInputClickHandler(Sender:TObject);
     procedure modeSwitchKeyPressHandler(Sender: TObject; var Key: Word; Shift: TShiftState);
@@ -125,17 +127,34 @@ begin
   fSolvedGameState:= fSolver.solve;
   fHistoryIndex:=-1;
   fSelectedCell:=nil;
-
-  //For testing
-  nonoDocHandler:=TNonogramDocumentHandler.Create;
-  nonoDocHandler.saveToFile('/Users/cloudsoft/Desktop/testFile','myTestGame',fId);
 end;
 
 //Load from file. Start in gmSolve. Number cells are not editable
 constructor TNonogramGame.create(filename: String);
+var
+  nonoDocHandler:TNonogramDocumentHandler;
+  newGameBlock:TGameBlock;
+  newRowClueBlock:TClueBlock;
+  newColumnClueBlock:TClueBlock;
 begin
   fGameMode:=gmSolve;
-  //loadfrom file
+  nonoDocHandler:=TNonogramDocumentHandler.Create;
+  nonoDocHandler.loadFromFile(filename);
+  fHistory:=TGameStateChangesList.create;
+  newGameBlock:=nonoDocHandler.gameBlock;
+  newRowClueBlock:=nonoDocHandler.rowClueBlock;
+  newColumnClueBlock:=nonoDocHandler.columnClueBlock;
+  fGameState:=TGameState.create(newGameBlock,newRowClueBlock,newColumnClueBlock);
+  fInitialGameState:=TGameState.create(newGameBlock,newRowClueBlock,newColumnClueBlock);
+  fSolvedGameState:=TGameState.create(newGameBlock,newRowClueBlock,newColumnClueBlock);
+  fName:=nonoDocHandler.name;
+  fId:=nonoDocHandler.id;
+  fVersion:=nonoDocHandler.version;
+  fDimensions:=nonoDocHandler.dimensions;
+  fSolver:=TNonogramSolver.create(fInitialGameState);
+  //fSolvedGameState:= fSolver.solve;
+  fHistoryIndex:=-1;
+  fSelectedCell:=nil;
 end;
 
 function TNonogramGame.getGameBlock: TGameBlock;
@@ -158,7 +177,7 @@ begin
   //update delegate should be a list of TPoint
   if (fOnCellStateChanged = nil) then exit;
   if sender is TGameCell then with sender as TGameCell do
-    fOnCellStateChanged(TUpdateDelegate.create(TPoint.Create(col,row)));
+  fOnCellStateChanged(TUpdateDelegate.create(TPoint.Create(col,row)));
 end;
 
 procedure TNonogramGame.applyChanges(changes: TGameStateChanges;
@@ -191,12 +210,17 @@ begin
   fOnCellStateChanged:=handler;
 end;
 
+procedure TNonogramGame.setGameModeChangedHandler(handler: TNotifyEvent);
+begin
+  fOnGameModeChanged:=handler;
+end;
+
 procedure TNonogramGame.gameInputKeyPressHandler(Sender: TObject;
   var Key: Word; Shift: TShiftState);
 begin
   WriteLn('key '+chr(key));
   case key of
-    66:
+    66://b
       begin
       if (fHistoryIndex > -1) then
         begin
@@ -205,7 +229,7 @@ begin
         if Assigned(fOnCellStateChanged) then fOnCellStateChanged(TUpdateDelegate.create(TPoint.Create(0,0))); //change to list
         end;
       end;
-    70:
+    70: //f
       begin
       if (fHistoryIndex < pred(fHistory.size)) then
         begin
@@ -213,6 +237,11 @@ begin
         applyChanges(fHistory[fHistoryIndex]);
         if Assigned(fOnCellStateChanged) then fOnCellStateChanged(TUpdateDelegate.create(TPoint.Create(0,0))); //change to list
         end;
+      end;
+    83://s (set/solve toggle)
+      begin
+      if (fGameMode = gmSolve) then fGameMode:=gmSet else fGameMode:=gmSolve;
+      if Assigned(fOnGameModeChanged) then fOnGameModeChanged(TGameModeChangedDelegate.Create(fGameMode));
       end;
   end;
 end;

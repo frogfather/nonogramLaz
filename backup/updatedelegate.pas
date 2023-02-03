@@ -5,14 +5,15 @@ unit updateDelegate;
 interface
 
 uses
-  Classes, SysUtils;
+  Classes, SysUtils,enums;
 type
 
   { TUpdateDelegate }
-
+  //Modify to allow multiple cells
   TUpdateDelegate = class(TInterfacedObject)
     private
     fPosition:TPoint;//which cell to update
+    fGameMode:EGameMode;
     public
     property position:TPoint read fPosition;
     constructor create(position_:TPoint);

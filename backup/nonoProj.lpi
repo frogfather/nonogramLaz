@@ -121,6 +121,10 @@
         <IsPartOfProject Value="True"/>
         <UnitName Value="nonoDocHandler"/>
       </Unit>
+      <Unit>
+        <Filename Value="gamemodechangeddelegate.pas"/>
+        <IsPartOfProject Value="True"/>
+      </Unit>
     </Units>
   </ProjectOptions>
   <CompilerOptions>

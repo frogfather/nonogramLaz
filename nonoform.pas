@@ -15,7 +15,6 @@ type
   TfNonogram = class(TForm)
     procedure FormCreate(Sender: TObject);
   private
-    fOnModeSwitchInput: TKeyEvent; //gets assigned to the modeSwitchKeyPressHandler of the game
     function createSampleGame:TNonogramGame;
   public
 
@@ -45,7 +44,8 @@ end;
 
 function TfNonogram.createSampleGame: TNonogramGame;
 begin
-  result:=TNonogramGame.create('test',TPoint.Create(20,20));
+  //result:=TNonogramGame.create('test',TPoint.Create(20,20));
+  result:=TNonogramGame.create('/Users/cloudsoft/Downloads/testFile.txt');
 end;
 
 end.

@@ -122,7 +122,7 @@ begin
       col:= initialState.gameBlock[blockIndex][cellIndex].col;
       row:= initialState.gameBlock[blockIndex][cellIndex].row;
       cellId:=initialState.gameBlock[blockIndex][cellIndex].cellId;
-      gameCells.push(TGameCell.create(col,row,cellId));
+      gameCells.push(TGameCell.create(col,row,clDefault,cellId));
       end;
     gameBlock.push(gameCells);
     end;
@@ -169,11 +169,11 @@ var
   changesOnCurrentLoop:integer;
 begin
   fSolvedGameState:=copyGameState(fInitialState);
-  changesOnCurrentLoop:=0;
     repeat
+    changesOnCurrentLoop:=0;
     changesOnCurrentLoop:=changesOnCurrentLoop + overlapRows;
     changesOnCurrentLoop:=changesOnCurrentLoop + overlapColumns;
-    until changesOnCurrentLoop.size = 0;
+    until changesOnCurrentLoop = 0;
   //now update fSolvedGame with the stored stateChanges
 
   result:=fSolvedGameState;

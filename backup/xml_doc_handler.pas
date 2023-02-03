@@ -80,10 +80,7 @@ function TXMLDocumentHandler.createNode(name: string;text:string): TDomNode;
 begin
   if document = nil then initializeDocument;
   result:=document.CreateElement(name);
-  if (text <> '') then
-    begin
-    result.AppendChild(createTextNode(text));
-    end;
+  if (text <> '') then result.AppendChild(createTextNode(text));
 end;
 
 function TXMLDocumentHandler.createTextNode(name: string): TDomNode;
@@ -192,6 +189,14 @@ var
   startNode,foundNode: TDomNode;
 begin
   if document = nil then initializeDocument;
+  if (nodeName = '') then
+    begin
+    if (document.GetChildCount > 0)
+      then result:=document.ChildNodes.Item[0]
+      else result:=nil;
+    exit;
+    end;
+
   if parent = nil then
      startNode := document
   else startNode:= parent;

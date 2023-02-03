@@ -189,6 +189,16 @@ var
   startNode,foundNode: TDomNode;
 begin
   if document = nil then initializeDocument;
+
+  //if nodename is an empty string return the first child node of the document
+  if (nodeName = '') then
+    begin
+    if (document.GetChildCount > 0)
+      then result:=document.ChildNodes.Item[0]
+      else result:=nil;
+    exit;
+    end;
+
   if parent = nil then
      startNode := document
   else startNode:= parent;

@@ -122,7 +122,7 @@ begin
       col:= initialState.gameBlock[blockIndex][cellIndex].col;
       row:= initialState.gameBlock[blockIndex][cellIndex].row;
       cellId:=initialState.gameBlock[blockIndex][cellIndex].cellId;
-      gameCells.push(TGameCell.create(col,row,cellId));
+      gameCells.push(TGameCell.create(col,row,cellId,clDefault));
       end;
     gameBlock.push(gameCells);
     end;
