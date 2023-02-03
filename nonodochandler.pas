@@ -77,7 +77,7 @@ var
 begin
   if fGameBlock.size = 0 then exit;
   attributes:=TStringArray.create('name',gameName,'id',GuidToString(gameId));
-  gameNode:= addSection(version,attributes);//creates a top level node and attaches it to the document
+  gameNode:= attachTopLevelNode(version,attributes);//creates a top level node and attaches it to the document
 
   gameBlockNode:=createNode('game-block');
   for row:=0 to pred(fGameBlock.size) do

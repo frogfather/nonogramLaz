@@ -185,6 +185,8 @@ begin
       end;
     fGameBlock.push(newGameCells);
     end;
+  //same for rows and columns
+  //add colours and selected colour
 end;
 
 //Private methods
