@@ -17,7 +17,7 @@ type
     private
     fDocument:TXMLDocument;
     protected
-    function createNode(name:string;text:string=''):TDomNode;
+    function createNode(name:string;text:string='';attributes:TStringArray=nil):TDomNode;
     function createTextNode(name:string):TDomNode;
     function findInXML(
       startNode: TDomNode;
@@ -76,11 +76,22 @@ begin
   writeXMLFile(fDocument, filename);
 end;
 
-function TXMLDocumentHandler.createNode(name: string;text:string): TDomNode;
+function TXMLDocumentHandler.createNode(name: string;text:string;attributes:TStringArray): TDomNode;
+var
+  attrIndex:integer;
 begin
   if document = nil then initializeDocument;
   result:=document.CreateElement(name);
   if (text <> '') then result.AppendChild(createTextNode(text));
+  if length(attributes) > 0 then
+    begin
+    attrIndex:=0;
+    while attrIndex < pred(length(attributes)) do
+      begin
+      TDOMElement(result).SetAttribute(attributes[attrIndex], attributes[attrIndex+1]);
+      attrIndex:=attrIndex + 2;
+      end;
+    end;
 end;
 
 function TXMLDocumentHandler.createTextNode(name: string): TDomNode;

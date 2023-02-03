@@ -5,7 +5,7 @@ unit nonoDocHandler;
 interface
 
 uses
-  Classes, SysUtils,xml_doc_handler,gameBlock,gameCell,clueCell,graphics,typinfo,enums,laz2_DOM;
+  Classes, SysUtils,xml_doc_handler,gameBlock,gameCell,clueCell,graphics,typinfo,enums,laz2_DOM,arrayUtils;
 type
   
   { TNonogramDocumentHandler }
@@ -19,6 +19,7 @@ type
     fName:string;
     fVersion:string;
     fDimensions:TPoint;
+    fColours:TColours;
     fSelectedColour:TColor;
     procedure addGameCells(cells:TGameCells;rowNo:integer);
     procedure addGameCell(cell:TGameCell;colNo:integer);
@@ -27,6 +28,8 @@ type
     procedure addColumnClues(clues:TClueCells;colNo:integer);
     procedure addColumnClue(clue:TClueCell;clueIndex:integer);
     public
+    constructor create;
+    constructor create(gameBlock_:TGameBlock;rowClueBlock_:TClueBlock;colClueBlock_:TClueBlock);
     property gameBlock:TGameBlock read fGameBlock write fGameBlock;
     property rowClueBlock:TClueBlock read fRowClueBlock write fRowClueBlock;
     property columnClueBlock:TClueBlock read fColumnClueBlock write fColumnClueBlock;
@@ -34,6 +37,7 @@ type
     property name: string read fName write fName;
     property version: string read fVersion write fVersion;
     property dimensions: TPoint read fDimensions write fDimensions;
+    property colours:TColours read fColours write fColours;
     property selectedColour: TColor read fSelectedColour write fSelectedColour;
     procedure saveToFile(filename,gameName:string;gameId:TGuid);
     procedure loadFromFile(filename:string);
@@ -41,22 +45,40 @@ type
 
 
 implementation
-const version = 'nonogram-game-v1';
 
 { TNonogramDocumentHandler }
+
+  constructor TNonogramDocumentHandler.create;
+  begin
+    initializeDocument;
+    fGameBlock:=nil;
+    fRowClueBlock:=nil;
+    fColumnClueBlock:=nil;
+  end;
+
+  constructor TNonogramDocumentHandler.create(gameBlock_: TGameBlock;
+    rowClueBlock_: TClueBlock; colClueBlock_: TClueBlock);
+  begin
+    initializeDocument;
+    fGameBlock:=gameBlock_;
+    fRowClueBlock:=rowClueBlock_;
+    fColumnClueBlock:=colClueBlock_;
+  end;
 
 //Public methods
 procedure TNonogramDocumentHandler.saveToFile(filename,gameName:string;gameId:TGuid);
 var
-  attributes:TStringArray;
-  row,col:integer;
+  attributes,gameCellAttributes:TStringArray;
+  row,col,clueId:integer;
   gameCell:TGameCell;
+  rowClue,colClue:TClueCell;
   fillStr:string;
-  gameNode,gameBlockNode,gameCellsNode,gameCellNode:TDomNode;
+  gameNode,gameBlockNode,gameCellsNode,gameCellNode,rowClueBlockNode,columnClueBlockNode,cluesNode,clueNode:TDomNode;
 begin
   if fGameBlock.size = 0 then exit;
   attributes:=TStringArray.create('name',gameName,'id',GuidToString(gameId));
-  gameNode:= addSection(version,attributes);
+  gameNode:= addSection(version,attributes);//creates a top level node and attaches it to the document
+
   gameBlockNode:=createNode('game-block');
   for row:=0 to pred(fGameBlock.size) do
     begin
@@ -64,7 +86,8 @@ begin
     for col:=0 to pred(fGameBlock[0].size) do
       begin
       gameCell:=fGameBlock[row][col];
-      gameCellNode:=createNode('game-cell');
+      gameCellAttributes:=TStringArray.create('cell-id',guidToString(gameCell.cellId));
+      gameCellNode:=createNode('game-cell','',gameCellAttributes);
       gameCellNode.AppendChild(createNode('row',gameCell.row.ToString));
       gameCellNode.AppendChild(createNode('col',gameCell.col.ToString));
       gameCellNode.AppendChild(createNode('colour',colorToString(gameCell.colour)));
@@ -75,6 +98,45 @@ begin
     addNode(gameBlockNode,gameCellsNode);
     end;
   addNode(gameNode,gameBlockNode);
+
+  rowClueBlockNode:=createNode('row-clue-block');
+  for row:=0 to pred(rowClueBlock.size) do
+    begin
+    cluesNode:=createNode('row-clues');
+      for clueId:=0 to pred(rowClueBlock[row].size) do
+        begin
+        rowClue:=rowClueBlock[row][clueId];
+        clueNode:=createNode('row-clue','',TStringArray.create('index',rowClue.index.toString));
+        clueNode.AppendChild(createNode('row',rowClue.row.ToString));
+        clueNode.AppendChild(createNode('col',rowClue.column.ToString));
+        clueNode.AppendChild(createNode('colour',colorToString(rowClue.colour)));
+        clueNode.AppendChild(createNode('value',rowClue.value.toString));
+        clueNode.AppendChild(createNode('solved',BoolToStr(rowClue.solved)));
+        addNode(cluesNode,clueNode);
+        end;
+      addNode(rowClueBlockNode,cluesNode);
+    end;
+  addNode(gameNode,rowClueBlockNode);
+
+  columnClueBlockNode:=createNode('column-clue-block');
+  for col:= 0 to pred(columnClueBlock.size) do
+    begin
+    cluesNode:=createNode('column-clues');
+      for clueId:=0 to pred(columnClueBlock[col].size) do
+        begin
+        colClue:=columnClueBlock[col][clueId];
+        clueNode:=createNode('column-clue','',TStringArray.create('index',colClue.index.toString));
+        clueNode.AppendChild(createNode('row',colClue.row.ToString));
+        clueNode.AppendChild(createNode('col',colClue.column.ToString));
+        clueNode.AppendChild(createNode('colour',colorToString(colClue.colour)));
+        clueNode.AppendChild(createNode('value',colClue.value.toString));
+        clueNode.AppendChild(createNode('solved',BoolToStr(colClue.solved)));
+        addNode(cluesNode,clueNode);
+        end;
+      addNode(columnClueBlockNode,cluesNode);
+    end;
+  addNode(gameNode,columnClueBlockNode);
+
   save(fileName);
 end;
 
@@ -89,7 +151,7 @@ var
   newGameCells:TGameCells;
 begin
   load(filename); //creates document from file
-  gameNode:=getNode('');//get first child node which should be the game node
+  gameNode:=getNode('');
   if not assigned(gameNode) then exit;
   fVersion:=gameNode.NodeName;
   fName:=gameNode.Attributes.GetNamedItem('name').TextContent;
@@ -123,6 +185,8 @@ begin
       end;
     fGameBlock.push(newGameCells);
     end;
+  //same for rows and columns
+  //add colours and selected colour
 end;
 
 //Private methods
@@ -160,7 +224,6 @@ procedure TNonogramDocumentHandler.addColumnClue(clue: TClueCell;
 begin
 
 end;
-
 
 end.
 

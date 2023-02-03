@@ -10,7 +10,7 @@ uses
   updateDelegate,gameModeChangedDelegate,enums,nonosolver,nonoDocHandler;
 
 const defaultDimensions: TPoint = (X:9; Y:9);
-const gameVersion: string = '0.0.2';
+const gameVersion = 'nonogram-game-v1';
 
 type
   { TNonogramGame }
@@ -23,6 +23,7 @@ type
     fId:TGUID;
     fVersion:string;
     fDimensions:TPoint;
+    fColours:TColours;
     //Originally intended to be immutable but now using GameStateChange objects
     fGameState: TGameState;
     //Initially the same as fGameState. Used for autosolving the game
@@ -47,7 +48,8 @@ type
     public
     constructor create(
         name:string;
-        gameDimensions:TPoint);
+        gameDimensions:TPoint;
+        colours:TColours=nil);
     constructor create(filename:String);
     procedure setCellChangedHandler(handler:TNotifyEvent);
     procedure setGameModeChangedHandler(handler:TNotifyEvent);
@@ -59,6 +61,7 @@ type
     procedure reset;
     function getCell(row,column:integer):TGameCell;
     function getCell(position_:TPoint):TGameCell;
+    property colours:TColours read fColours write fColours;
     property block:TGameBlock read getGameBlock;
     property rowClues:TClueBlock read getRowClues;
     property columnClues:TClueBlock read getColumnClues;
@@ -75,9 +78,8 @@ implementation
 
 { TNonogramGame }
 
-//Start in gmSet. Create empty cells according to the dimensions
-//Create number cells that are editable
-constructor TNonogramGame.create(name: string; gameDimensions: TPoint);
+//Create empty game with specified dimensions
+constructor TNonogramGame.create(name: string; gameDimensions: TPoint;colours:TColours);
 var
   row,col:integer;
   newGameRow:TGameCells;
@@ -94,7 +96,9 @@ begin
   CreateGuid(fId);
   fVersion:=gameVersion;
   fDimensions:=gameDimensions;
-  fSelectedColour:=clBlack;
+  if colours = nil then colours:=TColours.create(clBlack);
+  if (colours.indexOf(clBlack) > -1) then fSelectedColour:=clBlack
+    else fSelectedColour:=colours[0];
 
   newGameBlock:=TGameBlock.create;
   newRowClueBlock:=TClueBlock.create;
@@ -127,6 +131,15 @@ begin
   fSolvedGameState:= fSolver.solve;
   fHistoryIndex:=-1;
   fSelectedCell:=nil;
+
+  //For testing
+  nonoDocHandler:=TNonogramDocumentHandler.Create(newGameBlock,newRowClueBlock,newColumnClueBlock);
+  nonoDocHandler.version:=fVersion;
+  nonoDocHandler.colours:=fColours;
+  nonoDocHandler.selectedColour:=fSelectedColour;
+  nonoDocHandler.id:=fId;
+  nonoDocHandler.name:=fName;
+  nonoDocHandler.saveToFile('/Users/cloudsoft/Downloads/test.txt',fName,fId);
 end;
 
 //Load from file. Start in gmSolve. Number cells are not editable
@@ -151,7 +164,9 @@ begin
   fId:=nonoDocHandler.id;
   fVersion:=nonoDocHandler.version;
   fDimensions:=nonoDocHandler.dimensions;
-  fSolver:=TNonogramSolver.create(fInitialGameState);
+  fColours:=nonoDocHandler.colours;
+  fSelectedColour:=nonoDocHandler.selectedColour;
+  //fSolver:=TNonogramSolver.create(fInitialGameState);
   //fSolvedGameState:= fSolver.solve;
   fHistoryIndex:=-1;
   fSelectedCell:=nil;

@@ -17,7 +17,7 @@ type
     private
     fDocument:TXMLDocument;
     protected
-    function createNode(name:string;text:string=''):TDomNode;
+    function createNode(name:string;text:string='';attributes:TStringArray=nil):TDomNode;
     function createTextNode(name:string):TDomNode;
     function findInXML(
       startNode: TDomNode;
@@ -76,7 +76,7 @@ begin
   writeXMLFile(fDocument, filename);
 end;
 
-function TXMLDocumentHandler.createNode(name: string;text:string): TDomNode;
+function TXMLDocumentHandler.createNode(name: string;text:string;attributes:TStringArray): TDomNode;
 begin
   if document = nil then initializeDocument;
   result:=document.CreateElement(name);
@@ -189,6 +189,8 @@ var
   startNode,foundNode: TDomNode;
 begin
   if document = nil then initializeDocument;
+
+  //if nodename is an empty string return the first child node of the document
   if (nodeName = '') then
     begin
     if (document.GetChildCount > 0)
