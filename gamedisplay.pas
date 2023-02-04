@@ -35,7 +35,7 @@ type
     function getCellLocation(x,y:integer):TPoint; //Get the column and row of the cell from coordinates
     function getCellCoords(column,row:integer):TRect; //Get the bounds of the cell on the paintbox
     procedure resetSelection;
-    procedure drawClue(pb:TPaintbox;coords:TRect);
+    procedure drawSingleClueCell(canvas_:TCanvas;coords:TRect;clue:TClueCell);
     //receives input from the game regarding changes to the state
     procedure onGameCellChangedHandler(Sender: TObject);
     procedure onGameModeChangedHandler(Sender:TObject);
@@ -209,9 +209,16 @@ begin
   fSelEnd.Y:=-1;
 end;
 
-procedure TGameDisplay.drawClue(pb: TPaintbox; coords: TRect);
+procedure TGameDisplay.drawSingleClueCell(canvas_: TCanvas; coords: TRect;
+  clue: TClueCell);
 begin
-
+  //draw a rectangle at the position indicated
+  //If gameMode is set then draw a focus rectangle if the cell is selected
+  with canvas_ do
+    begin
+    brush.color:=clLime;
+    FillRect(coords);
+    end;
 end;
 
 //for changes signalled by the game - at the moment it just triggers redraw
@@ -252,11 +259,13 @@ begin
     end;
   if withDot then
     begin
+    Pen.Color:=clWhite;
+    Brush.Color:=clWhite;
     //draw circle in middle of cell
     cellCentre.X:=location.Left+((location.Right - location.Left) div 2);
     cellCentre.Y:=location.Top+((location.Bottom - location.Top) div 2);
-    dotWidth:=(location.Right - location.Left) div 3;
-    dotHeight:=(location.Bottom - location.Top)div 3;
+    dotWidth:=(location.Right - location.Left) div 5;
+    dotHeight:=(location.Bottom - location.Top)div 5;
     if dotWidth = 0 then dotWidth:=1;
     if dotHeight = 0 then dotheight:=1;
     dotDimensions.Left:=cellCentre.X-dotWidth;
@@ -264,6 +273,8 @@ begin
     dotDimensions.Top:=cellCentre.Y - dotWidth;
     dotDimensions.Bottom:=cellCentre.Y + dotWidth;
     canvas.Ellipse(dotDimensions);
+    Pen.Color:=borderColour;
+    Brush.Color:=fillColour;
     end;
   end;
 end;
@@ -288,12 +299,7 @@ begin
           cfEmpty: drawSingleGameCell(canvas,cellCoords,clDefault,clBlack);
           cfFill:  drawSingleGameCell(canvas,cellCoords,currentCell.colour,clBlack);
           cfCross: drawSingleGameCell(canvas,cellCoords,clDefault,clBlack,true);
-          cfDot:
-            begin
-            drawSingleGameCell(canvas,cellCoords,clDefault,clBlack);
-            //Temporary
-            canvas.TextOut(cellCoords.Top,cellcoords.Left,'o');
-            end;
+          cfDot:   drawSingleGameCell(Canvas,cellCoords,clDefault,clBlack,false,true);
         end;
       end;
   end;
@@ -301,8 +307,9 @@ end;
 
 procedure TGameDisplay.drawRowClues(Sender: TObject);
 var
-  rowNo:integer;
+  rowNo,clueIndex:integer;
   clueAreaHeight:integer;
+  clueDimensions:TRect;
 begin
   if sender is TPaintbox then with sender as TPaintbox do
     begin
@@ -311,7 +318,6 @@ begin
     canvas.Brush.Color:=$CACBD7;
     canvas.Pen.Style:=psClear;
     canvas.Rectangle(0,0,canvas.Width,clueAreaHeight);
-    //clues here line up with the grid
     canvas.pen.style:=psSolid;
     canvas.pen.color:=clBlack;
     canvas.MoveTo(0,0);
@@ -320,7 +326,16 @@ begin
       begin
       canvas.moveTo(0, (cellHeight*rowNo)+1);
       canvas.lineTo(canvas.Width, (cellHeight*rowNo)+1);
-      //some way of drawing clues - preferably taking an array of clues
+      writeln('canvas width is '+canvas.Width.toString);
+      for clueIndex:=0 to pred(fGame.rowClues[rowNo].size) do
+        begin
+        //some way of drawing clues - preferably taking an array of clues
+        clueDimensions.Left:=Canvas.Width - 740;
+        clueDimensions.Right:=clueDimensions.left+30;
+        clueDimensions.Top:=(cellHeight*rowNo)+4;
+        clueDimensions.Bottom:=clueDimensions.Top+30;
+        drawSingleClueCell(canvas,clueDimensions,fGame.rowClues[rowNo][clueIndex]);
+        end;
       end;
     end;
 end;

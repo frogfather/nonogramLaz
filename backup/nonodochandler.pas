@@ -198,7 +198,7 @@ begin
     for clueIndex:=0 to pred(rowCluesNode.GetChildCount) do
       begin
       clueNode:=rowCluesNode.ChildNodes.Item[clueIndex];
-      clueIndexPosition:=clueNode.Attributes.GetNamedItem('index').TextContent;
+      clueIndexPosition:=clueNode.Attributes.GetNamedItem('index').TextContent.ToInteger;
       for propIndex:=0 to pred(clueNode.GetChildCount) do
         begin
         clueChildNode:=clueNode.ChildNodes.Item[propIndex];
@@ -214,7 +214,7 @@ begin
         if (clueChildNode.NodeName='solved')
           then clueSolved:=StrToBool(clueChildNode.TextContent);
         end;
-      newRowClues.push(TClueCell.create(rowId,colId,clueValue,clueIndex,cellColour));
+      newRowClues.push(TClueCell.create(rowId,colId,clueValue,clueIndexPosition,cellColour));
       end;
     fRowClueBlock.push(newRowClues);
     end;
@@ -228,7 +228,7 @@ begin
     for clueIndex:=0 to pred(columnCluesNode.GetChildCount) do
       begin
       clueNode:=columnCluesNode.ChildNodes.Item[clueIndex];
-      clueIndexPosition:=clueNode.Attributes.GetNamedItem('index').TextContent;
+      clueIndexPosition:=clueNode.Attributes.GetNamedItem('index').TextContent.ToInteger;
       for propIndex:=0 to pred(clueNode.GetChildCount) do
         begin
         clueChildNode:=clueNode.ChildNodes.Item[propIndex];
@@ -243,7 +243,7 @@ begin
         if (clueChildNode.NodeName='solved')
           then clueSolved:=StrToBool(clueChildNode.TextContent);
         end;
-      newColumnClues.push(TClueCell.create(rowId,colId,clueValue,clueIndex,cellColour));
+      newColumnClues.push(TClueCell.create(rowId,colId,clueValue,clueIndexPosition,cellColour));
       end;
     fColumnClueBlock.push(newColumnClues);
     end;

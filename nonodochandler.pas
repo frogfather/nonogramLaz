@@ -181,7 +181,7 @@ begin
           then colId:=gameCellChildNode.TextContent.ToInteger else
         if (gameCellChildNode.NodeName = 'colour')
           then cellColour:=StringToColor(gameCellChildNode.TextContent) else
-        if (gameCellChildNode.NodeName = 'fill-colour')
+        if (gameCellChildNode.NodeName = 'fill-mode')
           then fillMode:= ECellFillMode(GetEnumValue(TypeInfo(ECellFillMode), gameCellChildNode.TextContent));
         end;
       newGameCells.push(TGameCell.create(colId,rowId,cellId,cellColour,fillMode));
