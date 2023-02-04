@@ -77,7 +77,7 @@ var
 begin
   if fGameBlock.size = 0 then exit;
   attributes:=TStringArray.create('name',gameName,'id',GuidToString(gameId));
-  gameNode:= addSection(version,attributes);//creates a top level node and attaches it to the document
+  gameNode:= attachTopLevelNode(version,attributes);//creates a top level node and attaches it to the document
 
   gameBlockNode:=createNode('game-block');
   for row:=0 to pred(fGameBlock.size) do
@@ -143,12 +143,15 @@ end;
 procedure TNonogramDocumentHandler.loadFromFile(filename: string);
 var
   gameNode,gameBlockNode,gameCellsNode,gameCellNode,gameCellChildNode:TDomNode;
-  rowIndex,colIndex,propIndex:integer;
-  rowId,colId: integer;
+  rowClueBlockNode,columnClueBlockNode,rowCluesNode,columnCluesNode,clueNode,clueChildNode:TDomNode;
+  rowIndex,colIndex,clueIndex,propIndex:integer;
+  rowId,colId,clueIndexPosition,clueValue: integer;
   fillMode: ECellfillMode;
   cellColour:TColor;
   cellId:TGUID;
+  clueSolved:boolean;
   newGameCells:TGameCells;
+  newRowClues,newColumnClues:TClueCells;
 begin
   load(filename); //creates document from file
   gameNode:=getNode('');
@@ -178,15 +181,72 @@ begin
           then colId:=gameCellChildNode.TextContent.ToInteger else
         if (gameCellChildNode.NodeName = 'colour')
           then cellColour:=StringToColor(gameCellChildNode.TextContent) else
-        if (gameCellChildNode.NodeName = 'fill-colour')
+        if (gameCellChildNode.NodeName = 'fill-mode')
           then fillMode:= ECellFillMode(GetEnumValue(TypeInfo(ECellFillMode), gameCellChildNode.TextContent));
         end;
       newGameCells.push(TGameCell.create(colId,rowId,cellId,cellColour,fillMode));
       end;
     fGameBlock.push(newGameCells);
     end;
-  //same for rows and columns
-  //add colours and selected colour
+
+  rowClueBlockNode:=getNode('row-clue-block',nil,false,gameNode);
+  fRowClueBlock:=TClueBlock.Create;
+  for rowIndex:=0 to pred(rowClueBlockNode.GetChildCount)do
+    begin
+    newRowClues:=TClueCells.Create;
+    rowCluesNode:=rowClueBlockNode.ChildNodes.Item[rowIndex];
+    for clueIndex:=0 to pred(rowCluesNode.GetChildCount) do
+      begin
+      clueNode:=rowCluesNode.ChildNodes.Item[clueIndex];
+      clueIndexPosition:=clueNode.Attributes.GetNamedItem('index').TextContent.ToInteger;
+      for propIndex:=0 to pred(clueNode.GetChildCount) do
+        begin
+        clueChildNode:=clueNode.ChildNodes.Item[propIndex];
+        //row,column,colour,value,solved
+        if (clueChildNode.NodeName='row')
+          then rowId:=clueChildNode.TextContent.ToInteger else
+        if (clueChildNode.NodeName='col')
+          then colId:=clueChildNode.TextContent.ToInteger else
+        if (clueChildNode.NodeName='colour')
+          then cellColour:=StringToColor(clueChildNode.TextContent) else
+        if (clueChildNode.NodeName='value')
+          then clueValue:=clueChildNode.TextContent.ToInteger else
+        if (clueChildNode.NodeName='solved')
+          then clueSolved:=StrToBool(clueChildNode.TextContent);
+        end;
+      newRowClues.push(TClueCell.create(rowId,colId,clueValue,clueIndexPosition,cellColour));
+      end;
+    fRowClueBlock.push(newRowClues);
+    end;
+
+  columnClueBlockNode:=getNode('column-clue-block',nil,false,gameNode);
+  fColumnClueBlock:=TClueBlock.Create;
+  for colIndex:=0 to pred(columnClueBlockNode.GetChildCount)do
+    begin
+    newColumnClues:=TClueCells.Create;
+    columnCluesNode:=columnClueBlockNode.ChildNodes.Item[colIndex];
+    for clueIndex:=0 to pred(columnCluesNode.GetChildCount) do
+      begin
+      clueNode:=columnCluesNode.ChildNodes.Item[clueIndex];
+      clueIndexPosition:=clueNode.Attributes.GetNamedItem('index').TextContent.ToInteger;
+      for propIndex:=0 to pred(clueNode.GetChildCount) do
+        begin
+        clueChildNode:=clueNode.ChildNodes.Item[propIndex];
+        if (clueChildNode.NodeName='row')
+          then rowId:=clueChildNode.TextContent.ToInteger else
+        if (clueChildNode.NodeName='col')
+          then colId:=clueChildNode.TextContent.ToInteger else
+        if (clueChildNode.NodeName='colour')
+          then cellColour:=StringToColor(clueChildNode.TextContent) else
+        if (clueChildNode.NodeName='value')
+          then clueValue:=clueChildNode.TextContent.ToInteger else
+        if (clueChildNode.NodeName='solved')
+          then clueSolved:=StrToBool(clueChildNode.TextContent);
+        end;
+      newColumnClues.push(TClueCell.create(rowId,colId,clueValue,clueIndexPosition,cellColour));
+      end;
+    fColumnClueBlock.push(newColumnClues);
+    end;
 end;
 
 //Private methods

@@ -32,8 +32,7 @@ type
     function addNode(
       parent, child: TDOMNode;
       Text: string = '';
-      attributes: TStringArray = nil;
-      parentAttributes:TStringArray = nil): TDOMNode;
+      attributes: TStringArray = nil): TDOMNode;
     function getNode(
       node: TDOMNode;
       nodeAttributes:TStringArray = nil;
@@ -41,15 +40,13 @@ type
     procedure initializeDocument;
     public
     procedure setDocument(doc:TXMLDocument);
-    function addSection(sectionName: string;attributes:TStringArray=nil; path:string = ''; value:string = ''):TDomNode;
+    function attachTopLevelNode(sectionName: string;attributes:TStringArray=nil; path:string = ''; value:string = ''):TDomNode;
     function getNode(
       nodeName: string;
       nodeAttributes:TStringArray = nil;
       findTextValue: boolean=false;
       parent:TDOMNode=nil;
       addIfNotFound:boolean=false): TDomNode;
-    function getNodeTextValue(nodeName:string;nodeAttributes:TStringArray=nil):string;
-    function getNodeAttributes(nodeName:string):TDOMNamedNodeMap;
     procedure load(filename: string);
     procedure save(filename: string);
     property document:TXMLDocument read fDocument write setDocument;
@@ -77,10 +74,21 @@ begin
 end;
 
 function TXMLDocumentHandler.createNode(name: string;text:string;attributes:TStringArray): TDomNode;
+var
+  attrIndex:integer;
 begin
   if document = nil then initializeDocument;
   result:=document.CreateElement(name);
   if (text <> '') then result.AppendChild(createTextNode(text));
+  if length(attributes) > 0 then
+    begin
+    attrIndex:=0;
+    while attrIndex < pred(length(attributes)) do
+      begin
+      TDOMElement(result).SetAttribute(attributes[attrIndex], attributes[attrIndex+1]);
+      attrIndex:=attrIndex + 2;
+      end;
+    end;
 end;
 
 function TXMLDocumentHandler.createTextNode(name: string): TDomNode;
@@ -152,7 +160,7 @@ begin
 end;
 
 function TXMLDocumentHandler.addNode(parent, child: TDOMNode; Text: string;
-  attributes: TStringArray; parentAttributes:TStringArray): TDOMNode;
+  attributes: TStringArray): TDOMNode;
 var
   textNode: TDOMNode;
   attrIndex:integer;
@@ -208,24 +216,6 @@ begin
   result:= foundNode;
 end;
 
-function TXMLDocumentHandler.getNodeTextValue(nodeName: string;nodeAttributes:TStringArray=nil): string;
-var
-  foundNode:TDOMNode;
-begin
-  result:='';
-  foundNode:=getNode(nodeName,nodeAttributes, true);
-  if (foundNode <> nil) then result:= foundNode.TextContent;
-end;
-
-function TXMLDocumentHandler.getNodeAttributes(nodeName: string): TDOMNamedNodeMap;
-var
-  foundNode:TDOMNode;
-begin
-  result:=nil;
-  foundNode:=getNode(nodeName,nil,true);
-  if (foundNode <> nil) then result:= foundNode.Attributes;
-end;
-
 procedure TXMLDocumentHandler.initializeDocument;
 begin
   fDocument:=TXMLDocument.Create;
@@ -238,7 +228,7 @@ begin
   fDocument:=doc;
 end;
 
-function TXMLDocumentHandler.addSection(sectionName: string; attributes:TStringArray=nil; path:string = ''; value:string = ''):TDomNode;
+function TXMLDocumentHandler.attachTopLevelNode(sectionName: string; attributes:TStringArray=nil; path:string = ''; value:string = ''):TDomNode;
 var
   pathParts:TStringArray;
   currentNode:TDOMNode;

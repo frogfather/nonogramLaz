@@ -28,14 +28,14 @@ type
     fSelStart:TPoint;
     fSelEnd:TPoint;
     fMultiSelect:boolean;
-    procedure initialiseView;
+    procedure recalculateView;
     function getCellSize:integer;
     function getRows:integer;
     function getColumns:integer;
     function getCellLocation(x,y:integer):TPoint; //Get the column and row of the cell from coordinates
     function getCellCoords(column,row:integer):TRect; //Get the bounds of the cell on the paintbox
     procedure resetSelection;
-    procedure drawClue(pb:TPaintbox;coords:TRect);
+    procedure drawSingleClueCell(canvas_:TCanvas;coords:TRect;clue:TClueCell);
     //receives input from the game regarding changes to the state
     procedure onGameCellChangedHandler(Sender: TObject);
     procedure onGameModeChangedHandler(Sender:TObject);
@@ -153,8 +153,17 @@ begin
     end;
 end;
 
-procedure TGameDisplay.initialiseView;
+procedure TGameDisplay.recalculateView;
+var
+  maxRowClues,maxColClues:integer;
 begin
+  if not assigned(fGame) then exit;
+  maxRowClues:=fGame.rowClues.maxClues;
+  maxColClues:=fGame.columnClues.maxClues;
+  if (maxRowClues = 0) then maxRowClues:=1;
+  if (maxColClues = 0) then maxColClues:=1;
+  fRowClues.Width:=maxRowClues * cellWidth;
+  fColumnClues.Height:=maxColClues * cellheight;
   if fGame.gameMode = gmSet then fMode.Caption:='Set' else fMode.Caption:='Solve';
 end;
 
@@ -209,9 +218,41 @@ begin
   fSelEnd.Y:=-1;
 end;
 
-procedure TGameDisplay.drawClue(pb: TPaintbox; coords: TRect);
+procedure TGameDisplay.drawSingleClueCell(canvas_: TCanvas; coords: TRect;
+  clue: TClueCell);
+var
+    widthOfText,heightOfText,textLeft,textTop,widthOfCell,heightOfCell:integer;
+    cellVBorder,cellHBorder,textTopBorder:integer;
+    cellRect:TRect;
+    thetext:string;
 begin
+  //draw a rectangle at the position indicated
+  //If gameMode is set then draw a focus rectangle if the cell is selected
+  thetext:='48';
+  if not assigned(canvas_) then exit;
+  with canvas_ do
+    begin
+    brush.color:=$5ABB87;
+    font.Color:=clBlack;
+    cellHBorder:=(coords.Right-coords.Left) div 10;
+    cellVBorder:=(coords.Bottom - coords.Top) div 10;
+    if (cellHBorder = 0) then cellHBorder:=1;
+    if (cellVBorder = 0) then cellVBorder:=1;
+    cellRect.Left:=coords.Left+cellHBorder;
+    cellRect.Right:=coords.Right-cellHBorder;
+    cellRect.Top:=coords.Top+cellVBorder;
+    cellRect.Bottom:=coords.Bottom-cellVBorder;
+    RoundRect(cellRect,4,4);
 
+    widthOfCell:=cellRect.Right-cellRect.Left;
+    heightOfCell:=cellRect.Bottom - cellRect.Top;
+    font.Height:= (widthOfCell * 7)div 10;
+    widthOfText:=TextWidth(thetext);
+    heightOfText:=TextHeight(thetext);
+    textLeft:=cellRect.Left+((widthOfCell - widthOftext)div 2);
+    textTop:=cellRect.Top + ((heightOfCell - heightOfText)div 2);
+    textOut(textLeft, textTop ,thetext);
+    end;
 end;
 
 //for changes signalled by the game - at the moment it just triggers redraw
@@ -252,11 +293,13 @@ begin
     end;
   if withDot then
     begin
+    Pen.Color:=clWhite;
+    Brush.Color:=clWhite;
     //draw circle in middle of cell
     cellCentre.X:=location.Left+((location.Right - location.Left) div 2);
     cellCentre.Y:=location.Top+((location.Bottom - location.Top) div 2);
-    dotWidth:=(location.Right - location.Left) div 3;
-    dotHeight:=(location.Bottom - location.Top)div 3;
+    dotWidth:=(location.Right - location.Left) div 5;
+    dotHeight:=(location.Bottom - location.Top)div 5;
     if dotWidth = 0 then dotWidth:=1;
     if dotHeight = 0 then dotheight:=1;
     dotDimensions.Left:=cellCentre.X-dotWidth;
@@ -264,6 +307,8 @@ begin
     dotDimensions.Top:=cellCentre.Y - dotWidth;
     dotDimensions.Bottom:=cellCentre.Y + dotWidth;
     canvas.Ellipse(dotDimensions);
+    Pen.Color:=borderColour;
+    Brush.Color:=fillColour;
     end;
   end;
 end;
@@ -288,12 +333,7 @@ begin
           cfEmpty: drawSingleGameCell(canvas,cellCoords,clDefault,clBlack);
           cfFill:  drawSingleGameCell(canvas,cellCoords,currentCell.colour,clBlack);
           cfCross: drawSingleGameCell(canvas,cellCoords,clDefault,clBlack,true);
-          cfDot:
-            begin
-            drawSingleGameCell(canvas,cellCoords,clDefault,clBlack);
-            //Temporary
-            canvas.TextOut(cellCoords.Top,cellcoords.Left,'o');
-            end;
+          cfDot:   drawSingleGameCell(Canvas,cellCoords,clDefault,clBlack,false,true);
         end;
       end;
   end;
@@ -301,8 +341,9 @@ end;
 
 procedure TGameDisplay.drawRowClues(Sender: TObject);
 var
-  rowNo:integer;
+  rowNo,clueIndex:integer;
   clueAreaHeight:integer;
+  clueDimensions:TRect;
 begin
   if sender is TPaintbox then with sender as TPaintbox do
     begin
@@ -310,8 +351,7 @@ begin
     clueAreaHeight:=(cellHeight * fGame.dimensions.Y)+1;
     canvas.Brush.Color:=$CACBD7;
     canvas.Pen.Style:=psClear;
-    canvas.Rectangle(0,0,canvas.Width,clueAreaHeight);
-    //clues here line up with the grid
+    canvas.Rectangle(0,0,clientRect.Width,clueAreaHeight);
     canvas.pen.style:=psSolid;
     canvas.pen.color:=clBlack;
     canvas.MoveTo(0,0);
@@ -320,7 +360,15 @@ begin
       begin
       canvas.moveTo(0, (cellHeight*rowNo)+1);
       canvas.lineTo(canvas.Width, (cellHeight*rowNo)+1);
-      //some way of drawing clues - preferably taking an array of clues
+      for clueIndex:=0 to pred(fGame.rowClues[rowNo].size) do
+        begin
+        //some way of drawing clues - preferably taking an array of clues
+        clueDimensions.Left:=ClientRect.Width - cellWidth;
+        clueDimensions.Right:=clueDimensions.left + cellWidth;
+        clueDimensions.Top:=(rowNo * cellheight)+canvas.Pen.Width;
+        clueDimensions.Bottom:=clueDimensions.Top + cellheight;
+        drawSingleClueCell(canvas,clueDimensions,fGame.rowClues[rowNo][clueIndex]);
+        end;
       end;
     end;
 end;
@@ -355,6 +403,7 @@ begin
   fGameCells.Repaint;
   fColumnClues.Repaint;
   fRowClues.Repaint;
+  recalculateView;
 end;
 
 //Instead of on click events we'll use mouse down and mouse up.
@@ -439,7 +488,7 @@ begin
   //assigns the notify event for a key press in this class to the handler in the game
   onGameKeyDown := @fGame.gameInputKeyPressHandler;
   onGameClick:= @fGame.gameInputClickHandler;
-  initialiseView;
+  recalculateView;
 end;
 
 end.
