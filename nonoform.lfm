@@ -1,8 +1,8 @@
 object fNonogram: TfNonogram
   Left = 240
-  Height = 568
+  Height = 537
   Top = 170
-  Width = 782
+  Width = 750
   Caption = 'Nonogram'
   OnCreate = FormCreate
   LCLVersion = '2.2.4.0'
