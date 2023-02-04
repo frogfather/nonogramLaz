@@ -28,7 +28,7 @@ type
     fSelStart:TPoint;
     fSelEnd:TPoint;
     fMultiSelect:boolean;
-    procedure initialiseView;
+    procedure recalculateView;
     function getCellSize:integer;
     function getRows:integer;
     function getColumns:integer;
@@ -153,8 +153,19 @@ begin
     end;
 end;
 
-procedure TGameDisplay.initialiseView;
+procedure TGameDisplay.recalculateView;
+var
+  maxRowClues,maxColClues:integer;
 begin
+  if not assigned(fGame) then exit;
+  //maxRowClues:=fGame.rowClues.maxClues;
+  //maxColClues:=fGame.columnClues.maxClues;
+  maxRowClues:=8;
+  maxColClues:=4;
+  if (maxRowClues = 0) then maxRowClues:=1;
+  if (maxColClues = 0) then maxColClues:=1;
+  fRowClues.Width:=maxRowClues * cellWidth;
+  fColumnClues.Height:=maxColClues * cellheight;
   if fGame.gameMode = gmSet then fMode.Caption:='Set' else fMode.Caption:='Solve';
 end;
 
@@ -211,13 +222,21 @@ end;
 
 procedure TGameDisplay.drawSingleClueCell(canvas_: TCanvas; coords: TRect;
   clue: TClueCell);
+var
+    widthOfText,textLeft,widthOfCell:integer;
 begin
   //draw a rectangle at the position indicated
   //If gameMode is set then draw a focus rectangle if the cell is selected
+  if not assigned(canvas_) then exit;
   with canvas_ do
     begin
     brush.color:=clLime;
-    FillRect(coords);
+    RoundRect(coords,5,5);
+    widthOfCell:=coords.Right-coords.Left;
+    font.Height:= widthOfCell - 4;
+    widthOfText:=TextWidth('7');
+    textLeft:=coords.Left+((widthOfCell - widthOftext)div 2);
+    textOut(textLeft,coords.Top+1,'7');
     end;
 end;
 
@@ -326,14 +345,13 @@ begin
       begin
       canvas.moveTo(0, (cellHeight*rowNo)+1);
       canvas.lineTo(canvas.Width, (cellHeight*rowNo)+1);
-      writeln('canvas width is '+canvas.Width.toString);
       for clueIndex:=0 to pred(fGame.rowClues[rowNo].size) do
         begin
         //some way of drawing clues - preferably taking an array of clues
         clueDimensions.Left:=Canvas.Width - 740;
-        clueDimensions.Right:=clueDimensions.left+30;
+        clueDimensions.Right:=clueDimensions.left+16;
         clueDimensions.Top:=(cellHeight*rowNo)+4;
-        clueDimensions.Bottom:=clueDimensions.Top+30;
+        clueDimensions.Bottom:=clueDimensions.Top+16;
         drawSingleClueCell(canvas,clueDimensions,fGame.rowClues[rowNo][clueIndex]);
         end;
       end;
@@ -370,6 +388,7 @@ begin
   fGameCells.Repaint;
   fColumnClues.Repaint;
   fRowClues.Repaint;
+  recalculateView;
 end;
 
 //Instead of on click events we'll use mouse down and mouse up.
@@ -454,7 +473,7 @@ begin
   //assigns the notify event for a key press in this class to the handler in the game
   onGameKeyDown := @fGame.gameInputKeyPressHandler;
   onGameClick:= @fGame.gameInputClickHandler;
-  initialiseView;
+  recalculateView;
 end;
 
 end.
