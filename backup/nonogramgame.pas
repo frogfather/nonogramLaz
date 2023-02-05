@@ -135,6 +135,10 @@ begin
   //For testing
   nonoDocHandler:=TNonogramDocumentHandler.Create(newGameBlock,newRowClueBlock,newColumnClueBlock);
   nonoDocHandler.version:=fVersion;
+  nonoDocHandler.colours:=fColours;
+  nonoDocHandler.selectedColour:=fSelectedColour;
+  nonoDocHandler.id:=fId;
+  nonoDocHandler.name:=fName;
   nonoDocHandler.saveToFile('/Users/cloudsoft/Downloads/test.txt',fName,fId);
 end;
 
@@ -160,7 +164,9 @@ begin
   fId:=nonoDocHandler.id;
   fVersion:=nonoDocHandler.version;
   fDimensions:=nonoDocHandler.dimensions;
-  fSolver:=TNonogramSolver.create(fInitialGameState);
+  fColours:=nonoDocHandler.colours;
+  fSelectedColour:=nonoDocHandler.selectedColour;
+  //fSolver:=TNonogramSolver.create(fInitialGameState);
   //fSolvedGameState:= fSolver.solve;
   fHistoryIndex:=-1;
   fSelectedCell:=nil;

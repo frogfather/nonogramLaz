@@ -28,6 +28,8 @@ type
     fSelStart:TPoint;
     fSelEnd:TPoint;
     fMultiSelect:boolean;
+    fSelectedClueRow:integer;
+    fSelectedClueIndex:integer;
     procedure recalculateView;
     function getCellSize:integer;
     function getRows:integer;
@@ -36,6 +38,7 @@ type
     function getCellCoords(column,row:integer):TRect; //Get the bounds of the cell on the paintbox
     procedure resetSelection;
     procedure drawSingleClueCell(canvas_:TCanvas;coords:TRect;clue:TClueCell);
+    function getClueRect(available:TRect):TRect;
     //receives input from the game regarding changes to the state
     procedure onGameCellChangedHandler(Sender: TObject);
     procedure onGameModeChangedHandler(Sender:TObject);
@@ -52,11 +55,14 @@ type
     property multiSelect:boolean read fMultiSelect write fMultiSelect;
   protected
     //intercepts the onClick event of the paintbox
-    procedure PaintboxMouseDownHandler(Sender: TObject; Button: TMouseButton;
+    procedure GameMouseDownHandler(Sender: TObject; Button: TMouseButton;
       Shift: TShiftState; X, Y: Integer);
-    procedure PaintboxMouseUpHandler(Sender: TObject; Button: TMouseButton;
+    procedure GameMouseUpHandler(Sender: TObject; Button: TMouseButton;
   Shift: TShiftState; X, Y: Integer);
+    procedure RowMouseDownHandler(Sender: TObject; Button: TMouseButton;
+      Shift: TShiftState; X, Y: Integer);
     procedure ButtonClickHandler(sender:TObject);
+    procedure keyDownHandler(Sender: TObject; var Key: Word; Shift: TShiftState);
   public
     constructor Create(aOwner: TComponent; dimensions: TPoint); reintroduce;
     procedure setGame(aGame: TNonogramGame);
@@ -73,6 +79,7 @@ implementation
 constructor TGameDisplay.Create(aOwner: TComponent; dimensions: TPoint);
 begin
   inherited Create(aOwner);
+  self.OnKeyDown:=@keyDownHandler;
   Name := 'myGameDisplay';
   Caption := '';
   Height := dimensions.Y;
@@ -131,8 +138,8 @@ begin
     Parent := self;
     Align:=alClient;
     name:='gameCells';
-    OnMouseDown := @PaintBoxMouseDownHandler;
-    OnMouseUp:= @PaintBoxMouseUpHandler;
+    OnMouseDown := @GameMouseDownHandler;
+    OnMouseUp:= @GameMouseUpHandler;
     OnPaint := @DrawGameCells;
   end;
   fRowClues:= TPaintbox.Create(aOwner);
@@ -141,8 +148,11 @@ begin
     Parent := self;
     Align:=alLeft;
     name:='rowClueCells';
+    OnMouseDown:=@RowMouseDownHandler;
     OnPaint:=@DrawRowClues;
     end;
+  fSelectedClueRow:=-1;
+  fSelectedClueIndex:=-1;
   fColumnClues:=TPaintbox.Create(aOwner);
   with fColumnClues do
     begin
@@ -218,40 +228,47 @@ begin
   fSelEnd.Y:=-1;
 end;
 
+function TGameDisplay.getClueRect(available: TRect): TRect;
+var
+  cellHBorder,cellVBorder: integer;
+begin
+  cellHBorder:=(available.Right-available.Left) div 10;
+  cellVBorder:=(available.Bottom - available.Top) div 10;
+  if (cellHBorder = 0) then cellHBorder:=1;
+  if (cellVBorder = 0) then cellVBorder:=1;
+  result.Left:=available.Left+cellHBorder;
+  result.Right:=available.Right-cellHBorder;
+  result.Top:=available.Top+cellVBorder;
+  result.Bottom:=available.Bottom-cellVBorder;
+end;
+
 procedure TGameDisplay.drawSingleClueCell(canvas_: TCanvas; coords: TRect;
   clue: TClueCell);
 var
-    widthOfText,heightOfText,textLeft,textTop,widthOfCell,heightOfCell:integer;
-    cellVBorder,cellHBorder,textTopBorder:integer;
     cellRect:TRect;
-    thetext:string;
+    widthOfText,heightOfText,textLeft,textTop,widthOfCell,heightOfCell:integer;
 begin
   //draw a rectangle at the position indicated
   //If gameMode is set then draw a focus rectangle if the cell is selected
-  thetext:='48';
   if not assigned(canvas_) then exit;
   with canvas_ do
     begin
-    brush.color:=$5ABB87;
-    font.Color:=clBlack;
-    cellHBorder:=(coords.Right-coords.Left) div 10;
-    cellVBorder:=(coords.Bottom - coords.Top) div 10;
-    if (cellHBorder = 0) then cellHBorder:=1;
-    if (cellVBorder = 0) then cellVBorder:=1;
-    cellRect.Left:=coords.Left+cellHBorder;
-    cellRect.Right:=coords.Right-cellHBorder;
-    cellRect.Top:=coords.Top+cellVBorder;
-    cellRect.Bottom:=coords.Bottom-cellVBorder;
+    brush.color:=clue.colour;
+    //set font colour depending on brush colour
+    font.Color:=clWhite;
+    if (clue.row = fSelectedClueRow) and (clue.index = fSelectedClueIndex)
+      then pen.color:=clLime else pen.color:=clDkGray;
+    cellRect:=getClueRect(coords);
     RoundRect(cellRect,4,4);
-
+    pen.color:=clDkGray;
     widthOfCell:=cellRect.Right-cellRect.Left;
     heightOfCell:=cellRect.Bottom - cellRect.Top;
     font.Height:= (widthOfCell * 7)div 10;
-    widthOfText:=TextWidth(thetext);
-    heightOfText:=TextHeight(thetext);
+    widthOfText:=TextWidth(clue.value.ToString);
+    heightOfText:=TextHeight(clue.value.ToString);
     textLeft:=cellRect.Left+((widthOfCell - widthOftext)div 2);
     textTop:=cellRect.Top + ((heightOfCell - heightOfText)div 2);
-    textOut(textLeft, textTop ,thetext);
+    textOut(textLeft, textTop ,clue.value.ToString);
     end;
 end;
 
@@ -362,8 +379,7 @@ begin
       canvas.lineTo(canvas.Width, (cellHeight*rowNo)+1);
       for clueIndex:=0 to pred(fGame.rowClues[rowNo].size) do
         begin
-        //some way of drawing clues - preferably taking an array of clues
-        clueDimensions.Left:=ClientRect.Width - cellWidth;
+        clueDimensions.Left:=ClientRect.Width - (cellWidth * (clueIndex + 1));
         clueDimensions.Right:=clueDimensions.left + cellWidth;
         clueDimensions.Top:=(rowNo * cellheight)+canvas.Pen.Width;
         clueDimensions.Bottom:=clueDimensions.Top + cellheight;
@@ -408,7 +424,7 @@ end;
 
 //Instead of on click events we'll use mouse down and mouse up.
 //This allows selection of multiple cells
-procedure TGameDisplay.PaintboxMouseDownHandler(Sender: TObject;
+procedure TGameDisplay.GameMouseDownHandler(Sender: TObject;
   Button: TMouseButton; Shift: TShiftState; X, Y: Integer);
 begin
   //send delegate on mouse up
@@ -416,7 +432,7 @@ begin
   if (fSelStart.X = -1)or(fSelStart.Y=-1) then resetSelection;
 end;
 
-procedure TGameDisplay.PaintboxMouseUpHandler(Sender: TObject;
+procedure TGameDisplay.GameMouseUpHandler(Sender: TObject;
   Button: TMouseButton; Shift: TShiftState; X, Y: Integer);
 var
   startx,startY,endX,endY:integer;
@@ -463,6 +479,23 @@ begin
   if Assigned(fOnGameClick) then fOnGameClick(TClickDelegate.create(selectedPoints));
 end;
 
+procedure TGameDisplay.RowMouseDownHandler(Sender: TObject;
+  Button: TMouseButton; Shift: TShiftState; X, Y: Integer);
+var
+  row_,index_:integer;
+begin
+  if sender is TPaintbox then with sender as TPaintbox do
+  begin
+  row_:=Y div cellwidth;
+  if (row_ < 0) or (row_ >= fGame.rowClues.size) then exit;
+  index_:=(clientRect.Width - X) div cellWidth;
+  if (index_ < 0) or (index_ >= fGame.rowClues[row_].size) then exit;
+  fSelectedClueRow:=row_;
+  fSelectedClueIndex:=index_;
+  fRowClues.Repaint;
+  end;
+end;
+
 procedure TGameDisplay.ButtonClickHandler(sender: TObject);
 var
   key:Word;
@@ -476,6 +509,12 @@ begin
     end;
     if Assigned(fOnGameKeyDown) then fOnGameKeyDown(Sender, key, []);
     end;
+end;
+
+procedure TGameDisplay.keyDownHandler(Sender: TObject; var Key: Word;
+  Shift: TShiftState);
+begin
+  writeln('key '+chr(key))
 end;
 
 procedure TGameDisplay.setGame(aGame: TNonogramGame);

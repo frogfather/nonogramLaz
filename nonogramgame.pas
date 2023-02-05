@@ -5,7 +5,7 @@ unit nonogramGame;
 interface
 
 uses
-  Classes, SysUtils,arrayUtils,gameCell,gameBlock,gameState,
+  Classes,forms, SysUtils,arrayUtils,gameCell,gameBlock,gameState,
   gameStateChange,gameStateChanges,clueCell,graphics,clickDelegate,
   updateDelegate,gameModeChangedDelegate,enums,nonosolver,nonoDocHandler;
 
