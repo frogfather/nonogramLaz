@@ -28,14 +28,17 @@ type
     fSelStart:TPoint;
     fSelEnd:TPoint;
     fMultiSelect:boolean;
-    fSelectedClueRow:integer;
-    fSelectedClueIndex:integer;
+    fSelectedRowClue:integer;
+    fSelectedRowClueIndex:integer;
+    fSelectedColumnClue:integer;
+    fSelectedColumnClueIndex:integer;
     procedure recalculateView;
     function getCellSize:integer;
     function getRows:integer;
     function getColumns:integer;
     function getCellLocation(x,y:integer):TPoint; //Get the column and row of the cell from coordinates
     function getCellCoords(column,row:integer):TRect; //Get the bounds of the cell on the paintbox
+    function getSelectedClueCell:TClueCell;
     procedure resetSelection;
     procedure drawSingleClueCell(canvas_:TCanvas;coords:TRect;clue:TClueCell);
     function getClueRect(available:TRect):TRect;
@@ -61,12 +64,10 @@ type
   Shift: TShiftState; X, Y: Integer);
     procedure RowMouseDownHandler(Sender: TObject; Button: TMouseButton;
       Shift: TShiftState; X, Y: Integer);
-    procedure RowCluesClickHandler(Sender:TObject);
     procedure ButtonClickHandler(sender:TObject);
-    procedure keyPressHandler(Sender: TObject; var Key: char);
-    procedure parentKeyPressTest(Sender:TObject; var Key:char);
+    procedure keyDownHandler(Sender: TObject; var Key: Word; Shift: TShiftState);
   public
-    constructor Create(aOwner: TWinControl; dimensions: TPoint); reintroduce;
+    constructor Create(aOwner: TComponent; dimensions: TPoint); reintroduce;
     procedure setGame(aGame: TNonogramGame);
     //property gameCells: TCellDisplayArray read fGameCells;
   published
@@ -78,12 +79,12 @@ implementation
 
 { TGameDisplay }
 
-constructor TGameDisplay.Create(aOwner: TWinControl; dimensions: TPoint);
+constructor TGameDisplay.Create(aOwner: TComponent; dimensions: TPoint);
 begin
   inherited Create(aOwner);
+  self.OnKeyDown:=@keyDownHandler;
   Name := 'myGameDisplay';
   Caption := '';
-  parent:=aOwner;
   Height := dimensions.Y;
   Width := dimensions.X;
   fGame := nil;
@@ -148,15 +149,13 @@ begin
   with fRowClues do
     begin
     Parent := self;
-    self.OnKeyPress:=@KeyPressHandler;
     Align:=alLeft;
     name:='rowClueCells';
     OnMouseDown:=@RowMouseDownHandler;
-    OnClick:=@RowCluesClickHandler;
     OnPaint:=@DrawRowClues;
     end;
-  fSelectedClueRow:=-1;
-  fSelectedClueIndex:=-1;
+  fSelectedRowClue:=-1;
+  fSelectedRowClueIndex:=-1;
   fColumnClues:=TPaintbox.Create(aOwner);
   with fColumnClues do
     begin
@@ -224,6 +223,14 @@ begin
   result:=TRect.Create(left_,top_,right_,bottom_);
 end;
 
+function TGameDisplay.getSelectedClueCell: TClueCell;
+begin
+  if (fSelectedColumnClue > -1) and (fSelectedColumnClueIndex > -1)
+    then result:=fGame.columnClues[fSelectedColumnClue][fSelectedColumnClueIndex]
+  else if (fSelectedRowClue > -1) and (fSelectedRowClueIndex > -1)
+    then result:=fGame.rowClues[fSelectedRowClue][fSelectedRowClueIndex];
+end;
+
 procedure TGameDisplay.resetSelection;
 begin
   fSelStart.X:=-1;
@@ -260,7 +267,7 @@ begin
     brush.color:=clue.colour;
     //set font colour depending on brush colour
     font.Color:=clWhite;
-    if (clue.row = fSelectedClueRow) and (clue.index = fSelectedClueIndex)
+    if (clue.row = fSelectedRowClue) and (clue.index = fSelectedRowClueIndex)
       then pen.color:=clLime else pen.color:=clDkGray;
     cellRect:=getClueRect(coords);
     RoundRect(cellRect,4,4);
@@ -272,7 +279,7 @@ begin
     heightOfText:=TextHeight(clue.value.ToString);
     textLeft:=cellRect.Left+((widthOfCell - widthOftext)div 2);
     textTop:=cellRect.Top + ((heightOfCell - heightOfText)div 2);
-    textOut(textLeft, textTop ,clue.value.ToString);
+    if (clue.value > -1) then textOut(textLeft, textTop ,clue.value.ToString);
     end;
 end;
 
@@ -365,6 +372,7 @@ var
   rowNo,clueIndex:integer;
   clueAreaHeight:integer;
   clueDimensions:TRect;
+
 begin
   if sender is TPaintbox then with sender as TPaintbox do
     begin
@@ -391,6 +399,8 @@ begin
         end;
       end;
     end;
+
+  SetFocus;
 end;
 
 procedure TGameDisplay.drawColumnClues(Sender: TObject);
@@ -494,15 +504,12 @@ begin
   if (row_ < 0) or (row_ >= fGame.rowClues.size) then exit;
   index_:=(clientRect.Width - X) div cellWidth;
   if (index_ < 0) or (index_ >= fGame.rowClues[row_].size) then exit;
-  fSelectedClueRow:=row_;
-  fSelectedClueIndex:=index_;
+  fSelectedRowClue:=row_;
+  fSelectedRowClueIndex:=index_;
+  fSelectedColumnClue:=-1;
+  fSelectedColumnClueIndex:=-1;
   fRowClues.Repaint;
   end;
-end;
-
-procedure TGameDisplay.RowCluesClickHandler(Sender: TObject);
-begin
-  parent.SetFocus;
 end;
 
 procedure TGameDisplay.ButtonClickHandler(sender: TObject);
@@ -520,14 +527,73 @@ begin
     end;
 end;
 
-procedure TGameDisplay.keyPressHandler(Sender: TObject; var Key: char);
-begin
-  writeln('key '+key);
-end;
+procedure TGameDisplay.keyDownHandler(Sender: TObject; var Key: Word;
+  Shift: TShiftState);
 
-procedure TGameDisplay.parentKeyPressTest(Sender: TObject; var Key: char);
+var
+  validKey:boolean;
+  selectedClueCell:TClueCell;
+  newValue:integer;
 begin
-  writeln('parent');
+  //if fSelectedRowClue and index are > -1 add the number to that clue
+  //if fSelectedColumnClue and index are > -1 add the number to that clue
+  //if adding the selected number to this clue would make it more than the grid width
+  //then do nothing
+  //also need to handle arrow keys - should select adjacent clues
+  //37 = left
+  //38 = up
+  //39 = right
+  //40 = down
+  validKey:= (key=8) or (key=13) or ((key > 36)and(key < 41)) or ((key > 47)and(key < 58));
+  selectedClueCell:=getSelectedClueCell;
+  if not (validKey and assigned(selectedClueCell) )then exit;
+  case key of
+    8:
+      begin
+      if (selectedClueCell.value <= 0) then exit;
+      newValue:=selectedClueCell.value div 10;
+      if newValue = 0 then newValue:= -1;
+      selectedClueCell.value:=newValue;
+      end;
+  13:
+     begin
+     if selectedClueCell.value <= 0 then exit;
+     //add another clue to the left of the current one with value -1;
+     //and set focus on it
+     end;
+  37:
+     begin
+     //left arrow
+     if (fGame.rowClues[fSelectedRowClue].size > fSelectedRowClueIndex + 1)
+       then fSelectedRowClueIndex:=fSelectedRowClueIndex+1;
+     end;
+  38:
+     begin
+     //up arrow
+     end;
+  39:
+     begin
+     //right arrow
+     if (fSelectedRowClueIndex > 0) then fSelectedRowClueIndex:=fSelectedRowClueIndex - 1;
+     end;
+  40:
+     begin
+     //down arrow
+     if (fGame.rowClues.size > fSelectedRowClue + 1)
+       then fSelectedRowClue:= fSelectedRowClue + 1;
+     if (fGame.rowClues[fSelectedRowClue].size < fSelectedRowClueIndex + 1)
+       then fSelectedRowClueIndex:=fGame.rowClues[fSelectedRowClue].size - 1;
+     end;
+  end;
+  if (key > 47) and (key < 58)
+  then
+    begin
+    //regular numbers
+    if (selectedClueCell.value = -1)
+      then selectedClueCell.value:= (key - 48)
+    else if (((selectedClueCell.value * 10)+ (key - 48)) < fGame.dimensions.X)
+      then selectedClueCell.value:= (selectedClueCell.value * 10)+(key - 48);
+    end;
 end;
 
 procedure TGameDisplay.setGame(aGame: TNonogramGame);
