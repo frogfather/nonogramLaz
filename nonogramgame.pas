@@ -233,9 +233,9 @@ end;
 procedure TNonogramGame.gameInputKeyPressHandler(Sender: TObject;
   var Key: Word; Shift: TShiftState);
 begin
-  WriteLn('key '+chr(key));
+  //Shouldn't use specific key mappings here - should send an object with info such as 'back' forward' etc
   case key of
-    66://b
+    66://b = back
       begin
       if (fHistoryIndex > -1) then
         begin
@@ -244,7 +244,7 @@ begin
         if Assigned(fOnCellStateChanged) then fOnCellStateChanged(TUpdateDelegate.create(TPoint.Create(0,0))); //change to list
         end;
       end;
-    70: //f
+    70: //f = forward
       begin
       if (fHistoryIndex < pred(fHistory.size)) then
         begin
@@ -277,9 +277,7 @@ begin
       selectedCell:= getCell(selectedCells[index]);
       if selectedCell <> Nil then
         begin
-        //let's do something with these cells
-        //TODO: instead of changing the state of the cell, generate a gamestatechange object
-        //add this gameState object to the history and generate a new one
+        //Temporary for testing
         if (selectedCell.fill = cfFill) then testFill:=cfEmpty else testFill:=cfFill;
         gameStateChanges.push(TGameStateChange.create(ctGame,selectedCell.col,selectedCell.row,testFill,selectedCell.fill,fSelectedColour,selectedCell.colour));
         end;
@@ -298,7 +296,7 @@ procedure TNonogramGame.modeSwitchKeyPressHandler(Sender: TObject;
   var Key: Word; Shift: TShiftState);
 begin
   //Handles change from fill, cross, dot
-  //Might want to make the mapping configurable
+  //Shouldn't be using fixed key values here - display should handle that
   if (shift <> [ssShift, ssAlt]) then exit;
   case key of
     78: fInputMode:= imFill;

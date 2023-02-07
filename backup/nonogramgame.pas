@@ -5,7 +5,7 @@ unit nonogramGame;
 interface
 
 uses
-  Classes, SysUtils,arrayUtils,gameCell,gameBlock,gameState,
+  Classes,forms, SysUtils,arrayUtils,gameCell,gameBlock,gameState,
   gameStateChange,gameStateChanges,clueCell,graphics,clickDelegate,
   updateDelegate,gameModeChangedDelegate,enums,nonosolver,nonoDocHandler;
 
@@ -233,9 +233,9 @@ end;
 procedure TNonogramGame.gameInputKeyPressHandler(Sender: TObject;
   var Key: Word; Shift: TShiftState);
 begin
-  WriteLn('key '+chr(key));
+  //could adapt this to set clues if in set mode and set cells/change history if in play mode
   case key of
-    66://b
+    66://b = back
       begin
       if (fHistoryIndex > -1) then
         begin
@@ -244,7 +244,7 @@ begin
         if Assigned(fOnCellStateChanged) then fOnCellStateChanged(TUpdateDelegate.create(TPoint.Create(0,0))); //change to list
         end;
       end;
-    70: //f
+    70: //f = forward
       begin
       if (fHistoryIndex < pred(fHistory.size)) then
         begin
@@ -277,9 +277,7 @@ begin
       selectedCell:= getCell(selectedCells[index]);
       if selectedCell <> Nil then
         begin
-        //let's do something with these cells
-        //TODO: instead of changing the state of the cell, generate a gamestatechange object
-        //add this gameState object to the history and generate a new one
+        //Temporary for testing
         if (selectedCell.fill = cfFill) then testFill:=cfEmpty else testFill:=cfFill;
         gameStateChanges.push(TGameStateChange.create(ctGame,selectedCell.col,selectedCell.row,testFill,selectedCell.fill,fSelectedColour,selectedCell.colour));
         end;

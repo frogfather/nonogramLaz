@@ -535,15 +535,7 @@ var
   selectedClueCell:TClueCell;
   newValue:integer;
 begin
-  //if fSelectedRowClue and index are > -1 add the number to that clue
-  //if fSelectedColumnClue and index are > -1 add the number to that clue
-  //if adding the selected number to this clue would make it more than the grid width
-  //then do nothing
-  //also need to handle arrow keys - should select adjacent clues
-  //37 = left
-  //38 = up
-  //39 = right
-  //40 = down
+  //Should the game hold the selectedRowClue etc values or is this a display thing?
   validKey:= (key=8) or (key=13) or ((key > 36)and(key < 41)) or ((key > 47)and(key < 58));
   selectedClueCell:=getSelectedClueCell;
   if not (validKey and assigned(selectedClueCell) )then exit;
@@ -595,9 +587,10 @@ begin
     //regular numbers
     if (selectedClueCell.value = -1)
       then selectedClueCell.value:= (key - 48)
-    else if (((selectedClueCell.value * 10)+ (key - 48)) < fGame.dimensions.X)
+    else if (((selectedClueCell.value * 10)+ (key - 48)) <= fGame.dimensions.X)
       then selectedClueCell.value:= (selectedClueCell.value * 10)+(key - 48);
     end;
+  fRowClues.Repaint;
 end;
 
 procedure TGameDisplay.setGame(aGame: TNonogramGame);
