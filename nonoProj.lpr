@@ -13,7 +13,8 @@ uses
   Forms, nonoForm, nonogramGame, gameCell, gameDisplay, arrayUtils, anysort,
   clickDelegate, clueCell, updateDelegate, gameBlock, gameState,
   gamestatechange, enums, gameStateChanges, drawingUtils, nonosolver,
-  xml_doc_handler, nonodochandler, gamemodechangeddelegate;
+  xml_doc_handler, nonodochandler, gamemodechangeddelegate, cluechangeddelegate,
+  clueclickeddelegate;
 
 {$R *.res}
 
