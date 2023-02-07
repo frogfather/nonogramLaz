@@ -7,7 +7,8 @@ interface
 uses
   Classes,forms, SysUtils,arrayUtils,gameCell,gameBlock,gameState,
   gameStateChange,gameStateChanges,clueCell,graphics,clickDelegate,
-  updateDelegate,gameModeChangedDelegate,enums,nonosolver,nonoDocHandler;
+  updateDelegate,cluechangeddelegate,gameModeChangedDelegate,clueclickeddelegate,
+  enums,nonosolver,nonoDocHandler;
 
 const defaultDimensions: TPoint = (X:9; Y:9);
 const gameVersion = 'nonogram-game-v1';
@@ -33,14 +34,20 @@ type
     fSolver:TNonogramSolver;
     fSelectedCell: TGameCell;
     fStarted:boolean;
+    fSelectedRowClue:integer;
+    fSelectedRowClueIndex:integer;
+    fSelectedColumnClue:integer;
+    fSelectedColumnClueIndex:integer;
     fOnCellStateChanged:TNotifyEvent;
     fOnGameModeChanged:TNotifyEvent;
+    fOnClueChanged:TNotifyEvent;
     fSelectedColour:TColor;
     fInputMode: EInputMode;
     fGameMode: EGameMode;
     function getGameBlock:TGameBlock;
     function getRowClues: TClueBlock;
     function getColumnClues: TClueBlock;
+    function getSelectedClueCell:TClueCell;
     procedure cellChangedHandler(sender:TObject);
     //adjusts the game state and updates the history
     procedure applyChanges(changes:TGameStateChanges; forward: boolean=true);
@@ -53,8 +60,11 @@ type
     constructor create(filename:String);
     procedure setCellChangedHandler(handler:TNotifyEvent);
     procedure setGameModeChangedHandler(handler:TNotifyEvent);
+    procedure setClueChangedHandler(handler:TNotifyEvent);
     procedure gameInputKeyPressHandler(Sender: TObject; var Key: Word; Shift: TShiftState);
     procedure gameInputClickHandler(Sender:TObject);
+    procedure clueInputKeyPressHandler(Sender: TObject; var Key: Word; Shift: TShiftState);
+    procedure clueInputClickHandler(Sender:TObject);
     procedure modeSwitchKeyPressHandler(Sender: TObject; var Key: Word; Shift: TShiftState);
     procedure saveToFile(filename:string);
     procedure start;
@@ -72,6 +82,10 @@ type
     property selectedColour:TColor read fSelectedColour;
     property inputMode: EInputMode read fInputMode;
     property gameMode: EGameMode read fGameMode;
+    property selectedRowClue: integer read fSelectedRowClue;
+    property selectedRowClueIndex:integer read fSelectedRowClueIndex;
+    property selectedColumnClue:integer read fSelectedColumnClue;
+    property selectedColumnClueIndex:integer read fSelectedColumnClueIndex;
   end;
 
 implementation
@@ -88,8 +102,6 @@ var
   newRowClueBlock:TClueBlock;
   newColumnClues:TClueCells;
   newColumnClueBlock:TClueBlock;
-  //for testing
-  nonoDocHandler:TNonogramDocumentHandler;
 begin
   fGameMode:=gmSet;
   fName:=name;
@@ -131,15 +143,10 @@ begin
   fSolvedGameState:= fSolver.solve;
   fHistoryIndex:=-1;
   fSelectedCell:=nil;
-
-  //For testing
-  nonoDocHandler:=TNonogramDocumentHandler.Create(newGameBlock,newRowClueBlock,newColumnClueBlock);
-  nonoDocHandler.version:=fVersion;
-  nonoDocHandler.colours:=fColours;
-  nonoDocHandler.selectedColour:=fSelectedColour;
-  nonoDocHandler.id:=fId;
-  nonoDocHandler.name:=fName;
-  nonoDocHandler.saveToFile('/Users/cloudsoft/Downloads/test.txt',fName,fId);
+  fSelectedRowClue:=-1;
+  fSelectedRowClueIndex:=-1;
+  fSelectedColumnClue:=-1;
+  fSelectedColumnClueIndex:=-1;
 end;
 
 //Load from file. Start in gmSolve. Number cells are not editable
@@ -187,6 +194,14 @@ begin
   result:=fGameState.columnClues;
 end;
 
+function TNonogramGame.getSelectedClueCell: TClueCell;
+begin
+  if (fSelectedColumnClue > -1) and (fSelectedColumnClueIndex > -1)
+    then result:=columnClues[fSelectedColumnClue][fSelectedColumnClueIndex]
+  else if (fSelectedRowClue > -1) and (fSelectedRowClueIndex > -1)
+    then result:=rowClues[fSelectedRowClue][fSelectedRowClueIndex];
+end;
+
 procedure TNonogramGame.cellChangedHandler(sender: TObject);
 begin
   //update delegate should be a list of TPoint
@@ -230,10 +245,15 @@ begin
   fOnGameModeChanged:=handler;
 end;
 
+procedure TNonogramGame.setClueChangedHandler(handler: TNotifyEvent);
+begin
+  fOnClueChanged:=handler;
+end;
+
 procedure TNonogramGame.gameInputKeyPressHandler(Sender: TObject;
   var Key: Word; Shift: TShiftState);
 begin
-  //could adapt this to set clues if in set mode and set cells/change history if in play mode
+  //Shouldn't use specific key mappings here - should send an object with info such as 'back' forward' etc
   case key of
     66://b = back
       begin
@@ -292,11 +312,100 @@ begin
     end;
 end;
 
+procedure TNonogramGame.clueInputKeyPressHandler(Sender: TObject;
+  var Key: Word; Shift: TShiftState);
+var
+  validKey:boolean;
+  selectedClueCell:TClueCell;
+  newValue:integer;
+begin
+  validKey:= (key=8) or (key=13) or ((key > 36)and(key < 41)) or ((key > 47)and(key < 58));
+  selectedClueCell:=getSelectedClueCell;
+  if not (validKey and assigned(selectedClueCell) )then exit;
+  case key of
+    8:
+      begin
+      if (selectedClueCell.value <= 0) then exit;
+      newValue:=selectedClueCell.value div 10;
+      if newValue = 0 then newValue:= -1;
+      selectedClueCell.value:=newValue;
+      end;
+  13:
+     begin
+     if selectedClueCell.value <= 0 then exit;
+     //add another clue to the left of the current one with value -1;
+     //and set focus on it
+     end;
+  37:
+     begin
+     //left arrow
+     if (rowClues[fSelectedRowClue].size > fSelectedRowClueIndex + 1)
+       then fSelectedRowClueIndex:=fSelectedRowClueIndex+1;
+     end;
+  38:
+     begin
+     //up arrow
+     if (fSelectedRowClueIndex > 0)
+       then fSelectedRowClueIndex:=fSelectedRowClueIndex - 1;
+     if (rowClues[fSelectedRowClue].size < fSelectedRowClueIndex + 1)
+       then fSelectedRowClueIndex:= rowClues[fSelectedRowClue].size - 1;
+     end;
+  39:
+     begin
+     //right arrow
+     if (fSelectedRowClueIndex > 0) then fSelectedRowClueIndex:=fSelectedRowClueIndex - 1;
+     end;
+  40:
+     begin
+     //down arrow
+     if (rowClues.size > fSelectedRowClue + 1)
+       then fSelectedRowClue:= fSelectedRowClue + 1;
+     if (rowClues[fSelectedRowClue].size < fSelectedRowClueIndex + 1)
+       then fSelectedRowClueIndex:=rowClues[fSelectedRowClue].size - 1;
+     end;
+  end;
+  if (key > 47) and (key < 58)
+  then
+    begin
+    //regular numbers
+    if (selectedClueCell.value = -1)
+      then selectedClueCell.value:= (key - 48)
+    else if (((selectedClueCell.value * 10)+ (key - 48)) <= dimensions.X)
+      then selectedClueCell.value:= (selectedClueCell.value * 10)+(key - 48);
+    end;
+  //signal that clue needs repainted
+  if assigned(fOnClueChanged) then fOnClueChanged(TClueChangedDelegate.create(fSelectedRowClue,fSelectedRowClueIndex))
+end;
+
+procedure TNonogramGame.clueInputClickHandler(Sender: TObject);
+var
+  maxSize,maxIndex:integer;
+begin
+  if sender is TClueClickDelegate then with sender as TClueClickDelegate do
+    begin
+    if isRow then maxSize:= rowClues.size else maxSize:= columnClues.size;
+    if (clueSetIndex < 0) or (clueSetIndex >= maxSize) then exit;
+    if isRow then maxIndex:=rowClues[clueSetIndex].size
+      else maxIndex:= columnClues[clueSetIndex].size;
+    if (clueIndex < 0) or (clueIndex >= maxIndex) then exit;
+    if isRow then
+      begin
+      fSelectedRowClue:=clueSetIndex;
+      fSelectedRowClueIndex:=clueIndex;
+      end else
+      begin
+      fSelectedColumnClue:=clueSetIndex;
+      fSelectedColumnClueIndex:=clueIndex;
+      end;
+    if assigned(fOnClueChanged) then fOnClueChanged(TClueChangedDelegate.create(fSelectedRowClue,fSelectedRowClueIndex,isRow))
+    end;
+end;
+
 procedure TNonogramGame.modeSwitchKeyPressHandler(Sender: TObject;
   var Key: Word; Shift: TShiftState);
 begin
   //Handles change from fill, cross, dot
-  //Might want to make the mapping configurable
+  //Shouldn't be using fixed key values here - display should handle that
   if (shift <> [ssShift, ssAlt]) then exit;
   case key of
     78: fInputMode:= imFill;

@@ -6,7 +6,8 @@ interface
 
 uses
   Classes, SysUtils, Controls,StdCtrls, ExtCtrls, nonogramGame,
-  Graphics, arrayUtils,clickDelegate,updateDelegate,gameModeChangedDelegate,gameCell,
+  Graphics, arrayUtils,clickDelegate,updateDelegate,gameModeChangedDelegate,
+  cluechangeddelegate,clueclickeddelegate,gameCell,
   clueCell,enums,drawingUtils;
 
 type
@@ -25,26 +26,24 @@ type
     fMode:TButton;
     fOnGameKeyDown: TKeyEvent;
     fOnGameClick:TNotifyEvent;
+    fOnClueKeyDown:TKeyEvent;
+    fOnClueClick:TNotifyEvent;
     fSelStart:TPoint;
     fSelEnd:TPoint;
     fMultiSelect:boolean;
-    fSelectedRowClue:integer;
-    fSelectedRowClueIndex:integer;
-    fSelectedColumnClue:integer;
-    fSelectedColumnClueIndex:integer;
     procedure recalculateView;
     function getCellSize:integer;
     function getRows:integer;
     function getColumns:integer;
     function getCellLocation(x,y:integer):TPoint; //Get the column and row of the cell from coordinates
     function getCellCoords(column,row:integer):TRect; //Get the bounds of the cell on the paintbox
-    function getSelectedClueCell:TClueCell;
     procedure resetSelection;
     procedure drawSingleClueCell(canvas_:TCanvas;coords:TRect;clue:TClueCell);
     function getClueRect(available:TRect):TRect;
     //receives input from the game regarding changes to the state
     procedure onGameCellChangedHandler(Sender: TObject);
     procedure onGameModeChangedHandler(Sender:TObject);
+    procedure onClueChangedHandler(Sender:TObject);
     procedure drawSingleGameCell(canvas_:TCanvas;location:TRect;
       fillColour,borderColour:TColor;withCross:boolean=False;withDot:boolean=False);
     procedure drawGameCells(Sender:TObject);
@@ -73,6 +72,8 @@ type
   published
     property OnGameKeyDown: TKeyEvent read fOnGameKeyDown write fOnGameKeyDown;
     property OnGameClick: TNotifyEvent read fOnGameClick write fOnGameClick;
+    property OnClueKeyDown: TKeyEvent read fOnClueKeyDown write fOnClueKeyDown;
+    property OnClueClick: TNotifyEvent read fOnClueClick write fOnClueClick;
   end;
 
 implementation
@@ -82,7 +83,6 @@ implementation
 constructor TGameDisplay.Create(aOwner: TComponent; dimensions: TPoint);
 begin
   inherited Create(aOwner);
-  self.OnKeyDown:=@keyDownHandler;
   Name := 'myGameDisplay';
   Caption := '';
   Height := dimensions.Y;
@@ -91,6 +91,7 @@ begin
   fSelStart:=TPoint.Create(-1,-1);
   fSelEnd:= TPoint.Create(-1,-1);
   fMultiSelect:=false;
+  onKeyDown:=@KeyDownHandler;
   onResize := @onResizeDisplay;
   fControls:=TPanel.Create(aOwner);
   with fControls do
@@ -154,8 +155,6 @@ begin
     OnMouseDown:=@RowMouseDownHandler;
     OnPaint:=@DrawRowClues;
     end;
-  fSelectedRowClue:=-1;
-  fSelectedRowClueIndex:=-1;
   fColumnClues:=TPaintbox.Create(aOwner);
   with fColumnClues do
     begin
@@ -223,14 +222,6 @@ begin
   result:=TRect.Create(left_,top_,right_,bottom_);
 end;
 
-function TGameDisplay.getSelectedClueCell: TClueCell;
-begin
-  if (fSelectedColumnClue > -1) and (fSelectedColumnClueIndex > -1)
-    then result:=fGame.columnClues[fSelectedColumnClue][fSelectedColumnClueIndex]
-  else if (fSelectedRowClue > -1) and (fSelectedRowClueIndex > -1)
-    then result:=fGame.rowClues[fSelectedRowClue][fSelectedRowClueIndex];
-end;
-
 procedure TGameDisplay.resetSelection;
 begin
   fSelStart.X:=-1;
@@ -267,7 +258,7 @@ begin
     brush.color:=clue.colour;
     //set font colour depending on brush colour
     font.Color:=clWhite;
-    if (clue.row = fSelectedRowClue) and (clue.index = fSelectedRowClueIndex)
+    if (clue.row = fgame.SelectedRowClue) and (clue.index = fgame.SelectedRowClueIndex)
       then pen.color:=clLime else pen.color:=clDkGray;
     cellRect:=getClueRect(coords);
     RoundRect(cellRect,4,4);
@@ -295,6 +286,15 @@ begin
   if sender is TGameModeChangedDelegate then with sender as TGameModeChangedDelegate do
     begin
     if (gameMode = gmSet) then fMode.caption:='Set' else fMode.caption:='Solve';
+    end;
+end;
+
+procedure TGameDisplay.onClueChangedHandler(Sender: TObject);
+begin
+  if sender is TClueChangedDelegate
+    then with sender as TClueChangedDelegate do
+    begin
+    if isRow then fRowClues.Repaint else fColumnClues.Repaint;
     end;
 end;
 
@@ -501,14 +501,8 @@ begin
   if sender is TPaintbox then with sender as TPaintbox do
   begin
   row_:=Y div cellwidth;
-  if (row_ < 0) or (row_ >= fGame.rowClues.size) then exit;
   index_:=(clientRect.Width - X) div cellWidth;
-  if (index_ < 0) or (index_ >= fGame.rowClues[row_].size) then exit;
-  fSelectedRowClue:=row_;
-  fSelectedRowClueIndex:=index_;
-  fSelectedColumnClue:=-1;
-  fSelectedColumnClueIndex:=-1;
-  fRowClues.Repaint;
+  if Assigned(fOnClueClick) then fOnClueClick(TClueClickDelegate.create(row_,index_));
   end;
 end;
 
@@ -529,68 +523,12 @@ end;
 
 procedure TGameDisplay.keyDownHandler(Sender: TObject; var Key: Word;
   Shift: TShiftState);
-
-var
-  validKey:boolean;
-  selectedClueCell:TClueCell;
-  newValue:integer;
 begin
-  //Should the game hold the selectedRowClue etc values or is this a display thing?
-  validKey:= (key=8) or (key=13) or ((key > 36)and(key < 41)) or ((key > 47)and(key < 58));
-  selectedClueCell:=getSelectedClueCell;
-  if not (validKey and assigned(selectedClueCell) )then exit;
-  case key of
-    8:
-      begin
-      if (selectedClueCell.value <= 0) then exit;
-      newValue:=selectedClueCell.value div 10;
-      if newValue = 0 then newValue:= -1;
-      selectedClueCell.value:=newValue;
-      end;
-  13:
-     begin
-     if selectedClueCell.value <= 0 then exit;
-     //add another clue to the left of the current one with value -1;
-     //and set focus on it
-     end;
-  37:
-     begin
-     //left arrow
-     if (fGame.rowClues[fSelectedRowClue].size > fSelectedRowClueIndex + 1)
-       then fSelectedRowClueIndex:=fSelectedRowClueIndex+1;
-     end;
-  38:
-     begin
-     //up arrow
-     if (fSelectedRowClueIndex > 0)
-       then fSelectedRowClueIndex:=fSelectedRowClueIndex - 1;
-     if (fGame.rowClues[fSelectedRowClue].size < fSelectedRowClueIndex + 1)
-       then fSelectedRowClueIndex:=fGame.rowClues[fSelectedRowClue].size - 1;
-     end;
-  39:
-     begin
-     //right arrow
-     if (fSelectedRowClueIndex > 0) then fSelectedRowClueIndex:=fSelectedRowClueIndex - 1;
-     end;
-  40:
-     begin
-     //down arrow
-     if (fGame.rowClues.size > fSelectedRowClue + 1)
-       then fSelectedRowClue:= fSelectedRowClue + 1;
-     if (fGame.rowClues[fSelectedRowClue].size < fSelectedRowClueIndex + 1)
-       then fSelectedRowClueIndex:=fGame.rowClues[fSelectedRowClue].size - 1;
-     end;
-  end;
-  if (key > 47) and (key < 58)
-  then
-    begin
-    //regular numbers
-    if (selectedClueCell.value = -1)
-      then selectedClueCell.value:= (key - 48)
-    else if (((selectedClueCell.value * 10)+ (key - 48)) < fGame.dimensions.X)
-      then selectedClueCell.value:= (selectedClueCell.value * 10)+(key - 48);
-    end;
-  fRowClues.Repaint;
+  if not assigned(fOnClueKeyDown) then exit;
+  if sender is TGameDisplay then with sender as TGameDisplay do
+   begin
+   fOnClueKeyDown(sender,key,shift);
+   end;
 end;
 
 procedure TGameDisplay.setGame(aGame: TNonogramGame);
@@ -600,9 +538,12 @@ begin
   //in the game to allow the game to signal that something has changed
   fGame.setCellChangedHandler(@onGameCellChangedHandler);
   fGame.setGameModeChangedHandler(@onGameModeChangedHandler);
+  fGame.setCellChangedHandler(@onClueChangedHandler);
   //assigns the notify event for a key press in this class to the handler in the game
   onGameKeyDown := @fGame.gameInputKeyPressHandler;
   onGameClick:= @fGame.gameInputClickHandler;
+  onClueKeyDown:=@fGame.clueInputKeyPressHandler;
+  onClueClick:=@fGame.clueInputClickHandler;
   recalculateView;
 end;
 
