@@ -538,7 +538,7 @@ begin
   //in the game to allow the game to signal that something has changed
   fGame.setCellChangedHandler(@onGameCellChangedHandler);
   fGame.setGameModeChangedHandler(@onGameModeChangedHandler);
-  fGame.setCellChangedHandler(@onClueChangedHandler);
+  fGame.setClueChangedHandler(@onClueChangedHandler);
   //assigns the notify event for a key press in this class to the handler in the game
   onGameKeyDown := @fGame.gameInputKeyPressHandler;
   onGameClick:= @fGame.gameInputClickHandler;
