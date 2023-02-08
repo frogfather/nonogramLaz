@@ -23,7 +23,7 @@ type
     constructor create(row_,column_,value_,index_:integer;colour_:TColor=clBlack);
     property row:integer read fRow;
     property column: integer read fColumn;
-    property index: integer read fIndex;
+    property index: integer read fIndex write fIndex;
     property value: integer read fValue write fValue; //should handle size here
     property colour: TColor read fColour;
     property solved: boolean read fSolved write fSolved;

@@ -50,6 +50,7 @@ type
     function getSelectedClueCells:TClueCells;
     function getSelectedClueCell:TClueCell;
     procedure cellChangedHandler(sender:TObject);
+    function addNewClueCell(clueSet:TClueCells):TClueCells;
     //adjusts the game state and updates the history
     procedure applyChanges(changes:TGameStateChanges; forward: boolean=true);
     property version: string read fVersion;
@@ -227,6 +228,22 @@ begin
   fOnCellStateChanged(TUpdateDelegate.create(TPoint.Create(col,row)));
 end;
 
+function TNonogramGame.addNewClueCell(clueSet: TClueCells):TClueCells;
+var
+  index_:integer;
+begin
+  //add a new clue on the end of the array and update the index of the remaining clues
+  result:=TClueCells.create;
+  result.push(TClueCell.create(fSelectedRowClueSet,fSelectedColumnClueSet,-1,0));
+  for index_:= 0 to pred(clueSet.size) do
+    begin
+    clueSet[index_].index:=index_+1;
+    result.push(clueSet[index_]);
+    end;
+  if (fSelectedRowClueIndex > -1) then fSelectedRowClueIndex:=0
+    else fSelectedColumnClueIndex:=0;
+end;
+
 procedure TNonogramGame.applyChanges(changes: TGameStateChanges;
   forward: boolean);
 var
@@ -334,13 +351,25 @@ procedure TNonogramGame.clueInputKeyPressHandler(Sender: TObject;
 var
   validKey:boolean;
   selectedClueCell:TClueCell;
-  selectedClueCells: TClueCells;
+  selectedClueCells:TClueCells;
   newValue:integer;
+  isRow,resize:boolean;
 begin
+  if (fSelectedRowClueSet = -1) and (fSelectedColumnClueSet = -1) then exit;
   validKey:= (key=8) or (key=13) or ((key > 36)and(key < 41)) or ((key > 47)and(key < 58));
-  selectedClueCells:=getSelectedClueCells;
-  selectedClueCell:=getSelectedClueCell;
+  isRow:=(fSelectedRowClueSet > -1);
+  if isRow then
+    begin
+    selectedClueCells:=fGameState.rowClues[fSelectedRowClueSet];
+    selectedClueCell:=selectedClueCells[fSelectedRowClueIndex]
+    end else
+    begin
+    selectedClueCells:=fGameState.columnClues[fSelectedColumnClueSet];
+    selectedClueCell:=selectedClueCells[fSelectedColumnClueIndex];
+    end;
   if not (validKey and assigned(selectedClueCell) )then exit;
+  resize:=false;
+
   case key of
     8:
       begin
@@ -351,13 +380,14 @@ begin
       end;
   13:
      begin
+     //enter
      if selectedClueCell.value <= 0 then exit;
-     if (selectedClueCells.indexOf(selectedClueCell) < pred(selectedClueCells.size))
-       then
-         begin
-         if (fSelectedRowClueIndex > -1) then fSelectedRowClueIndex:=fSelectedRowClueIndex + 1
-         else if (fSelectedColumnClueIndex > -1) then fSelectedColumnClueIndex:= fSelectedColumnClueIndex +1;
-         end;
+     if (selectedClueCells.indexOf(selectedClueCell) = 0) then
+       begin
+       if isRow then fGameState.rowClues[fSelectedRowClueSet]:=addNewClueCell(selectedClueCells)
+       else fGameState.columnClues[fSelectedColumnClueSet]:=addNewClueCell(selectedClueCells);
+       resize:=true;
+       end;
      end;
   37:
      begin
@@ -397,7 +427,7 @@ begin
       then selectedClueCell.value:= (selectedClueCell.value * 10)+(key - 48);
     end;
   //signal that clue needs repainted
-  if assigned(fOnClueChanged) then fOnClueChanged(TClueChangedDelegate.create(fSelectedRowClueSet,fSelectedRowClueIndex))
+  if assigned(fOnClueChanged) then fOnClueChanged(TClueChangedDelegate.create(fSelectedRowClueSet,fSelectedRowClueIndex,isRow,resize))
 end;
 
 procedure TNonogramGame.clueInputClickHandler(Sender: TObject);

@@ -258,7 +258,7 @@ begin
     brush.color:=clue.colour;
     //set font colour depending on brush colour
     font.Color:=clWhite;
-    if (clue.row = fgame.SelectedRowClue) and (clue.index = fgame.SelectedRowClueIndex)
+    if (clue.row = fgame.selectedRowClueSet) and (clue.index = fgame.SelectedRowClueIndex)
       then pen.color:=clLime else pen.color:=clDkGray;
     cellRect:=getClueRect(coords);
     RoundRect(cellRect,4,4);

@@ -15,9 +15,11 @@ type
     fIsRow:boolean;
     fClueRowIndex:integer;
     fClueIndex:integer;
+    fResize:boolean;
     public
-    constructor create(clueRowIndex,clueIndex:integer;isRow:boolean=true);
+    constructor create(clueRowIndex,clueIndex:integer;isRow:boolean=true;resize:boolean=false);
     property isRow:boolean read fIsrow;
+    property resize:boolean read fResize;
   end;
 
 implementation
@@ -25,11 +27,12 @@ implementation
 { TClueChangedDelegate }
 
 constructor TClueChangedDelegate.create(clueRowIndex, clueIndex: integer;
-  isRow: boolean);
+  isRow: boolean;resize:boolean);
 begin
   fIsRow:=isRow;
   fClueRowIndex:=clueRowIndex;
   fClueIndex:=clueIndex;
+  fResize:=resize;
 end;
 
 end.

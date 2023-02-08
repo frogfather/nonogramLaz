@@ -24,7 +24,7 @@ type
     property row:integer read fRow;
     property column: integer read fColumn;
     property index: integer read fIndex;
-    property value: integer read fValue;
+    property value: integer read fValue write fValue; //should handle size here
     property colour: TColor read fColour;
     property solved: boolean read fSolved write fSolved;
   end;

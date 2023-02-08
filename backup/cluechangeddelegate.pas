@@ -17,6 +17,7 @@ type
     fClueIndex:integer;
     public
     constructor create(clueRowIndex,clueIndex:integer;isRow:boolean=true);
+    property isRow:boolean read fIsrow;
   end;
 
 implementation

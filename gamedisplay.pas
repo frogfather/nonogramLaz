@@ -294,7 +294,9 @@ begin
   if sender is TClueChangedDelegate
     then with sender as TClueChangedDelegate do
     begin
-    if isRow then fRowClues.Repaint else fColumnClues.Repaint;
+    if resize then recalculateView else
+    if isRow then fRowClues.Repaint else
+      fColumnClues.Repaint;
     end;
 end;
 
