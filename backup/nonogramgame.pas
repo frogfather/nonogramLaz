@@ -355,7 +355,7 @@ var
   newValue:integer;
   isRow,resize:boolean;
 begin
-  if (fSelectedRowClueSet = -1) and (fSelectedColumnRowClueSet = -1) then exit;
+  if (fSelectedRowClueSet = -1) and (fSelectedColumnClueSet = -1) then exit;
   validKey:= (key=8) or (key=13) or ((key > 36)and(key < 41)) or ((key > 47)and(key < 58));
   isRow:=(fSelectedRowClueSet > -1);
   if isRow then
@@ -445,10 +445,14 @@ begin
       begin
       fSelectedRowClueSet:=clueSetIndex;
       fSelectedRowClueIndex:=clueIndex;
+      fSelectedColumnClueSet:=-1;
+      fSelectedColumnClueIndex:=-1;
       end else
       begin
       fSelectedColumnClueSet:=clueSetIndex;
       fSelectedColumnClueIndex:=clueIndex;
+      fSelectedRowClueSet:=-1;
+      fSelectedRowClueIndex:=-1;
       end;
     if assigned(fOnClueChanged) then fOnClueChanged(TClueChangedDelegate.create(fSelectedRowClueSet,fSelectedRowClueIndex,isRow))
     end;

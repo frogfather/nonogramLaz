@@ -392,29 +392,54 @@ begin
   37:
      begin
      //left arrow
-     if (rowClues[fSelectedRowClueSet].size > fSelectedRowClueIndex + 1)
-       then fSelectedRowClueIndex:=fSelectedRowClueIndex+1;
+     if (isRow and (rowClues[fSelectedRowClueSet].size > fSelectedRowClueIndex + 1))
+       then fSelectedRowClueIndex:=fSelectedRowClueIndex+1
+     else if ((isRow=false) and (fSelectedColumnClueSet > 0))
+       then
+         begin
+         fSelectedColumnClueSet:=fSelectedColumnClueSet - 1;
+         if (columnClues[fSelectedColumnClueSet].size < fSelectedColumnClueIndex + 1)
+         then fSelectedColumnClueIndex:=columnClues[fSelectedColumnClueSet].size -1;
+         end;
      end;
   38:
      begin
      //up arrow
-     if (fSelectedRowClueIndex > 0)
-       then fSelectedRowClueIndex:=fSelectedRowClueIndex - 1;
-     if (rowClues[fSelectedRowClueSet].size < fSelectedRowClueIndex + 1)
+     if (isRow and (fSelectedRowClueIndex > 0)) then
+       begin
+       fSelectedRowClueIndex:=fSelectedRowClueIndex - 1;
+       if (rowClues[fSelectedRowClueSet].size < fSelectedRowClueIndex + 1)
        then fSelectedRowClueIndex:= rowClues[fSelectedRowClueSet].size - 1;
+       end
+     else if ((isRow=false)
+       and (columnClues[fSelectedColumnClueSet].size > fSelectedColumnClueIndex + 1))
+       then fSelectedColumnClueIndex:=fSelectedColumnClueIndex + 1;
      end;
   39:
      begin
      //right arrow
-     if (fSelectedRowClueIndex > 0) then fSelectedRowClueIndex:=fSelectedRowClueIndex - 1;
+     if (isRow and (fSelectedRowClueIndex > 0))
+       then fSelectedRowClueIndex:=fSelectedRowClueIndex - 1
+     else if ((isRow=false) and (columnClues.size > fSelectedColumnClueSet +1))
+       then
+         begin
+         fSelectedColumnClueSet:=fSelectedColumnClueSet + 1;
+         if (columnClues[fSelectedColumnClueSet].size < fSelectedColumnClueIndex + 1)
+           then fSelectedColumnClueIndex:= columnClues[fSelectedColumnClueSet].size - 1;
+         end;
      end;
   40:
      begin
      //down arrow
-     if (rowClues.size > fSelectedRowClueSet + 1)
-       then fSelectedRowClueSet:= fSelectedRowClueSet + 1;
-     if (rowClues[fSelectedRowClueSet].size < fSelectedRowClueIndex + 1)
-       then fSelectedRowClueIndex:=rowClues[fSelectedRowClueSet].size - 1;
+     if (isRow and (rowClues.size > fSelectedRowClueSet + 1))
+       then
+         begin
+         fSelectedRowClueSet:= fSelectedRowClueSet + 1;
+         if (rowClues[fSelectedRowClueSet].size < fSelectedRowClueIndex + 1)
+         then fSelectedRowClueIndex:=rowClues[fSelectedRowClueSet].size - 1;
+         end
+     else if ((isRow=false) and (fSelectedColumnClueIndex > 1))
+       then fSelectedColumnClueIndex:=fSelectedColumnClueIndex - 1;
      end;
   end;
   if (key > 47) and (key < 58)
@@ -445,10 +470,14 @@ begin
       begin
       fSelectedRowClueSet:=clueSetIndex;
       fSelectedRowClueIndex:=clueIndex;
+      fSelectedColumnClueSet:=-1;
+      fSelectedColumnClueIndex:=-1;
       end else
       begin
       fSelectedColumnClueSet:=clueSetIndex;
       fSelectedColumnClueIndex:=clueIndex;
+      fSelectedRowClueSet:=-1;
+      fSelectedRowClueIndex:=-1;
       end;
     if assigned(fOnClueChanged) then fOnClueChanged(TClueChangedDelegate.create(fSelectedRowClueSet,fSelectedRowClueIndex,isRow))
     end;

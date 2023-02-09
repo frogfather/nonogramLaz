@@ -38,7 +38,7 @@ type
     function getCellLocation(x,y:integer):TPoint; //Get the column and row of the cell from coordinates
     function getCellCoords(column,row:integer):TRect; //Get the bounds of the cell on the paintbox
     procedure resetSelection;
-    procedure drawSingleClueCell(canvas_:TCanvas;coords:TRect;clue:TClueCell);
+    procedure drawSingleClueCell(canvas_:TCanvas;coords:TRect;clue:TClueCell;isRow:boolean=true);
     function getClueRect(available:TRect):TRect;
     //receives input from the game regarding changes to the state
     procedure onGameCellChangedHandler(Sender: TObject);
@@ -60,8 +60,10 @@ type
     procedure GameMouseDownHandler(Sender: TObject; Button: TMouseButton;
       Shift: TShiftState; X, Y: Integer);
     procedure GameMouseUpHandler(Sender: TObject; Button: TMouseButton;
-  Shift: TShiftState; X, Y: Integer);
+      Shift: TShiftState; X, Y: Integer);
     procedure RowMouseDownHandler(Sender: TObject; Button: TMouseButton;
+      Shift: TShiftState; X, Y: Integer);
+    procedure ColumnMouseDownHandler(Sender: TObject; Button: TMouseButton;
       Shift: TShiftState; X, Y: Integer);
     procedure ButtonClickHandler(sender:TObject);
     procedure keyDownHandler(Sender: TObject; var Key: Word; Shift: TShiftState);
@@ -161,6 +163,7 @@ begin
     Parent := self;
     Align:=alTop;
     name:='columnClueCells';
+    OnMouseDown:=@ColumnMouseDownHandler;
     OnPaint:=@DrawColumnClues;
     end;
 end;
@@ -245,7 +248,7 @@ begin
 end;
 
 procedure TGameDisplay.drawSingleClueCell(canvas_: TCanvas; coords: TRect;
-  clue: TClueCell);
+  clue: TClueCell;isRow:boolean);
 var
     cellRect:TRect;
     widthOfText,heightOfText,textLeft,textTop,widthOfCell,heightOfCell:integer;
@@ -258,8 +261,12 @@ begin
     brush.color:=clue.colour;
     //set font colour depending on brush colour
     font.Color:=clWhite;
-    if (clue.row = fgame.selectedRowClueSet) and (clue.index = fgame.SelectedRowClueIndex)
-      then pen.color:=clLime else pen.color:=clDkGray;
+
+    if (isRow and (clue.row = fgame.selectedRowClueSet) and (clue.index = fgame.SelectedRowClueIndex))
+    or ((isRow=false) and (clue.column = fGame.selectedColumnClueSet) and (clue.index = fGame.selectedColumnClueIndex))
+
+    then pen.color:=clLime else pen.color:=clDkGray;
+
     cellRect:=getClueRect(coords);
     RoundRect(cellRect,4,4);
     pen.color:=clDkGray;
@@ -432,7 +439,7 @@ begin
         clueDimensions.Bottom:=clueDimensions.Top + cellWidth;
         clueDimensions.left:= fRowClues.Width + (columnNo * cellWidth)+canvas.Pen.Width;
         clueDimensions.Right:=clueDimensions.Left + cellWidth;
-        drawSingleClueCell(canvas,clueDimensions,fGame.columnClues[columnNo][clueIndex]);
+        drawSingleClueCell(canvas,clueDimensions,fGame.columnClues[columnNo][clueIndex],false);
         end;
       end;
     end;
@@ -513,6 +520,19 @@ begin
   row_:=Y div cellwidth;
   index_:=(clientRect.Width - X) div cellWidth;
   if Assigned(fOnClueClick) then fOnClueClick(TClueClickDelegate.create(row_,index_));
+  end;
+end;
+
+procedure TGameDisplay.ColumnMouseDownHandler(Sender: TObject;
+  Button: TMouseButton; Shift: TShiftState; X, Y: Integer);
+var
+  column_,index_:integer;
+begin
+  if sender is TPaintbox then with sender as TPaintbox do
+  begin
+  column_:= (X - fRowClues.Width) div cellWidth;
+  index_:= (ClientRect.Height - Y) div cellHeight;
+  if Assigned(fOnClueClick) then fOnClueClick(TClueClickDelegate.create(column_,index_,false));
   end;
 end;
 
