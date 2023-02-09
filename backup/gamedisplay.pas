@@ -174,8 +174,8 @@ begin
   maxColClues:=fGame.columnClues.maxClues;
   if (maxRowClues = 0) then maxRowClues:=1;
   if (maxColClues = 0) then maxColClues:=1;
-  fRowClues.Width:=maxRowClues * cellWidth;
-  fColumnClues.Height:=maxColClues * cellheight;
+  fRowClues.Width:= (maxRowClues + 1) * cellWidth;
+  fColumnClues.Height:= (maxColClues + 1) * cellheight;
   if fGame.gameMode = gmSet then fMode.Caption:='Set' else fMode.Caption:='Solve';
 end;
 
@@ -294,7 +294,9 @@ begin
   if sender is TClueChangedDelegate
     then with sender as TClueChangedDelegate do
     begin
-    if isRow then fRowClues.Repaint else fColumnClues.Repaint;
+    if resize then recalculateView else
+    if isRow then fRowClues.Repaint else
+      fColumnClues.Repaint;
     end;
 end;
 
@@ -372,7 +374,6 @@ var
   rowNo,clueIndex:integer;
   clueAreaHeight:integer;
   clueDimensions:TRect;
-
 begin
   if sender is TPaintbox then with sender as TPaintbox do
     begin
@@ -405,8 +406,9 @@ end;
 
 procedure TGameDisplay.drawColumnClues(Sender: TObject);
 var
-  columnNo:integer;
+  columnNo,clueIndex:integer;
   clueAreaWidth:integer;
+  clueDimensions:TRect;
 begin
   if sender is TPaintbox then with sender as TPaintbox do
     begin
@@ -424,6 +426,14 @@ begin
       begin
       canvas.MoveTo(fGameCells.Left+ (cellWidth*columnNo),0);
       canvas.LineTo(fGameCells.Left+ (cellWidth*columnNo), Canvas.Height);
+      for clueIndex:=0 to pred(fGame.ColumnClues[columnNo].size) do
+        begin
+        clueDimensions.Top:=ClientRect.Height - (cellheight * (clueIndex + 1));
+        clueDimensions.Bottom:=clueDimensions.Top + cellWidth;
+        clueDimensions.left:=(columnNo * cellWidth)+canvas.Pen.Width;
+        clueDimensions.Right:=clueDimensions.Left + cellWidth;
+        drawSingleClueCell(canvas,clueDimensions,fGame.columnClues[columnNo][clueIndex]);
+        end;
       end;
     end;
 end;
