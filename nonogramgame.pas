@@ -521,7 +521,10 @@ end;
 procedure TNonogramGame.solveGame;
 begin
   if not assigned(fSolver) then exit;
-  fSolvedGameState:=fSolver.solve(fInitialGameState);
+
+  //for testing;
+  fGameState:=fSolver.solve(fInitialGameState);
+  //fSolvedGameState:=fSolver.solve(fInitialGameState);
 end;
 
 function TNonogramGame.getCell(row, column: integer): TGameCell;

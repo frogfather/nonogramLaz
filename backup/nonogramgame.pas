@@ -89,6 +89,7 @@ type
     property selectedRowClueIndex:integer read fSelectedRowClueIndex;
     property selectedColumnClueSet:integer read fSelectedColumnClueSet;
     property selectedColumnClueIndex:integer read fSelectedColumnClueIndex;
+    property solver:INonogramSolver read fSolver write fSolver;
   end;
 
 implementation

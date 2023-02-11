@@ -5,7 +5,7 @@ unit nonosolver;
 interface
 
 uses
-  Classes, SysUtils,gameState,gameStateChanges,gameBlock,gameCell,
+  Classes, SysUtils,gameState,gameStateChanges,gameStateChange,gameBlock,gameCell,
   enums,graphics,arrayUtils,clueCell,iNonoSolver;
 type
   
@@ -23,6 +23,7 @@ type
     function overlapColumns(gameState:TGameState):integer;
     function processStepResult(stepResult:TGameStateChanges):integer;
     function copyGameState(initialState: TGameState):TGameState;
+    function applyChanges(gameState:TGameState;gameStateChanges:TGameStateChanges):TGameState;
     property multiColour:boolean read fMulticolour;
     public
     constructor create(isMultiColour:boolean=false);
@@ -40,13 +41,12 @@ function TNonogramSolver.overlapRow(gameState:TGameState;rowId: integer): TGameS
 var
   clues:TClueCells;
   gameRow:TGameCells;
+  cell:TGameCell;
   clueIndex,columnId:integer;
   cluesLengthBefore,cluesLengthAfter:integer;
   minRight,maxleft:integer;
   spaceBetweenClues:integer;
 begin
-  writeLn('----------------------');
-  writeln('row '+rowId.toString);
   clues:=GameState.rowClues[rowId];
   gameRow:=gameState.gameBlock[rowId];
   result:=TGameStateChanges.create;
@@ -76,12 +76,17 @@ begin
 
     minRight:=cluesLengthBefore;
 
-    writeln('Clue '+clueIndex.toString+' maxLeft '+maxLeft.toString+' minRight '+minRight.toString);
-    if (maxLeft < minRight) then
-      for columnId:= maxLeft to minRight do
+    if (maxLeft <= minRight) then
+      for columnId:= (maxLeft-1) to (minRight-1) do
         begin
-        writeln('row '+rowId.toString+'cell '+columnId.ToString+' must be clue '+clueIndex.toString);
-        gameRow[columnId].rowCandidates.push(clues[clueIndex]);
+        //set the cell to filled
+        cell:=gameState.gameBlock[rowId][columnId];
+        if (cell.fill <> cfFill) or (cell.colour <> clues[clueIndex].colour)
+          then result.push(TGameStateChange.create(ctGame,columnId,rowId,
+                                                   cfFill,cell.fill,
+                                                   clues[clueIndex].colour,
+                                                   cell.colour))
+          else writeln('cell '+rowId.toString+','+columnId.ToString+' has not changed');
         end;
     end;
 end;
@@ -129,6 +134,7 @@ var
   index:integer;
 begin
   Result:=0;
+  writeln('step result is '+stepResult.size.toString);
   if stepResult.size = 0 then exit;
   for index:= 0 to pred(stepResult.size) do
     begin
@@ -200,6 +206,25 @@ begin
   result:=TGameState.create(gameBlock,rowClueBlock,columnClueBlock);
 end;
 
+//TODO - move this somewhere common so that the game can access it
+function TNonogramSolver.applyChanges(gameState:TGameState;gameStateChanges:TGameStateChanges):TGameState;
+var
+  index:integer;
+  change:TGameStateChange;
+begin
+  //update the game object with the changes
+  for index:=0 to pred(gameStateChanges.size) do
+    begin
+    change:=gameStateChanges[index];
+    if (change.cellType = ctGame) then
+      begin
+      GameState.gameBlock[change.row][change.column].fill:=change.cellFillMode;
+      GameState.gameBlock[change.row][change.column].colour:=change.colour;
+      end; //todo: clues
+    end;
+  result:=gameState;
+end;
+
 constructor TNonogramSolver.create(isMultiColour: boolean);
 begin
   fMultiColour:=isMultiColour;
@@ -217,6 +242,7 @@ begin
     changesOnCurrentLoop:=0;
     changesOnCurrentLoop:=changesOnCurrentLoop + overlapRows(solvedGameState);
     changesOnCurrentLoop:=changesOnCurrentLoop + overlapColumns(solvedGameState);
+    solvedGameState:=applyChanges(solvedGameState,fChanges);;
     until changesOnCurrentLoop = 0;
   //now update solvedGame with the stored stateChanges
 

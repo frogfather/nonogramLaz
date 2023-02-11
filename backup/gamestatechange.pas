@@ -45,7 +45,7 @@ begin
   fColumn:=column_;
   fRow:=row_;
   fCellFillMode:=cellFillMode_;
-  fOldCellFillMode:=oldCellFillMode_;
+  fOldFillMode:=oldCellFillMode_;
   fColour:=colour_;
   fOldColour:=oldColour_;
 end;
