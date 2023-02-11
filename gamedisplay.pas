@@ -25,6 +25,7 @@ type
     fForward:TButton;
     fMode:TButton;
     fNewGame:TButton;
+    fLoadGame:TButton;
     fSaveGame:TButton;
     fSolveGame:TButton;
     fOnGameKeyDown: TKeyEvent;
@@ -73,6 +74,7 @@ type
       Shift: TShiftState; X, Y: Integer);
     procedure ButtonClickHandler(sender:TObject);
     procedure NewGameClickHandler(sender:TObject);
+    procedure GameLoadClickHandler(sender:TObject);
     procedure GameSaveClickHandler(sender:TObject);
     procedure GameSolveClickHandler(sender:TObject);
     procedure keyDownHandler(Sender: TObject; var Key: Word; Shift: TShiftState);
@@ -179,6 +181,17 @@ begin
     visible:=true;
     default:=false;
     caption:='Solve';
+    end;
+  fLoadGame:=TButton.create(self);
+  with fLoadGame do
+    begin
+    parent:=fControls;
+    name:='bLoadGame';
+    left:=fSolveGame.Left + fsolveGame.Width + 2;
+    onClick:=@GameLoadClickHandler;
+    visible:=true;
+    default:=false;
+    caption:='Load';
     end;
   fGameCells := TPaintbox.Create(aOwner);
   with fGameCells do
@@ -610,6 +623,15 @@ begin
   fNewGameDialog.showModal;
   if fNewGameDialog.ModalResult=mrOK then
     setGame(TNonogramGame.create(fNewGameDialog.eName.Text,fNewGameDialog.dimensions));
+end;
+
+procedure TGameDisplay.GameLoadClickHandler(sender: TObject);
+begin
+  fLoadDialog:=TOpenDialog.Create(self);
+  if fLoadDialog.Execute then
+    begin
+    setGame(TNonogramGame.create(fLoadDialog.FileName));
+    end;
 end;
 
 procedure TGameDisplay.GameSaveClickHandler(sender: TObject);
