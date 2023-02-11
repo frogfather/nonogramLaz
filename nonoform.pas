@@ -15,7 +15,7 @@ type
   TfNonogram = class(TForm)
     procedure FormCreate(Sender: TObject);
   private
-    function createSampleGame:TNonogramGame;
+
   public
 
   end;
@@ -39,13 +39,6 @@ begin
   gameDisplay_.Color:=clDefault;
   gameDisplay_.Visible:=true;
   gameDisplay_.Caption:='';
-  gameDisplay_.setGame(createSampleGame);
-end;
-
-function TfNonogram.createSampleGame: TNonogramGame;
-begin
-  //result:=TNonogramGame.create('test',TPoint.Create(20,20));
-  result:=TNonogramGame.create('/Users/cloudsoft/Downloads/test.txt');
 end;
 
 end.

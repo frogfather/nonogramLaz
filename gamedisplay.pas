@@ -5,10 +5,10 @@ unit gameDisplay;
 interface
 
 uses
-  Classes, SysUtils, Controls,StdCtrls, ExtCtrls, nonogramGame,
+  Classes, SysUtils, Controls,StdCtrls, ExtCtrls,dialogs, nonogramGame,
   Graphics, arrayUtils,clickDelegate,updateDelegate,gameModeChangedDelegate,
   cluechangeddelegate,clueclickeddelegate,gameCell,
-  clueCell,enums,drawingUtils;
+  clueCell,enums,drawingUtils,newgamedialog,fileUtilities,nonoSolver;
 
 type
 
@@ -24,6 +24,9 @@ type
     fBack:TButton;
     fForward:TButton;
     fMode:TButton;
+    fNewGame:TButton;
+    fSaveGame:TButton;
+    fSolveGame:TButton;
     fOnGameKeyDown: TKeyEvent;
     fOnGameClick:TNotifyEvent;
     fOnClueKeyDown:TKeyEvent;
@@ -31,6 +34,9 @@ type
     fSelStart:TPoint;
     fSelEnd:TPoint;
     fMultiSelect:boolean;
+    fNewGameDialog:TfNewGameDialog;
+    fLoadDialog:TOpenDialog;
+    fSaveDialog:TSaveDialog;
     procedure recalculateView;
     function getCellSize:integer;
     function getRows:integer;
@@ -66,6 +72,9 @@ type
     procedure ColumnMouseDownHandler(Sender: TObject; Button: TMouseButton;
       Shift: TShiftState; X, Y: Integer);
     procedure ButtonClickHandler(sender:TObject);
+    procedure NewGameClickHandler(sender:TObject);
+    procedure GameSaveClickHandler(sender:TObject);
+    procedure GameSolveClickHandler(sender:TObject);
     procedure keyDownHandler(Sender: TObject; var Key: Word; Shift: TShiftState);
   public
     constructor Create(aOwner: TComponent; dimensions: TPoint); reintroduce;
@@ -136,7 +145,40 @@ begin
     onClick:=@ButtonClickHandler;
     visible:=true;
     default:=false;
-    caption:='';
+    caption:='Set';
+    end;
+  fNewGame:=TButton.Create(self);
+  with fNewGame do
+    begin
+    parent:=fControls;
+    name:='bNewGame';
+    left:=fMode.Left+fMode.Width + 2;
+    onClick:=@NewGameClickHandler;
+    visible:=true;
+    default:=false;
+    caption:='New';
+    end;
+  fSaveGame:=TButton.create(self);
+  with fSaveGame do
+    begin
+    parent:=fControls;
+    name:='bSaveGame';
+    left:=fNewGame.Left + fnewGame.Width + 2;
+    onClick:=@GameSaveClickHandler;
+    visible:=true;
+    default:=false;
+    caption:='Save';
+    end;
+  fSolveGame:=TButton.create(self);
+  with fSolveGame do
+    begin
+    parent:=fControls;
+    name:='bSolveGame';
+    left:=fSaveGame.Left + fsaveGame.Width + 2;
+    onClick:=@GameSolveClickHandler;
+    visible:=true;
+    default:=false;
+    caption:='Solve';
     end;
   fGameCells := TPaintbox.Create(aOwner);
   with fGameCells do
@@ -186,6 +228,7 @@ function TGameDisplay.getCellSize: integer;
 var
   cWidth,cHeight:integer;
 begin
+  if not assigned(fGame) then exit;
   cWidth:=fGameCells.Width div fGame.dimensions.Y;
   cHeight:=fGameCells.Height div fGame.dimensions.X;
   if cWidth < cHeight
@@ -195,11 +238,13 @@ end;
 
 function TGameDisplay.getRows: integer;
 begin
+  if not assigned(fGame) then exit;
   result:=fGame.dimensions.X
 end;
 
 function TGameDisplay.getColumns: integer;
 begin
+  if not assigned(fGame) then exit;
   result:=fGame.dimensions.Y
 end;
 
@@ -207,6 +252,7 @@ function TGameDisplay.getCellLocation(x, y: integer): TPoint;
 var
   rowNo,ColNo:integer;
 begin
+  if not assigned(fGame) then exit;
   rowNo:= y div cellHeight;
   if (rowNo < 0) or (rowNo > pred(rows)) then rowNo:=-1;
   colNo:= x div cellWidth;
@@ -218,6 +264,7 @@ function TGameDisplay.getCellCoords(column, row:integer): TRect;
 var
     left_,top_,right_,bottom_:integer;
 begin
+  if not assigned(fGame) then exit;
   left_:= (cellwidth * column)+1;
   top_:= (cellHeight * row)+1;
   right_:= (cellWidth * (column+1)+1);
@@ -293,6 +340,8 @@ begin
   if sender is TGameModeChangedDelegate then with sender as TGameModeChangedDelegate do
     begin
     if (gameMode = gmSet) then fMode.caption:='Set' else fMode.caption:='Solve';
+    fNewGame.visible:=(gameMode=gmSet);
+    fSaveGame.visible:=(gameMode=gmSet);
     end;
 end;
 
@@ -356,6 +405,7 @@ var
   currentCell: TGameCell;
   cellCoords:TRect;
 begin
+  if not assigned(fGame) then exit;
   if sender is TPaintbox then with sender as TPaintbox do
   begin
     if (name <> 'gameCells') then exit;
@@ -382,6 +432,7 @@ var
   clueAreaHeight:integer;
   clueDimensions:TRect;
 begin
+  if not assigned(fGame) then exit;
   if sender is TPaintbox then with sender as TPaintbox do
     begin
     if (name <> 'rowClueCells') then exit;
@@ -417,6 +468,7 @@ var
   clueAreaWidth:integer;
   clueDimensions:TRect;
 begin
+  if not assigned(fGame) then exit;
   if sender is TPaintbox then with sender as TPaintbox do
     begin
     if (name <> 'columnClueCells') then exit;
@@ -536,6 +588,7 @@ begin
   end;
 end;
 
+//Signals clicks on display buttons to the game
 procedure TGameDisplay.ButtonClickHandler(sender: TObject);
 var
   key:Word;
@@ -543,12 +596,45 @@ begin
   if sender is TButton then with sender as TButton do
     begin
     case name of
-      'bBack': key:=66;
-      'bForward': key:=70;
-      'bMode': key:=83;
+      'bBack': key:=66; //b
+      'bForward': key:=70; //f
+      'bMode': key:=83; //s
     end;
     if Assigned(fOnGameKeyDown) then fOnGameKeyDown(Sender, key, []);
     end;
+end;
+
+procedure TGameDisplay.NewGameClickHandler(sender: TObject);
+begin
+  fNewGameDialog:=TfNewGameDialog.Create(self);
+  fNewGameDialog.showModal;
+  if fNewGameDialog.ModalResult=mrOK then
+    setGame(TNonogramGame.create(fNewGameDialog.eName.Text,fNewGameDialog.dimensions));
+end;
+
+procedure TGameDisplay.GameSaveClickHandler(sender: TObject);
+var
+  userDir:string;
+begin
+  //save the current game
+  if assigned(fGame) then
+    begin
+    userDir:=getUsrDir('cloudsoft');
+    SetCurrentDir(userdir+'/Downloads');
+    fSaveDialog:=TSaveDialog.Create(self);
+    fSaveDialog.InitialDir:=userDir+'/Downloads';
+    fSaveDialog.FileName:=fGame.name+'.xml';
+    if fSaveDialog.Execute then
+      begin
+      fGame.saveToFile(fSaveDialog.FileName);
+      end;
+    end;
+end;
+
+procedure TGameDisplay.GameSolveClickHandler(sender: TObject);
+begin
+  fGame.solver:=TNonogramSolver.create;
+  fGame.solveGame;
 end;
 
 procedure TGameDisplay.keyDownHandler(Sender: TObject; var Key: Word;

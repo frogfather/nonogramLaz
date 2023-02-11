@@ -8,7 +8,7 @@ uses
   Classes,forms, SysUtils,arrayUtils,gameCell,gameBlock,gameState,
   gameStateChange,gameStateChanges,clueCell,graphics,clickDelegate,
   updateDelegate,cluechangeddelegate,gameModeChangedDelegate,clueclickeddelegate,
-  enums,nonosolver,nonoDocHandler;
+  enums,nonosolver,nonoDocHandler,iNonosolver;
 
 const defaultDimensions: TPoint = (X:9; Y:9);
 const gameVersion = 'nonogram-game-v1';
@@ -31,7 +31,7 @@ type
     fInitialGameState: TGameState;
     //The result of the solving operation
     fSolvedGameState: TGameState;
-    fSolver:TNonogramSolver;
+    fSolver:INonogramSolver;
     fSelectedCell: TGameCell;
     fStarted:boolean;
     fSelectedRowClueSet:integer;
@@ -71,6 +71,7 @@ type
     procedure saveToFile(filename:string);
     procedure start;
     procedure reset;
+    procedure solveGame;
     function getCell(row,column:integer):TGameCell;
     function getCell(position_:TPoint):TGameCell;
     property colours:TColours read fColours write fColours;
@@ -141,8 +142,6 @@ begin
   fGameState:=TGameState.create(newGameBlock,newRowClueBlock,newColumnClueBlock);
   fInitialGameState:=TGameState.create(newGameBlock,newRowClueBlock,newColumnClueBlock);
   fSolvedGameState:=TGameState.create(newGameBlock,newRowClueBlock,newColumnClueBlock);
-  fSolver:=TNonogramSolver.create(fInitialGameState);
-  fSolvedGameState:= fSolver.solve;
   fHistoryIndex:=-1;
   fSelectedCell:=nil;
   fSelectedRowClueSet:=-1;
@@ -392,29 +391,54 @@ begin
   37:
      begin
      //left arrow
-     if (rowClues[fSelectedRowClueSet].size > fSelectedRowClueIndex + 1)
-       then fSelectedRowClueIndex:=fSelectedRowClueIndex+1;
+     if (isRow and (rowClues[fSelectedRowClueSet].size > fSelectedRowClueIndex + 1))
+       then fSelectedRowClueIndex:=fSelectedRowClueIndex+1
+     else if ((isRow=false) and (fSelectedColumnClueSet > 0))
+       then
+         begin
+         fSelectedColumnClueSet:=fSelectedColumnClueSet - 1;
+         if (columnClues[fSelectedColumnClueSet].size < fSelectedColumnClueIndex + 1)
+         then fSelectedColumnClueIndex:=columnClues[fSelectedColumnClueSet].size -1;
+         end;
      end;
   38:
      begin
      //up arrow
-     if (fSelectedRowClueIndex > 0)
-       then fSelectedRowClueIndex:=fSelectedRowClueIndex - 1;
-     if (rowClues[fSelectedRowClueSet].size < fSelectedRowClueIndex + 1)
+     if (isRow and (fSelectedRowClueIndex > 0)) then
+       begin
+       fSelectedRowClueIndex:=fSelectedRowClueIndex - 1;
+       if (rowClues[fSelectedRowClueSet].size < fSelectedRowClueIndex + 1)
        then fSelectedRowClueIndex:= rowClues[fSelectedRowClueSet].size - 1;
+       end
+     else if ((isRow=false)
+       and (columnClues[fSelectedColumnClueSet].size > fSelectedColumnClueIndex + 1))
+       then fSelectedColumnClueIndex:=fSelectedColumnClueIndex + 1;
      end;
   39:
      begin
      //right arrow
-     if (fSelectedRowClueIndex > 0) then fSelectedRowClueIndex:=fSelectedRowClueIndex - 1;
+     if (isRow and (fSelectedRowClueIndex > 0))
+       then fSelectedRowClueIndex:=fSelectedRowClueIndex - 1
+     else if ((isRow=false) and (columnClues.size > fSelectedColumnClueSet +1))
+       then
+         begin
+         fSelectedColumnClueSet:=fSelectedColumnClueSet + 1;
+         if (columnClues[fSelectedColumnClueSet].size < fSelectedColumnClueIndex + 1)
+           then fSelectedColumnClueIndex:= columnClues[fSelectedColumnClueSet].size - 1;
+         end;
      end;
   40:
      begin
      //down arrow
-     if (rowClues.size > fSelectedRowClueSet + 1)
-       then fSelectedRowClueSet:= fSelectedRowClueSet + 1;
-     if (rowClues[fSelectedRowClueSet].size < fSelectedRowClueIndex + 1)
-       then fSelectedRowClueIndex:=rowClues[fSelectedRowClueSet].size - 1;
+     if (isRow and (rowClues.size > fSelectedRowClueSet + 1))
+       then
+         begin
+         fSelectedRowClueSet:= fSelectedRowClueSet + 1;
+         if (rowClues[fSelectedRowClueSet].size < fSelectedRowClueIndex + 1)
+         then fSelectedRowClueIndex:=rowClues[fSelectedRowClueSet].size - 1;
+         end
+     else if ((isRow=false) and (fSelectedColumnClueIndex > 1))
+       then fSelectedColumnClueIndex:=fSelectedColumnClueIndex - 1;
      end;
   end;
   if (key > 47) and (key < 58)
@@ -472,8 +496,14 @@ begin
 end;
 
 procedure TNonogramGame.saveToFile(filename: string);
+var
+  docHandler:TNonogramDocumentHandler;
 begin
-  //write to JSON or XML? Hmmm
+  docHandler:=TNonogramDocumentHandler.create(fGameState.gameBlock,fGamestate.rowClues,fGameState.columnClues);
+  docHandler.version:=gameVersion;
+  docHandler.dimensions:=fDimensions;
+  docHandler.colours:=fColours;
+  docHandler.saveToFile(filename,fName,fId);
 end;
 
 procedure TNonogramGame.start;
@@ -485,6 +515,12 @@ procedure TNonogramGame.reset;
 begin
   fStarted:=false;
   //and clear the game play after a dire warning
+end;
+
+procedure TNonogramGame.solveGame;
+begin
+  if not assigned(fSolver) then exit;
+  fSolvedGameState:=fSolver.solve(fInitialGameState);
 end;
 
 function TNonogramGame.getCell(row, column: integer): TGameCell;

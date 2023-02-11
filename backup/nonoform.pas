@@ -39,7 +39,7 @@ begin
   gameDisplay_.Color:=clDefault;
   gameDisplay_.Visible:=true;
   gameDisplay_.Caption:='';
-  gameDisplay_.setGame(createSampleGame);
+  //gameDisplay_.setGame(createSampleGame);
 end;
 
 function TfNonogram.createSampleGame: TNonogramGame;

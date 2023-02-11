@@ -14,7 +14,7 @@ uses
   clickDelegate, clueCell, updateDelegate, gameBlock, gameState,
   gamestatechange, enums, gameStateChanges, drawingUtils, nonosolver,
   xml_doc_handler, nonodochandler, gamemodechangeddelegate, cluechangeddelegate,
-  clueclickeddelegate;
+  clueclickeddelegate, newgamedialog, fileUtilities, iNonoSolver;
 
 {$R *.res}
 
@@ -23,6 +23,7 @@ begin
   Application.Scaled:=True;
   Application.Initialize;
   Application.CreateForm(TfNonogram, fNonogram);
+  Application.CreateForm(TfNewGameDialog, fNewGameDialog);
   Application.Run;
 end.
 

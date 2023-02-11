@@ -133,6 +133,23 @@
         <Filename Value="clueclickeddelegate.pas"/>
         <IsPartOfProject Value="True"/>
       </Unit>
+      <Unit>
+        <Filename Value="newgamedialog.pas"/>
+        <IsPartOfProject Value="True"/>
+        <ComponentName Value="fNewGameDialog"/>
+        <HasResources Value="True"/>
+        <ResourceBaseClass Value="Form"/>
+      </Unit>
+      <Unit>
+        <Filename Value="fileutilities.pas"/>
+        <IsPartOfProject Value="True"/>
+        <UnitName Value="fileUtilities"/>
+      </Unit>
+      <Unit>
+        <Filename Value="inonosolver.pas"/>
+        <IsPartOfProject Value="True"/>
+        <UnitName Value="iNonoSolver"/>
+      </Unit>
     </Units>
   </ProjectOptions>
   <CompilerOptions>

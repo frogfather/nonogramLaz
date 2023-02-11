@@ -8,7 +8,7 @@ uses
   Classes,forms, SysUtils,arrayUtils,gameCell,gameBlock,gameState,
   gameStateChange,gameStateChanges,clueCell,graphics,clickDelegate,
   updateDelegate,cluechangeddelegate,gameModeChangedDelegate,clueclickeddelegate,
-  enums,nonosolver,nonoDocHandler;
+  enums,nonosolver,nonoDocHandler,iNonosolver;
 
 const defaultDimensions: TPoint = (X:9; Y:9);
 const gameVersion = 'nonogram-game-v1';
@@ -31,7 +31,7 @@ type
     fInitialGameState: TGameState;
     //The result of the solving operation
     fSolvedGameState: TGameState;
-    fSolver:TNonogramSolver;
+    fSolver:INonogramSolver;
     fSelectedCell: TGameCell;
     fStarted:boolean;
     fSelectedRowClueSet:integer;
@@ -71,6 +71,7 @@ type
     procedure saveToFile(filename:string);
     procedure start;
     procedure reset;
+    procedure solveGame;
     function getCell(row,column:integer):TGameCell;
     function getCell(position_:TPoint):TGameCell;
     property colours:TColours read fColours write fColours;
@@ -88,6 +89,7 @@ type
     property selectedRowClueIndex:integer read fSelectedRowClueIndex;
     property selectedColumnClueSet:integer read fSelectedColumnClueSet;
     property selectedColumnClueIndex:integer read fSelectedColumnClueIndex;
+    property solver:INonogramSolver read fSolver write fSolver;
   end;
 
 implementation
@@ -141,8 +143,6 @@ begin
   fGameState:=TGameState.create(newGameBlock,newRowClueBlock,newColumnClueBlock);
   fInitialGameState:=TGameState.create(newGameBlock,newRowClueBlock,newColumnClueBlock);
   fSolvedGameState:=TGameState.create(newGameBlock,newRowClueBlock,newColumnClueBlock);
-  fSolver:=TNonogramSolver.create(fInitialGameState);
-  fSolvedGameState:= fSolver.solve;
   fHistoryIndex:=-1;
   fSelectedCell:=nil;
   fSelectedRowClueSet:=-1;
@@ -497,8 +497,14 @@ begin
 end;
 
 procedure TNonogramGame.saveToFile(filename: string);
+var
+  docHandler:TNonogramDocumentHandler;
 begin
-  //write to JSON or XML? Hmmm
+  docHandler:=TNonogramDocumentHandler.create(fGameState.gameBlock,fGamestate.rowClues,fGameState.columnClues);
+  docHandler.version:=gameVersion;
+  docHandler.dimensions:=fDimensions;
+  docHandler.colours:=fColours;
+  docHandler.saveToFile(filename,fName,fId);
 end;
 
 procedure TNonogramGame.start;
@@ -510,6 +516,12 @@ procedure TNonogramGame.reset;
 begin
   fStarted:=false;
   //and clear the game play after a dire warning
+end;
+
+procedure TNonogramGame.solveGame;
+begin
+  if not assigned(fSolver) then exit;
+  fSolvedGameState:=fSolver.solve(fInitialGameState);
 end;
 
 function TNonogramGame.getCell(row, column: integer): TGameCell;

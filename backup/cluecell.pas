@@ -23,7 +23,7 @@ type
     constructor create(row_,column_,value_,index_:integer;colour_:TColor=clBlack);
     property row:integer read fRow;
     property column: integer read fColumn;
-    property index: integer read fIndex;
+    property index: integer read fIndex write fIndex;
     property value: integer read fValue write fValue; //should handle size here
     property colour: TColor read fColour;
     property solved: boolean read fSolved write fSolved;
@@ -38,6 +38,7 @@ type
   function size: integer;
   function push(element:TClueCell):integer;
   function indexOf(element:TClueCell):integer;
+  function clueSum:integer;
   end;
 
   { TClueBlockArrayHelper }
@@ -67,6 +68,16 @@ begin
     if self[Result] = element then
       Exit;
   Result := -1;
+end;
+
+function TClueCellsArrayHelper.clueSum: integer;
+var
+  index:integer;
+begin
+  result:=0;
+  if self.size = 0 then exit;
+  for index:=0 to pred(self.size)do
+    result;=result+self[index].value;
 end;
 
 { TClueBlockArrayHelper }
