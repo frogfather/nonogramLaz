@@ -4,7 +4,7 @@ unit gameCell;
 interface
 
 uses
-  Classes, SysUtils,arrayUtils,graphics,enums;
+  Classes, SysUtils,arrayUtils,graphics,enums,clue;
 type
 
   { TGameCell }
@@ -13,20 +13,22 @@ type
     fCellId: TGUID;
     fRow: integer;
     fColumn: integer;
-    fCandidates: TIntArray;//which clues can this cell be?
+    fRowCandidates: TClueCells;//which row clues can this cell be?
+    fColCandidates: TClueCells;
     fFill: ECellFillMode;
     fColour: TColor;
     public
     constructor create(column,row: integer;
       cellFill: ECellFillMode=cfEmpty);
     constructor create(column,row:integer; cellId:TGuid;
-      cellFill: ECellFillMode=cfEmpty;cellColour:TColor=nil);
+      cellColour:TColor;cellFill: ECellFillMode=cfEmpty);
     property cellId: TGUID read fCellId;
     property row: integer read fRow;
     property col: integer read fColumn;
     property fill: ECellFillMode read fFill write fFill;
     property colour:TColor read fColour write fColour;
-    property candidates:TIntArray read fCandidates;
+    property rowCandidates:TClueCells read fRowCandidates write fRowCandidates;
+    property colCandidates:TClueCells read fColCandidates write fColCandidates;
   end;
 
 implementation
@@ -44,12 +46,12 @@ end;
 
 //used for copying existing cell
 constructor TGameCell.create(column, row: integer; cellId: TGuid;
-  cellFill: ECellFillMode);
+  cellColour:TColor;cellFill: ECellFillMode);
 begin
   fRow:=row;
   fColumn:=column;
   fFill:=cellFill;
-  fColour:=clDefault;
+  fColour:=cellColour;
   fCellId:=cellId;
 end;
 

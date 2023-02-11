@@ -16,13 +16,16 @@ type
     fInitialState:TGameState;
     fSolvedGameState:TGameState;
     fChanges:TGameStateChanges;
+    fMultiColour:boolean;
     function overlapRow(gameState:TGameState;rowId:integer):TGameStateChanges;
     function overlapColumn(gameState:TGameState;columnId:integer):TGameStateChanges;
     function overlapRows(gameState:TGameState):integer;
     function overlapColumns(gameState:TGameState):integer;
     function processStepResult(stepResult:TGameStateChanges):integer;
     function copyGameState(initialState: TGameState):TGameState;
+    property multiColour:boolean read fMulticolour;
     public
+    constructor create(isMultiColour:boolean=false);
     function solve(initialState:TGameState):TGameState; //should be some kind of result object
   end;
 
@@ -36,11 +39,51 @@ implementation
 function TNonogramSolver.overlapRow(gameState:TGameState;rowId: integer): TGameStateChanges;
 var
   clues:TClueCells;
+  gameRow:TGameCells;
+  clueIndex,columnId:integer;
+  cluesLengthBefore,cluesLengthAfter:integer;
+  minRight,maxleft:integer;
+  spaceBetweenClues:integer;
 begin
+  writeLn('----------------------');
+  writeln('row '+rowId.toString);
   clues:=GameState.rowClues[rowId];
+  gameRow:=gameState.gameBlock[rowId];
   result:=TGameStateChanges.create;
-  //process this row to look for overlaps
+  if clues.size = 0 then exit;
+  cluesLengthAfter:=0;
+  cluesLengthBefore:=0;
+  if multicolour then spaceBetweenClues:=0 else spacebetweenClues:=1;
+  //cluesLengthAfter initially length of all clues without spaces
+  for clueIndex:= 0 to pred(clues.size) do
+    begin
+    cluesLengthAfter:=cluesLengthAfter + clues[clueIndex].value;
+    if (clueIndex < pred(clues.size)) and (clues[clueIndex].colour = clues[clueIndex+1].colour)
+      then cluesLengthAfter:=cluesLengthAfter + 1; //add space if the colour is the same
+    end;
 
+  for clueIndex:= pred(clues.size) downTo 0 do
+    begin
+    maxLeft:=succ(gameRow.size) - cluesLengthAfter;
+
+    cluesLengthAfter:= cluesLengthAfter - clues[clueIndex].value;
+    if (clueIndex > 0) and (clues[clueIndex].colour = clues[clueIndex-1].colour)
+      then cluesLengthAfter:=cluesLengthAfter - 1;
+
+    if (clueIndex < pred(clues.size)) and (clues[clueIndex].colour = clues[clueIndex + 1].colour)
+      then cluesLengthBefore:=cluesLengthBefore + 1;
+    cluesLengthBefore:=cluesLengthBefore + clues[clueIndex].value;
+
+    minRight:=cluesLengthBefore;
+
+    writeln('Clue '+clueIndex.toString+' maxLeft '+maxLeft.toString+' minRight '+minRight.toString);
+    if (maxLeft < minRight) then
+      for columnId:= maxLeft to minRight do
+        begin
+        writeln('row '+rowId.toString+'cell '+columnId.ToString+' must be clue '+clueIndex.toString);
+        gameRow[columnId].rowCandidates.push(clues[clueIndex]);
+        end;
+    end;
 end;
 
 function TNonogramSolver.overlapColumn(gameState:TGameState;columnId: integer): TGameStateChanges;
@@ -76,7 +119,7 @@ var
   colIndex:integer;
 begin
   result:=0;
-  if fSolvedGameState.gameBlock.size = 0 then exit;
+  if GameState.gameBlock.size = 0 then exit;
   for colIndex:=0 to pred(GameState.gameBlock[0].size) do
     result:= result + processStepResult(overlapColumn(gameState,colIndex));
 end;
@@ -155,6 +198,11 @@ begin
     columnClueBlock.push(clueCells);
     end;
   result:=TGameState.create(gameBlock,rowClueBlock,columnClueBlock);
+end;
+
+constructor TNonogramSolver.create(isMultiColour: boolean);
+begin
+  fMultiColour:=isMultiColour;
 end;
 
 

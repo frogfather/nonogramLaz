@@ -252,13 +252,13 @@ end;
 function TGameDisplay.getRows: integer;
 begin
   if not assigned(fGame) then exit;
-  result:=fGame.dimensions.X
+  result:=fGame.dimensions.Y
 end;
 
 function TGameDisplay.getColumns: integer;
 begin
   if not assigned(fGame) then exit;
-  result:=fGame.dimensions.Y
+  result:=fGame.dimensions.X
 end;
 
 function TGameDisplay.getCellLocation(x, y: integer): TPoint;
@@ -655,7 +655,7 @@ end;
 
 procedure TGameDisplay.GameSolveClickHandler(sender: TObject);
 begin
-  fGame.solver:=TNonogramSolver.create;
+  fGame.solver:=TNonogramSolver.create(fGame.colours.size > 1);
   fGame.solveGame;
 end;
 

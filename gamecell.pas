@@ -4,7 +4,7 @@ unit gameCell;
 interface
 
 uses
-  Classes, SysUtils,arrayUtils,graphics,enums;
+  Classes, SysUtils,arrayUtils,graphics,enums,clueCell;
 type
 
   { TGameCell }
@@ -13,7 +13,8 @@ type
     fCellId: TGUID;
     fRow: integer;
     fColumn: integer;
-    fCandidates: TIntArray;//which clues can this cell be?
+    fRowCandidates: TClueCells;//which row clues can this cell be?
+    fColCandidates: TClueCells;
     fFill: ECellFillMode;
     fColour: TColor;
     public
@@ -26,7 +27,8 @@ type
     property col: integer read fColumn;
     property fill: ECellFillMode read fFill write fFill;
     property colour:TColor read fColour write fColour;
-    property candidates:TIntArray read fCandidates;
+    property rowCandidates:TClueCells read fRowCandidates write fRowCandidates;
+    property colCandidates:TClueCells read fColCandidates write fColCandidates;
   end;
 
 implementation
