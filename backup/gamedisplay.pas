@@ -655,7 +655,7 @@ end;
 
 procedure TGameDisplay.GameSolveClickHandler(sender: TObject);
 begin
-  fGame.solver:=TNonogramSolver.create;
+  fGame.solver:=TNonogramSolver.create(fGame.colours.size > 1);
   fGame.solveGame;
 end;
 

@@ -16,7 +16,6 @@ type
     fInitialState:TGameState;
     fSolvedGameState:TGameState;
     fChanges:TGameStateChanges;
-    fMultiColour:boolean;
     function overlapRow(gameState:TGameState;rowId:integer):TGameStateChanges;
     function overlapColumn(gameState:TGameState;columnId:integer):TGameStateChanges;
     function overlapRows(gameState:TGameState):integer;
@@ -24,9 +23,10 @@ type
     function processStepResult(stepResult:TGameStateChanges):integer;
     function copyGameState(initialState: TGameState):TGameState;
     function applyChanges(gameState:TGameState;gameStateChanges:TGameStateChanges):TGameState;
-    property multiColour:boolean read fMulticolour;
+    function addClueToBlock(clues:TClueCells;currentLength,index:integer):integer;
+    function removeClueFromBlock(clues:TClueCells;currentLength,index:integer):integer;
+    function getGameCellColumn(gameState:TGameState;column:integer):TGameCells;
     public
-    constructor create(isMultiColour:boolean=false);
     function solve(initialState:TGameState):TGameState; //should be some kind of result object
   end;
 
@@ -45,7 +45,6 @@ var
   clueIndex,columnId:integer;
   cluesLengthBefore,cluesLengthAfter:integer;
   minRight,maxleft:integer;
-  spaceBetweenClues:integer;
 begin
   clues:=GameState.rowClues[rowId];
   gameRow:=gameState.gameBlock[rowId];
@@ -53,35 +52,23 @@ begin
   if clues.size = 0 then exit;
   cluesLengthAfter:=0;
   cluesLengthBefore:=0;
-  if multicolour then spaceBetweenClues:=0 else spacebetweenClues:=1;
-  //cluesLengthAfter initially length of all clues without spaces
+
+  //first add all the clues to cluesLengthAfter
   for clueIndex:= 0 to pred(clues.size) do
-    begin
-    cluesLengthAfter:=cluesLengthAfter + clues[clueIndex].value;
-    if (clueIndex < pred(clues.size)) and (clues[clueIndex].colour = clues[clueIndex+1].colour)
-      then cluesLengthAfter:=cluesLengthAfter + 1; //add space if the colour is the same
-    end;
+    cluesLengthAfter:=addClueToBlock(clues,cluesLengthAfter,clueIndex);
 
   for clueIndex:= pred(clues.size) downTo 0 do
     begin
     maxLeft:=succ(gameRow.size) - cluesLengthAfter;
-
-    cluesLengthAfter:= cluesLengthAfter - clues[clueIndex].value;
-    if (clueIndex > 0) and (clues[clueIndex].colour = clues[clueIndex-1].colour)
-      then cluesLengthAfter:=cluesLengthAfter - 1;
-
-    if (clueIndex < pred(clues.size)) and (clues[clueIndex].colour = clues[clueIndex + 1].colour)
-      then cluesLengthBefore:=cluesLengthBefore + 1;
-    cluesLengthBefore:=cluesLengthBefore + clues[clueIndex].value;
-
+    cluesLengthAfter:= removeClueFromBlock(clues,cluesLengthAfter,clueIndex);
+    cluesLengthBefore:=addClueToBlock(clues,cluesLengthBefore,clueIndex);
     minRight:=cluesLengthBefore;
 
     if (maxLeft <= minRight) then
       for columnId:= (maxLeft-1) to (minRight-1) do
         begin
-        //set the cell to filled
         cell:=gameState.gameBlock[rowId][columnId];
-        if (cell.fill <> cfFill) or (cell.colour <> clues[clueIndex].colour)
+        if (cell.fill = cfEmpty)
           then result.push(TGameStateChange.create(ctGame,columnId,rowId,
                                                    cfFill,cell.fill,
                                                    clues[clueIndex].colour,
@@ -93,18 +80,42 @@ end;
 
 function TNonogramSolver.overlapColumn(gameState:TGameState;columnId: integer): TGameStateChanges;
 var
-  cells:TGameCells;
   clues:TClueCells;
+  gameColumn:TGameCells;
+  clueIndex,rowId:integer;
+  cell:TGameCell;
   rowIndex:integer;
+  cluesLengthAbove,cluesLengthBelow:integer;
+  minBottom,maxTop:integer;
 begin
-  cells:=TGameCells.create;
-  //get the cells in a format we can process more easily
-  for rowIndex:= 0 to pred(GameState.gameBlock.size) do
-    cells.push(GameState.gameBlock[rowIndex][columnId]);
-  //get the clues for this column
+  gameColumn:=getGameCellColumn(gameState,columnId);
   clues:=GameState.columnClues[columnId];
   result:=TGameStateChanges.create;
-  //process this column to look for overlaps
+    //first add all the clues to cluesLengthAfter
+  cluesLengthAbove:=0;
+  cluesLengthBelow:=0;
+  for clueIndex:= 0 to pred(clues.size) do
+    cluesLengthBelow:=addClueToBlock(clues,cluesLengthBelow,clueIndex);
+
+  for clueIndex:= pred(clues.size) downTo 0 do
+    begin
+    maxTop:=succ(gameColumn.size) - cluesLengthBelow;
+    cluesLengthBelow:= removeClueFromBlock(clues,cluesLengthBelow,clueIndex);
+    cluesLengthAbove:=addClueToBlock(clues,cluesLengthAbove,clueIndex);
+    minBottom:=cluesLengthAbove;
+
+    if (maxTop <= minBottom) then
+      for rowId:= (maxTop-1) to (minBottom-1) do
+        begin
+        cell:=gameState.gameBlock[rowId][columnId];
+        if (cell.fill = cfEmpty)
+          then result.push(TGameStateChange.create(ctGame,columnId,rowId,
+                                                   cfFill,cell.fill,
+                                                   clues[clueIndex].colour,
+                                                   cell.colour))
+          else writeln('cell '+rowId.toString+','+columnId.ToString+' has not changed');
+        end;
+    end;
 
 end;
 
@@ -225,9 +236,31 @@ begin
   result:=gameState;
 end;
 
-constructor TNonogramSolver.create(isMultiColour: boolean);
+function TNonogramSolver.addClueToBlock(clues: TClueCells; currentLength,
+  index: integer): integer;
 begin
-  fMultiColour:=isMultiColour;
+  result:= currentLength + clues[index].value;
+  if (index < pred(clues.size))
+    and (clues[index].colour = clues[index+1].colour)
+    then result:=result + 1;
+end;
+
+function TNonogramSolver.removeClueFromBlock(clues: TClueCells; currentLength,
+  index: integer): integer;
+begin
+  result:= currentlength - clues[index].value;
+  if (index > 0)
+    and (clues[index].colour = clues[index-1].colour)
+    then result:= result - 1;
+end;
+
+function TNonogramSolver.getGameCellColumn(gameState:TGameState;column: integer): TGameCells;
+var
+  rowIndex:integer;
+begin
+  result:=TGameCells.create;
+  for rowIndex:= 0 to pred(GameState.gameBlock.size) do
+    result.push(GameState.gameBlock[rowIndex][column]);
 end;
 
 
@@ -246,6 +279,10 @@ begin
     until changesOnCurrentLoop = 0;
   result:=solvedGameState;
 end;
+
+//Some useful methods
+
+
 
 end.
 
