@@ -181,7 +181,7 @@ begin
           then colId:=gameCellChildNode.TextContent.ToInteger else
         if (gameCellChildNode.NodeName = 'colour')
           then cellColour:=StringToColor(gameCellChildNode.TextContent) else
-        if (gameCellChildNode.NodeName = 'fill-colour')
+        if (gameCellChildNode.NodeName = 'fill-mode')
           then fillMode:= ECellFillMode(GetEnumValue(TypeInfo(ECellFillMode), gameCellChildNode.TextContent));
         end;
       newGameCells.push(TGameCell.create(colId,rowId,cellId,cellColour,fillMode));
@@ -195,7 +195,7 @@ begin
     begin
     newRowClues:=TClueCells.Create;
     rowCluesNode:=rowClueBlockNode.ChildNodes.Item[rowIndex];
-    for clueIndex:=0 to pred(rowCluesNode.GetChildCount) do
+    for clueIndex:=pred(rowCluesNode.GetChildCount) downto 0 do
       begin
       clueNode:=rowCluesNode.ChildNodes.Item[clueIndex];
       clueIndexPosition:=clueNode.Attributes.GetNamedItem('index').TextContent.ToInteger;
@@ -221,7 +221,7 @@ begin
 
   columnClueBlockNode:=getNode('column-clue-block',nil,false,gameNode);
   fColumnClueBlock:=TClueBlock.Create;
-  for colIndex:=0 to pred(columnClueBlockNode.GetChildCount)do
+  for colIndex:= pred(columnClueBlockNode.GetChildCount) downto 0 do
     begin
     newColumnClues:=TClueCells.Create;
     columnCluesNode:=columnClueBlockNode.ChildNodes.Item[colIndex];

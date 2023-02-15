@@ -431,7 +431,7 @@ begin
         cellCoords:=getCellCoords(column,row);
         case currentCell.fill of
           cfEmpty: drawSingleGameCell(canvas,cellCoords,clDefault,clBlack);
-          cfFill:  drawSingleGameCell(canvas,cellCoords,currentCell.colour,clBlack);
+          cfFill:  drawSingleGameCell(canvas,cellCoords,currentCell.colour,$121212);
           cfCross: drawSingleGameCell(canvas,cellCoords,clDefault,clBlack,true);
           cfDot:   drawSingleGameCell(Canvas,cellCoords,clDefault,clBlack,false,true);
         end;
@@ -655,7 +655,7 @@ end;
 
 procedure TGameDisplay.GameSolveClickHandler(sender: TObject);
 begin
-  fGame.solver:=TNonogramSolver.create(fGame.colours.size > 1);
+  fGame.solver:=TNonogramSolver.create;
   fGame.solveGame;
 end;
 

@@ -12,6 +12,7 @@ uses
 
 const defaultDimensions: TPoint = (X:9; Y:9);
 const gameVersion = 'nonogram-game-v1';
+const defaultGameCellColour:TColor = $292929;
 
 type
   { TNonogramGame }
@@ -112,8 +113,8 @@ begin
   CreateGuid(fId);
   fVersion:=gameVersion;
   fDimensions:=gameDimensions;
-  if colours = nil then colours:=TColours.create(clBlack);
-  if (colours.indexOf(clBlack) > -1) then fSelectedColour:=clBlack
+  if colours = nil then colours:=TColours.create(defaultGameCellColour);
+  if (colours.indexOf(defaultGameCellColour) > -1) then fSelectedColour:=defaultGameCellColour
     else fSelectedColour:=colours[0];
 
   newGameBlock:=TGameBlock.create;
@@ -232,14 +233,9 @@ function TNonogramGame.addNewClueCell(clueSet: TClueCells):TClueCells;
 var
   index_:integer;
 begin
-  //add a new clue on the end of the array and update the index of the remaining clues
+  //add a new clue on the end of the array
   result:=TClueCells.create;
-  result.push(TClueCell.create(fSelectedRowClueSet,fSelectedColumnClueSet,-1,0));
-  for index_:= 0 to pred(clueSet.size) do
-    begin
-    clueSet[index_].index:=index_+1;
-    result.push(clueSet[index_]);
-    end;
+  result.push(TClueCell.create(fSelectedRowClueSet,fSelectedColumnClueSet,-1,result.size));
   if (fSelectedRowClueIndex > -1) then fSelectedRowClueIndex:=0
     else fSelectedColumnClueIndex:=0;
 end;

@@ -12,7 +12,7 @@ type
   { TNonogramSolver }
 
   TNonogramSolver = class(TInterfacedObject,INonogramSolver)
-    private
+    protected
     fInitialState:TGameState;
     fSolvedGameState:TGameState;
     fChanges:TGameStateChanges;
@@ -98,6 +98,10 @@ begin
     cluesLengthBelow:=addClueToBlock(clues,cluesLengthBelow,clueIndex);
 
   for clueIndex:= pred(clues.size) downTo 0 do
+    //change this to a method on TClueCells that returns a TPoint
+    //where the X value is length below the supplied index
+    //and the Y value is the length above the supplied index
+
     begin
     maxTop:=succ(gameColumn.size) - cluesLengthBelow;
     cluesLengthBelow:= removeClueFromBlock(clues,cluesLengthBelow,clueIndex);
