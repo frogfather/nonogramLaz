@@ -6,7 +6,7 @@ unit gameBlock;
 interface
 
 uses
-  Classes, SysUtils,gameCell;
+  Classes, SysUtils,gameCell,enums,gameSpace;
 
 type
   TGameCells = array of TGameCell; //cells for a row
@@ -18,12 +18,15 @@ type
   function size: integer;
   function push(element:TGameCell):integer;
   function indexOf(element:TGameCell):integer;
+  function filledCells:integer;
+  function spaces:TGameSpaces;
   end;
 
   { TGameBlockArrayHelper }
   TGameBlockArrayHelper = type helper for TGameBlock
   function size: integer;
   function push(element:TGameCells):integer;
+  function getColumn(columnId:integer):TGameCells;
   end;
 
 implementation
@@ -39,6 +42,15 @@ function TGameBlockArrayHelper.push(element: TGameCells): integer;
 begin
   insert(element,self,length(self));
   result:=self.size;
+end;
+
+function TGameBlockArrayHelper.getColumn(columnId: integer): TGameCells;
+var
+  rowIndex:integer;
+begin
+  result:=TGameCells.create;
+  for rowIndex:= 0 to pred(self.size) do
+    result.push(self[rowIndex][columnId]);
 end;
 
 { TGameCellsArrayHelper }
@@ -60,6 +72,42 @@ begin
     if self[Result] = element then
       Exit;
   Result := -1;
+end;
+
+function TGameCellsArrayHelper.filledCells: integer;
+var
+  index:integer;
+begin
+  result:=0;
+  for index:=0 to pred(self.size) do
+    if (self[index].fill = cfFill) then result:=result+1;
+end;
+
+function TGameCellsArrayHelper.spaces: TGameSpaces;
+var
+  index:integer;
+  startBlock,endBlock:integer;
+begin
+  result:=TGameSpaces.create;
+  startBlock:=-1;
+  endBlock:=-1;
+  for index:=0 to self.size do
+    begin
+    if (index < self.size) and (self[index].fill <> cfCross) then
+      begin
+      if startBlock = -1 then
+        begin
+        startBlock:=index;
+        endBlock:=index;
+        end
+      else endBlock:=endBlock + 1;
+      end else if (endBlock > -1) then
+      begin
+      result.push(TGameSpace.Create(startBlock,endBlock));
+      startBlock:=-1;
+      endBlock:=-1;
+      end;
+    end;
 end;
 
 end.

@@ -99,14 +99,14 @@ begin
     begin
     result.X:= result.X + self[count].value;
     if (count > (normalisedIndex))
-      and (self[count].colour = self[count+1].colour)
+      and (self[count].colour = self[count-1].colour)
       then result.X:=result.X+1;
     end;
   for count:=0 to (normalisedIndex) do
     begin
     result.Y:=result.Y-self[count].value;
     if (count < normalisedIndex)
-      and (self[count].colour = self[count-1].colour)
+      and (self[count].colour = self[count+1].colour)
       then result.Y:=result.Y-1;
     end;
 end;

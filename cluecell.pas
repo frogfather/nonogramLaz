@@ -71,7 +71,8 @@ begin
   Result := -1;
 end;
 
-//This is not correct because it doesn't include the spaces between same coloured blocks
+//This returns the sum of the value of the clues, not how much space they
+//take up on the grid
 function TClueCellsArrayHelper.clueSum: integer;
 var
   index:integer;

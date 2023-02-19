@@ -150,6 +150,11 @@
         <IsPartOfProject Value="True"/>
         <UnitName Value="iNonoSolver"/>
       </Unit>
+      <Unit>
+        <Filename Value="gamespace.pas"/>
+        <IsPartOfProject Value="True"/>
+        <UnitName Value="gameSpace"/>
+      </Unit>
     </Units>
   </ProjectOptions>
   <CompilerOptions>

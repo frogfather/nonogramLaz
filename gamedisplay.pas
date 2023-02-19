@@ -375,14 +375,19 @@ var
     dotDimensions:TRect;
     cellCentre:TPoint;
     dotWidth,dotHeight:integer;
+    fillLimit:TRect;
 begin
   with canvas_ do
   begin
   Pen.Color:=borderColour;
   Brush.Color:=fillColour;
   Pen.Style:=psClear;
-  rectangle(location);
-  drawFrame(canvas_,location);
+  fillLimit.Top:=location.Top + 1;
+  fillLimit.Bottom:=location.Bottom - 1;
+  fillLimit.Left:=location.Left+1;
+  fillLimit.Right:=location.Right -1;
+  rectangle(fillLimit);
+  drawFrame(canvas_,fillLimit);
   if withCross then
     begin
     canvas.MoveTo(location.TopLeft);
