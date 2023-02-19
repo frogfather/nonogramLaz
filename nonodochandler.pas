@@ -195,7 +195,7 @@ begin
     begin
     newRowClues:=TClueCells.Create;
     rowCluesNode:=rowClueBlockNode.ChildNodes.Item[rowIndex];
-    for clueIndex:=0 to pred(rowCluesNode.GetChildCount) do
+    for clueIndex:=pred(rowCluesNode.GetChildCount) downto 0 do
       begin
       clueNode:=rowCluesNode.ChildNodes.Item[clueIndex];
       clueIndexPosition:=clueNode.Attributes.GetNamedItem('index').TextContent.ToInteger;
@@ -225,7 +225,7 @@ begin
     begin
     newColumnClues:=TClueCells.Create;
     columnCluesNode:=columnClueBlockNode.ChildNodes.Item[colIndex];
-    for clueIndex:=0 to pred(columnCluesNode.GetChildCount) do
+    for clueIndex:= pred(columnCluesNode.GetChildCount) downto 0 do
       begin
       clueNode:=columnCluesNode.ChildNodes.Item[clueIndex];
       clueIndexPosition:=clueNode.Attributes.GetNamedItem('index').TextContent.ToInteger;

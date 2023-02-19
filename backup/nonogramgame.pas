@@ -12,6 +12,7 @@ uses
 
 const defaultDimensions: TPoint = (X:9; Y:9);
 const gameVersion = 'nonogram-game-v1';
+const defaultGameCellColour:TColor = $292929;
 
 type
   { TNonogramGame }
@@ -112,8 +113,8 @@ begin
   CreateGuid(fId);
   fVersion:=gameVersion;
   fDimensions:=gameDimensions;
-  if colours = nil then colours:=TColours.create(clBlack);
-  if (colours.indexOf(clBlack) > -1) then fSelectedColour:=clBlack
+  if colours = nil then colours:=TColours.create(defaultGameCellColour);
+  if (colours.indexOf(defaultGameCellColour) > -1) then fSelectedColour:=defaultGameCellColour
     else fSelectedColour:=colours[0];
 
   newGameBlock:=TGameBlock.create;
@@ -521,7 +522,10 @@ end;
 procedure TNonogramGame.solveGame;
 begin
   if not assigned(fSolver) then exit;
-  fSolvedGameState:=fSolver.solve(fInitialGameState);
+
+  //for testing;
+  fGameState:=fSolver.solve(fInitialGameState);
+  //fSolvedGameState:=fSolver.solve(fInitialGameState);
 end;
 
 function TNonogramGame.getCell(row, column: integer): TGameCell;
