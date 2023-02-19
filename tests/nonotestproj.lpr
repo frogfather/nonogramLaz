@@ -3,7 +3,8 @@ program nonotestproj;
 {$mode objfpc}{$H+}
 
 uses
-  Interfaces, Forms, GuiTestRunner, nonosolvertests, nonosolver, clueCell;
+  Interfaces, Forms, GuiTestRunner, nonosolvertests, nonosolver, clueCell,
+  gamestatechange, gameState, gameCell;
 
 {$R *.res}
 

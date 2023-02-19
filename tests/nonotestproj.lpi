@@ -48,6 +48,20 @@
         <IsPartOfProject Value="True"/>
         <UnitName Value="clueCell"/>
       </Unit>
+      <Unit>
+        <Filename Value="../gamestatechange.pas"/>
+        <IsPartOfProject Value="True"/>
+      </Unit>
+      <Unit>
+        <Filename Value="../gamestate.pas"/>
+        <IsPartOfProject Value="True"/>
+        <UnitName Value="gameState"/>
+      </Unit>
+      <Unit>
+        <Filename Value="../gamecell.pas"/>
+        <IsPartOfProject Value="True"/>
+        <UnitName Value="gameCell"/>
+      </Unit>
     </Units>
   </ProjectOptions>
   <CompilerOptions>

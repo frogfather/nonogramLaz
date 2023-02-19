@@ -461,7 +461,7 @@ begin
       begin
       canvas.moveTo(0, (cellHeight*rowNo)+1);
       canvas.lineTo(canvas.Width, (cellHeight*rowNo)+1);
-      for clueIndex:=0 to pred(fGame.rowClues[rowNo].size) do
+      for clueIndex:=pred(fGame.rowClues[rowNo].size) downto 0 do
         begin
         clueDimensions.Left:=ClientRect.Width - (cellWidth * (clueIndex + 1));
         clueDimensions.Right:=clueDimensions.left + cellWidth;
@@ -498,7 +498,7 @@ begin
       begin
       canvas.MoveTo(fGameCells.Left+ (cellWidth*columnNo),0);
       canvas.LineTo(fGameCells.Left+ (cellWidth*columnNo), Canvas.Height);
-      for clueIndex:=0 to pred(fGame.ColumnClues[columnNo].size) do
+      for clueIndex:=pred(fGame.ColumnClues[columnNo].size) downto 0 do
         begin
         clueDimensions.Top:=ClientRect.Height - (cellheight * (clueIndex + 1));
         clueDimensions.Bottom:=clueDimensions.Top + cellWidth;

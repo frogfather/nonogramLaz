@@ -23,8 +23,6 @@ type
     function processStepResult(stepResult:TGameStateChanges):integer;
     function copyGameState(initialState: TGameState):TGameState;
     function applyChanges(gameState:TGameState;gameStateChanges:TGameStateChanges):TGameState;
-    function addClueToBlock(clues:TClueCells;currentLength,index:integer):integer;
-    function removeClueFromBlock(clues:TClueCells;currentLength,index:integer):integer;
     function getGameCellColumn(gameState:TGameState;column:integer):TGameCells;
     public
     function solve(initialState:TGameState):TGameState; //should be some kind of result object
@@ -40,32 +38,19 @@ implementation
 function TNonogramSolver.overlapRow(gameState:TGameState;rowId: integer): TGameStateChanges;
 var
   clues:TClueCells;
-  gameRow:TGameCells;
   cell:TGameCell;
   clueIndex,columnId:integer;
-  cluesLengthBefore,cluesLengthAfter:integer;
-  minRight,maxleft:integer;
+  limits:TPoint;
 begin
   clues:=GameState.rowClues[rowId];
-  gameRow:=gameState.gameBlock[rowId];
   result:=TGameStateChanges.create;
   if clues.size = 0 then exit;
-  cluesLengthAfter:=0;
-  cluesLengthBefore:=0;
-
-  //first add all the clues to cluesLengthAfter
-  for clueIndex:= 0 to pred(clues.size) do
-    cluesLengthAfter:=addClueToBlock(clues,cluesLengthAfter,clueIndex);
-
-  for clueIndex:= pred(clues.size) downTo 0 do
+  for clueIndex:=0 to pred(clues.size) do
     begin
-    maxLeft:=succ(gameRow.size) - cluesLengthAfter;
-    cluesLengthAfter:= removeClueFromBlock(clues,cluesLengthAfter,clueIndex);
-    cluesLengthBefore:=addClueToBlock(clues,cluesLengthBefore,clueIndex);
-    minRight:=cluesLengthBefore;
-
-    if (maxLeft <= minRight) then
-      for columnId:= (maxLeft-1) to (minRight-1) do
+    limits:= clues.limits(gameState.gameBlock[rowId].size, clueIndex);
+    writeln('Row '+rowId.ToString+' clue '+clueIndex.toString+' limits '+limits.X.ToString+':'+limits.Y.toString);
+    if (limits.Y <= limits.X) then
+      for columnId:= (limits.Y-1) to (limits.X-1) do
         begin
         cell:=gameState.gameBlock[rowId][columnId];
         if (cell.fill = cfEmpty)
@@ -81,35 +66,20 @@ end;
 function TNonogramSolver.overlapColumn(gameState:TGameState;columnId: integer): TGameStateChanges;
 var
   clues:TClueCells;
-  gameColumn:TGameCells;
   clueIndex,rowId:integer;
   cell:TGameCell;
-  rowIndex:integer;
-  cluesLengthAbove,cluesLengthBelow:integer;
-  minBottom,maxTop:integer;
+  limits:TPoint;
 begin
-  gameColumn:=getGameCellColumn(gameState,columnId);
   clues:=GameState.columnClues[columnId];
   result:=TGameStateChanges.create;
-    //first add all the clues to cluesLengthAfter
-  cluesLengthAbove:=0;
-  cluesLengthBelow:=0;
-  for clueIndex:= 0 to pred(clues.size) do
-    cluesLengthBelow:=addClueToBlock(clues,cluesLengthBelow,clueIndex);
 
-  for clueIndex:= pred(clues.size) downTo 0 do
-    //change this to a method on TClueCells that returns a TPoint
-    //where the X value is length below the supplied index
-    //and the Y value is the length above the supplied index
-
+  if clues.size = 0 then exit;
+  for clueIndex:=0 to pred(clues.size) do
     begin
-    maxTop:=succ(gameColumn.size) - cluesLengthBelow;
-    cluesLengthBelow:= removeClueFromBlock(clues,cluesLengthBelow,clueIndex);
-    cluesLengthAbove:=addClueToBlock(clues,cluesLengthAbove,clueIndex);
-    minBottom:=cluesLengthAbove;
-
-    if (maxTop <= minBottom) then
-      for rowId:= (maxTop-1) to (minBottom-1) do
+    limits:= clues.limits(gameState.gameBlock.size, clueIndex);
+    writeln('Column '+columnId.ToString+' clue '+clueIndex.toString+' limits '+limits.X.ToString+':'+limits.Y.toString);
+    if (limits.Y <= limits.X) then
+      for rowId:= (limits.Y-1) to (limits.X-1) do
         begin
         cell:=gameState.gameBlock[rowId][columnId];
         if (cell.fill = cfEmpty)
@@ -240,24 +210,6 @@ begin
   result:=gameState;
 end;
 
-function TNonogramSolver.addClueToBlock(clues: TClueCells; currentLength,
-  index: integer): integer;
-begin
-  result:= currentLength + clues[index].value;
-  if (index < pred(clues.size))
-    and (clues[index].colour = clues[index+1].colour)
-    then result:=result + 1;
-end;
-
-function TNonogramSolver.removeClueFromBlock(clues: TClueCells; currentLength,
-  index: integer): integer;
-begin
-  result:= currentlength - clues[index].value;
-  if (index > 0)
-    and (clues[index].colour = clues[index-1].colour)
-    then result:= result - 1;
-end;
-
 function TNonogramSolver.getGameCellColumn(gameState:TGameState;column: integer): TGameCells;
 var
   rowIndex:integer;
@@ -276,10 +228,12 @@ var
 begin
   solvedGameState:=copyGameState(initialState);
     repeat
+    writeln('start loop --------------');
     changesOnCurrentLoop:=0;
     changesOnCurrentLoop:=changesOnCurrentLoop + overlapRows(solvedGameState);
     changesOnCurrentLoop:=changesOnCurrentLoop + overlapColumns(solvedGameState);
-    solvedGameState:=applyChanges(solvedGameState,fChanges);;
+    solvedGameState:=applyChanges(solvedGameState,fChanges);
+    writeln('end loop ----------------');
     until changesOnCurrentLoop = 0;
   result:=solvedGameState;
 end;
