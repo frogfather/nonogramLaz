@@ -9,12 +9,16 @@ uses
   Classes, SysUtils,clueCell;
 
 type
+  
+  { TGameSpace }
+
   TGameSpace = class(TInterfacedObject)
     private
     fStart:integer;
     fEnd:integer;
     fCandidates:TClueCells;
     public
+    constructor create(start_,end_:integer);
     property startPos:integer read fStart;
     property endPos:integer read fEnd;
     property candidates:TClueCells read fCandidates write fCandidates;
@@ -31,6 +35,15 @@ type
  end;
 
 implementation
+
+{ TGameSpace }
+
+constructor TGameSpace.create(start_, end_: integer);
+begin
+  fStart:=start_;
+  fEnd:=end_;
+  fCandidates:=TClueCells.create;
+end;
 
 { TGameSpacesHelper }
 

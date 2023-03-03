@@ -25,6 +25,7 @@ type
   TGameStateChangesListHelper = type helper for TGameStateChangesList
   function size: integer;
   function push(element:TGameStateChanges):integer;
+  function deleteAfter(index:integer):integer;
   function indexOf(element:TGameStateChanges):integer;
   end;
 
@@ -40,6 +41,13 @@ end;
 function TGameStateChangesListHelper.push(element: TGameStateChanges): integer;
 begin
   insert(element,self,length(self));
+  result:=self.size;
+end;
+
+function TGameStateChangesListHelper.deleteAfter(index: integer): integer;
+begin
+  if (index > -1) and (index < pred(self.size)) then
+    setLength(self,index +1);
   result:=self.size;
 end;
 

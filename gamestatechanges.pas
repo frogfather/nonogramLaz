@@ -18,6 +18,7 @@ type
   function size: integer;
   function push(element:TGameStateChange):integer;
   function indexOf(element:TGameStateChange):integer;
+  function concat(arr:TGameStateChanges):TGameStateChanges;
   end;
 
   { TGameStateChangesListHelper }
@@ -79,6 +80,16 @@ begin
     if self[Result] = element then
       Exit;
   Result := -1;
+end;
+
+function TGameStateChangesHelper.concat(arr: TGameStateChanges
+  ): TGameStateChanges;
+var
+  index:integer;
+begin
+  for index:=0 to pred(arr.size) do
+    self.push(arr[index]);
+  result:=self;
 end;
 
 end.

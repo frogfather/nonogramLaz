@@ -17,10 +17,12 @@ type
     fStart:integer;
     fEnd:integer;
     fCandidates:TClueCells;
+    function getSpaceSize:integer;
     public
     constructor create(start_,end_:integer);
     property startPos:integer read fStart;
     property endPos:integer read fEnd;
+    property spaceSize: integer read getSpaceSize;
     property candidates:TClueCells read fCandidates write fCandidates;
   end;
 
@@ -38,10 +40,16 @@ implementation
 
 { TGameSpace }
 
+function TGameSpace.getSpaceSize: integer;
+begin
+  result:= 1 + self.endPos - self.startPos;
+end;
+
 constructor TGameSpace.create(start_, end_: integer);
 begin
   fStart:=start_;
   fEnd:=end_;
+  fCandidates:=TClueCells.create;
 end;
 
 { TGameSpacesHelper }
