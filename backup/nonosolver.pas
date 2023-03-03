@@ -28,6 +28,7 @@ type
     function columnCluesComplete(gameState:TGameState;columnId:integer):TGameStateChanges;
 
     function generateChanges(gameState:TGameState;rowStart,rowEnd,colStart,colEnd:Integer;fill:ECellFillMode=cfFill;fillColour:TColor=clBlack):TGameStateChanges;
+    function clueInSpace(spaces:TGameSpaces;clue:TClueCell):integer;
 
     function processStepResult(stepResult:TGameStateChanges):integer;
     function copyGameState(initialState: TGameState):TGameState;
@@ -101,6 +102,25 @@ begin
     end;
 end;
 
+function TNonogramSolver.clueInSpace(spaces: TGameSpaces; clue: TClueCell
+  ): integer;
+var
+  clueSpaceCount,spaceIndex,clueSpaceIndex:integer;
+begin
+  clueSpaceCount:=0;
+  clueSpaceIndex:=-1;
+  for spaceIndex:=0 to pred(spaces.size) do
+    begin
+    if (spaces[spaceIndex].candidates.indexOf(clue)> -1)
+      then
+      begin
+      if (clueSpaceCount = 0) then clueSpaceIndex:= spaceIndex;
+      clueSpaceCount:=clueSpaceCount + 1;
+      end;
+    end;
+  if clueSpaceCount = 1 then result:=clueSpaceIndex else result:=-1;
+end;
+
 
 //1 Overlap: for any given clue are the any cells that must be filled in?
 function TNonogramSolver.overlapRows(gameState:TGameState): integer;
@@ -126,15 +146,13 @@ end;
 function TNonogramSolver.overlapRow(gameState:TGameState;rowId: integer): TGameStateChanges;
 var
   clues:TClueCells;
-  cell:TGameCell;
-  clueIndex,columnId,spaceIndex:integer;
+  clueIndex,spaceIndex:integer;
   limits:TPoint;
   spaces:TGameSpaces;
   noMoreClues:boolean;
   availableSpace:integer;
   clueSpaceCount:integer;
-  clueInSpace:integer;
-  fillStart,fillEnd:integer;
+  clueSpaceIndex:integer;
 begin
   //1 setup
   clues:=GameState.rowClues[rowId];
@@ -170,21 +188,11 @@ begin
   //The situation where there is only one space is a subset of this
   for clueIndex:=0 to pred(clues.size) do
     begin
-    //if it's in more than one space then exit
-    clueSpaceCount:=0;
-    for spaceIndex:=0 to pred(spaces.size) do
+    clueSpaceIndex:=clueInSpace(spaces,clues[clueIndex]);
+
+    if (clueSpaceIndex > -1) then
       begin
-      if (spaces[spaceIndex].candidates.indexOf(clues[clueIndex])> -1)
-        then
-          begin
-          if (clueSpaceCount = 0)
-            then clueInSpace:= spaceIndex;
-          clueSpaceCount:=clueSpaceCount + 1;
-          end;
-      end;
-    if (clueSpaceCount = 1) then
-      begin
-      limits:= clues.limits(spaces[clueInSpace].spaceSize, clueIndex);
+      limits:= clues.limits(spaces[clueSpaceIndex].spaceSize, clueIndex);
       if (limits.Y <= limits.X) then
         result.concat(
         generateChanges(
