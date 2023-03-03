@@ -151,7 +151,6 @@ var
   spaces:TGameSpaces;
   noMoreClues:boolean;
   availableSpace:integer;
-  clueSpaceCount:integer;
   clueSpaceIndex:integer;
 begin
   //1 setup
@@ -207,33 +206,60 @@ function TNonogramSolver.overlapColumn(gameState:TGameState;columnId: integer): 
 var
   clues:TClueCells;
   gameCells:TGameCells;
-  clueIndex,rowId:integer;
-  cell:TGameCell;
+  clueIndex,spaceIndex,clueSpaceIndex:integer;
+  rowId:integer;
   limits:TPoint;
+  noMoreClues:boolean;
   spaces:TGameSpaces;
+  availableSpace:integer;
 begin
   clues:=GameState.columnClues[columnId];
   gameCells:=gameState.gameBlock.getColumn(columnId);
   result:=TGameStateChanges.create;
   spaces:=gameCells.spaces;
-  writeln('Spaces in column '+columnId.toString+' '+spaces.size.toString);
+  noMoreClues:=false;
+
   if clues.size = 0 then exit;
+  //3 work out which clues can go in which spaces
+  spaceIndex:=0;
+  clueIndex:=0;
+
+  repeat
+  availableSpace:= 1 + spaces[spaceIndex].endPos - spaces[spaceIndex].startPos;
+  if (clues[clueIndex].value <= availableSpace) then
+    begin
+    //add it to candidates of the space
+    spaces[spaceIndex].candidates.push(clues[clueIndex]);
+    availableSpace:=availableSpace - clues[clueIndex].value;
+    if (clueIndex < pred(clues.size)) then clueIndex:=clueIndex + 1
+      else noMoreClues:=true;
+    end else
+  if (spaceIndex < pred(spaces.size)) then spaceIndex:= spaceIndex + 1
+    else
+      begin
+      //this shouldn't happen. it means there's no more space but clues left
+      writeln('error - not enough space for clues');
+      noMoreClues:=true;
+      end;
+  until noMoreClues;
+
+  //4 look at clues that can only be in one space. Work out limits
+  //The situation where there is only one space is a subset of this
   for clueIndex:=0 to pred(clues.size) do
     begin
-    limits:= clues.limits(gameState.gameBlock.size, clueIndex);
-    if (limits.Y <= limits.X) then
-      for rowId:= (limits.Y-1) to (limits.X-1) do
-        begin
-        cell:=gameCells[rowId];
-        if (cell.fill = cfEmpty)
-          then result.push(TGameStateChange.create(ctGame,columnId,rowId,
-                                                   cfFill,cell.fill,
-                                                   clues[clueIndex].colour,
-                                                   cell.colour))
-          else writeln('cell '+rowId.toString+','+columnId.ToString+' has not changed');
-        end;
-    end;
+    clueSpaceIndex:=clueInSpace(spaces,clues[clueIndex]);
 
+    if (clueSpaceIndex > -1) then
+      begin
+      limits:= clues.limits(spaces[clueSpaceIndex].spaceSize, clueIndex);
+      if (limits.Y <= limits.X) then
+        result.concat(
+        generateChanges(
+          gameState,
+          Spaces[clueSpaceIndex].startPos+limits.Y - 1,
+          spaces[clueSpaceIndex].startPos + limits.X - 1,columnId,columnId, cfFill,clues[clueIndex].colour));
+      end;
+    end;
 end;
 
 //2 Edge proximity: is the first or last clue positioned such that the edge cell(s) must be crosses?
