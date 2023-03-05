@@ -30,6 +30,7 @@ type
     procedure overlapSingleClue;
     procedure overlapTwoCluesSameColour;
     procedure nonOverlapTwoCluesDifferentColour;
+    procedure overlapTwoSpaces;
     property gameState_: TGameState read fGameState write fGameState;
   end;
 
@@ -118,6 +119,22 @@ begin
   gameState_.rowClues[0].push(TClueCell.create(0,-1,9,1));
   AssertEquals(0,ngTestSolver.overlapRowMethod(gameState_,0).size);
 end;
+
+procedure TNonoSolverTests.overlapTwoSpaces;
+begin
+  //If there are two distinct spaces in a row then it should
+  //work out that the first clue can only go in the first space
+  //and the second can only go in the second
+  //The first clue overlaps a single cell in the first space
+  //and the second overlaps 10 cells in the second space
+  gameState_.rowClues[0].push(TClueCell.create(0,-1,2,0));
+  gameState_.rowClues[0].push(TClueCell.create(0,-1,13,1));
+  gameState_.gameBlock[0][3].fill:=cfCross;
+  AssertEquals(11,ngTestSolver.overlapRowMethod(gameState_,0).size);
+
+end;
+
+
 
 initialization
 

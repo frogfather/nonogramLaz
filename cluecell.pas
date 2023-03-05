@@ -39,7 +39,8 @@ type
   function push(element:TClueCell):integer;
   function indexOf(element:TClueCell):integer;
   function clueSum:integer;
-  function limits(gameCellsLength,index:integer):TPoint;
+  function delete(clueIndex:integer):integer;
+  function limits(allowedClues:TClueCells; availableSpace,index:integer):TPoint;
   end;
 
   { TClueBlockArrayHelper }
@@ -83,31 +84,47 @@ begin
     result:=result+self[index].value;
 end;
 
-function TClueCellsArrayHelper.limits(gameCellsLength,index: integer): TPoint;
+function TClueCellsArrayHelper.delete(clueIndex: integer): integer;
 var
-  count, normalisedIndex:integer;
+  index:integer;
+begin
+  //if the index is out of range do nothing
+  if (clueIndex < 0) or (clueIndex > Pred(self.size)) then exit;
+  for index:=clueIndex to pred(self.size) do
+    begin
+    if (clueIndex < pred(self.size))
+      then self[clueIndex]:=self[clueIndex+1];
+    end;
+  setlength(self,self.size - 1);
+  result:=self.size;
+end;
+
+function TClueCellsArrayHelper.limits(allowedClues:TClueCells;availableSpace,index: integer): TPoint;
+var
+  count, currentClueIndex:integer;
 begin
   //return a point where X is the point the specified cell ends if it's as far left as possible
   //and Y is where it starts if it's as far right as it can go.
+  //The allowed clues should be in order because anything else would suggest some very faulty logic elsewhere
+
+  //This needs
+
   //The clues are in reverse order because... reasons.
-  normalisedIndex:=Pred(self.size) - index;
-  if (normalisedIndex < 0) then normalisedIndex:=0
-    else if (normalisedIndex > pred(self.size)) then normalisedIndex:= pred(self.size);
-
-  result:=Tpoint.Create(0,gameCellsLength+1);
-
-  for count:=pred(Self.size) downto normalisedIndex do
+  result:=Tpoint.Create(0,availableSpace + 1);
+  currentClueIndex:=allowedClues.indexOf(self[index]);
+  if (currentClueIndex = -1) then exit;
+  for count:= currentClueIndex to pred(allowedClues.size) do
     begin
-    result.X:= result.X + self[count].value;
-    if (count > (normalisedIndex))
-      and (self[count].colour = self[count-1].colour)
+    result.X:= result.X + allowedClues[count].value;
+    if (count > (currentClueIndex))
+      and (allowedClues[count].colour = allowedClues[count-1].colour)
       then result.X:=result.X+1;
     end;
-  for count:=0 to (normalisedIndex) do
+  for count:=(currentClueIndex) downto 0 do
     begin
-    result.Y:=result.Y-self[count].value;
-    if (count < normalisedIndex)
-      and (self[count].colour = self[count+1].colour)
+    result.Y:=result.Y-allowedClues[count].value;
+    if (count < currentClueIndex)
+      and (allowedClues[count].colour = allowedClues[count+1].colour)
       then result.Y:=result.Y-1;
     end;
 end;

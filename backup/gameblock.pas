@@ -93,7 +93,7 @@ begin
   endBlock:=-1;
   for index:=0 to self.size do
     begin
-    if (index < self.size) and self[index].fill <> cfCross then
+    if (index < self.size) and (self[index].fill <> cfCross) then
       begin
       if startBlock = -1 then
         begin

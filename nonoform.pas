@@ -14,6 +14,7 @@ type
 
   TfNonogram = class(TForm)
     procedure FormCreate(Sender: TObject);
+    procedure FormDestroy(Sender: TObject);
   private
 
   public
@@ -40,6 +41,13 @@ begin
   gameDisplay_.Visible:=true;
   gameDisplay_.Caption:='';
 end;
+
+procedure TfNonogram.FormDestroy(Sender: TObject);
+begin
+  writeln('call destroy form');
+end;
+
+
 
 end.
 
