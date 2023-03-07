@@ -41,6 +41,7 @@ type
   function clueSum:integer;
   function delete(clueIndex:integer):integer;
   function limits(allowedClues:TClueCells; availableSpace,index:integer):TPoint;
+  function join(separator:String):string;
   end;
 
   { TClueBlockArrayHelper }
@@ -126,6 +127,18 @@ begin
     if (count < currentClueIndex)
       and (allowedClues[count].colour = allowedClues[count+1].colour)
       then result.Y:=result.Y-1;
+    end;
+end;
+
+function TClueCellsArrayHelper.join(separator: String): string;
+var
+  index:integer;
+begin
+  result:='';
+  for index:= 0 to pred(self.size) do
+    begin
+    result:=result+Self[index].value.toString;
+    if (index < pred(self.size))then result:=result+ separator;
     end;
 end;
 

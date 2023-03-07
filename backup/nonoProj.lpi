@@ -155,6 +155,11 @@
         <IsPartOfProject Value="True"/>
         <UnitName Value="gameSpace"/>
       </Unit>
+      <Unit>
+        <Filename Value="clueblock.pas"/>
+        <IsPartOfProject Value="True"/>
+        <UnitName Value="clueBlock"/>
+      </Unit>
     </Units>
   </ProjectOptions>
   <CompilerOptions>
