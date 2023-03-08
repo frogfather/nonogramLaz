@@ -6,7 +6,7 @@ interface
 
 uses
   Classes, SysUtils,gameState,gameStateChanges,gameStateChange,gameBlock,gameCell,
-  enums,graphics,arrayUtils,clueCell,iNonoSolver,gameSpace;
+  enums,graphics,arrayUtils,clueCell,iNonoSolver,gameSpace,clueBlock;
 type
   
   { TNonogramSolver }
@@ -33,7 +33,7 @@ type
     function processStepResult(stepResult:TGameStateChanges):integer;
     function copyGameState(initialState: TGameState):TGameState;
     function applyChanges(gameState:TGameState;gameStateChanges:TGameStateChanges):TGameState;
-    procedure setClueCandidates(var spaces: TGameSpaces;clues:TClueCells);
+    function setClueCandidates(spaces: TGameSpaces;clues:TClueCells):TGameSpaces;
     procedure outputCurrentGameState(gameState:TGameState);
 
     public
@@ -200,12 +200,12 @@ begin
   clues:=GameState.rowClues[rowId];
   result:=TGameStateChanges.create;
   writeln('spaces for row '+rowId.toString);
-  spaces:=gameState.gameBlock[rowId].spaces;
+  spaces:= setClueCandidates(gameState.gameBlock[rowId].spaces,clues);
 
   //2 Cases where there are no clues or no spaces
   if clues.size = 0 then exit;
   //3 work out which clues can go in which spaces
-  setClueCandidates(spaces,clues);
+
 
 
   //4 look at clues that can only be in one space. Work out limits
@@ -444,89 +444,86 @@ begin
   result:=gameState;
 end;
 
-procedure TNonogramSolver.setClueCandidates(var spaces: TGameSpaces;
-  clues: TClueCells);
+function TNonogramSolver.setClueCandidates(spaces: TGameSpaces;
+  clues: TClueCells):TGameSpaces;
 var
-  spaceIndex,clueIndex,spaceOfLastClue,lastFreeSpace:integer;
-  nomoreClues,noPreviousClues:boolean;
-  spaceWithRoomFound,allSpacesChecked,previousClueFound:boolean;
-  freeSpaces:TIntArray;
-  //change this to an array of objects that have a
-  //value and a space before and a space after
-
-  //for testing
-  testIndex:integer;
-  testOutput:string;
+  clueIndex,spaceIndex,clueCurrentlyAt,lastSpaceClueWillFit:integer;
+  spaceClueBlock:TSpaceClueBlock;
+  lastAllowedSpace:integer;
+  currentClue:TClueCell;
+  spaceFound,done:boolean;
 begin
-  // 0 Initialise
-  freeSpaces:=TIntArray.create;
-  lastFreeSpace:=pred(spaces.size);//The last space we can put any clue in
-
-  //1) setup sizes
-  for spaceIndex:= 0 to pred(spaces.size) do
-    freeSpaces.push(1 + spaces[spaceIndex].endPos - spaces[spaceIndex].startPos);
-
-  //2) add clues to first space until no more room
-  // then move to next space etc until no more clues- remember clues in reverse order
+  //1) Add clues to the first space until no more will fit then move on to the next space
+  //until no more clues
+  result:=spaces;
   spaceIndex:=0;
-  clueIndex:=pred(clues.size);
-  noMoreClues:=false;
-  repeat
-  if (clues[clueIndex].value <= freeSpaces[spaceIndex]) then
-    begin
-    //add it to candidates of the space
-    writeln('Setup: clue '+clueIndex.toString+' ('+clues[clueIndex].value.toString+') will fit in space '+spaceIndex.toString);
-    spaces[spaceIndex].candidates.push(clues[clueIndex]);
-    freeSpaces[spaceIndex]:=freeSpaces[spaceIndex] - clues[clueIndex].value;
-    //If the next clue is of the same colour then we need to add a space between them
-    if (clueIndex < pred(clues.size))
-      and (clues[clueIndex].colour = clues[clueIndex+1].colour)
-      then freeSpaces[spaceIndex]:=freeSpaces[spaceIndex] - 1;
-    if (clueIndex > 0) then clueIndex:=clueIndex - 1
-      else noMoreClues:=true;
-    end else
-  if (spaceIndex < lastFreeSpace) then spaceIndex:= spaceIndex + 1
-    else
-      begin
-      //this shouldn't happen. it means there's no more space but clues left
-      writeln('error - not enough space for clues');
-      noMoreClues:=true;
-      end;
-  until noMoreClues;
-
-  //now the last clue is as far left as it'll go
-  //move it to each space to the right that it'll fit into
-
+  lastAllowedSpace:=pred(result.size);
   for clueIndex:=pred(clues.size) downto 0 do
     begin
-    //find the first space (counting from the end) that this clue can fit in
-    spaceOfLastClue:=lastFreeSpace;
-    while spaces[spaceOfLastClue].candidates.indexOf(clues[clueIndex]) = -1 do
-      spaceOfLastClue:=spaceOfLastClue - 1;
-
-    spaceIndex:=spaceOfLastClue;
-      repeat
-      if (spaceIndex < lastFreeSpace)
-      and (clues[clueIndex].value <= freeSpaces[spaceIndex + 1]) then
-        begin
-        //move the clue out of the current space
-        freeSpaces[spaceOfLastClue]:= freeSpaces[spaceOfLastClue] + clues[clueIndex].value;
-        //This isn't right because we're adding a space if the next clue is the same colour above
-        //if previous clue of same colour add 1
-        if (clueIndex < pred(clues.size)) and (clues[clueIndex].colour = clues[clueIndex + 1].colour)
-        then freeSpaces[spaceOfLastClue]:=freeSpaces[spaceOfLastClue] + 1;
-        //Now move to the next space
-        spaceIndex:=spaceIndex + 1;
-        //and add the clue to its candidates
-        spaces[spaceIndex].candidates.push(clues[clueIndex]);
-        //move clue into new space
-        freeSpaces[spaceIndex]:=freeSpaces[spaceIndex]-clues[clueIndex].value;
-        //if previous clue of same colour, subtract 1
-        if (clueIndex < pred(clues.size)) and (clues[clueIndex].colour = clues[clueIndex + 1].colour)
-        then freeSpaces[spaceIndex]:=freeSpaces[spaceIndex] - 1;
-        end else lastFreeSpace:=spaceIndex; //If this clue won't fit then neither will any of the previous ones
-      until spaceIndex >= lastFreeSpace;
+    currentClue:= clues[clueIndex];
+    done:=false;
+    //find a space it'll fit in
+    while not done do
+      begin
+      spaceFound:= (currentClue.value <= result[spaceIndex].freeSpace);
+      if not spaceFound then spaceIndex:=spaceIndex+1;
+      done:=spaceFound or (spaceIndex >= spaces.size);
       end;
+
+    if spaceFound then
+      begin
+      result[spaceIndex].candidates.push(currentClue);
+      //create a block corresponding to this clue
+      spaceClueBlock:=TSpaceClueBlock.Create(clueIndex,currentClue.value);
+      if (clueIndex > 0) and (currentClue.colour = clues[clueIndex - 1].colour)
+        then spaceClueBlock.spaceRight:=1;
+      result[spaceIndex].blocks.push(spaceClueBlock);
+      end else
+      begin
+      writeln('Raise an error - no space for clues');
+      end;
+    end;
+
+  //now we find the last clue block and move it to the right until we get
+  //to the last space that can hold it.
+  for clueIndex:=0 to pred(clues.size) do
+    begin
+    //Find the space that has that clue in it
+    clueCurrentlyAt:=lastAllowedSpace;
+    while result[clueCurrentlyAt].candidates.indexOf(clues[clueIndex]) = -1 do
+      clueCurrentlyAt:=clueCurrentlyAt -1;
+
+    //If there are further spaces, see if the clue will fit
+    if clueCurrentlyAt < lastAllowedSpace then
+      begin
+      lastSpaceClueWillFit:=clueCurrentlyAt;
+      for spaceIndex:=clueCurrentlyAt + 1 to lastAllowedSpace do
+      //If the clue will fit in this space then update the candidates
+      //and the marker
+        begin
+        if clues[clueIndex].value <= result[spaceIndex].freeSpace then
+          begin
+          lastSpaceClueWillFit:=spaceIndex;
+          result[spaceIndex].candidates.push(clues[clueIndex]);
+          end;
+        end;
+      //If the last space the clue will fit is not where it currently is then
+      //remove it from the old position and add it to the new one
+      if (lastSpaceClueWillFit <> clueCurrentlyAt) then
+        begin
+        //remove the clue from its last position
+        result[clueCurrentlyAt].blocks.delete(clueIndex);
+        //and add it to the new position
+        spaceClueBlock:=TSpaceClueBlock.create(clueIndex,clues[clueIndex].value);
+        //If there's a previous block of the same colour then there should be a space to its left
+        if (clueIndex < pred(clues.size)) and (clues[clueIndex].colour = clues[clueIndex+1].colour)
+          then spaceClueBlock.spaceLeft:=1;
+        result[lastSpaceClueWillFit].blocks.push(spaceClueBlock);
+
+        lastAllowedSpace:=lastSpaceClueWillFit;
+        end;
+      end;
+    end;
 
 end;
 

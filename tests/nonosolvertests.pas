@@ -6,7 +6,7 @@ interface
 
 uses
   Classes, SysUtils, fpcunit, testutils, testregistry,nonosolver,clueCell,
-  graphics,gameState,gameStateChanges,gameCell,gameBlock,enums;
+  graphics,gameState,gameStateChanges,gameCell,gameBlock,enums,gameSpace;
 
 type
   
@@ -16,6 +16,7 @@ type
     public
     function overlapRowMethod(gameState:TGameState;rowId:integer):TGameStateChanges;
     function overlapColumnMethod(gameState:TGameState;columnId:integer):TGameStateChanges;
+    function setClueCandidatesMethod(var spaces: TGameSpaces;clues: TClueCells):TGameSpaces;
   end;
 
   { TNonoSolverTests }
@@ -31,6 +32,7 @@ type
     procedure overlapTwoCluesSameColour;
     procedure nonOverlapTwoCluesDifferentColour;
     procedure overlapTwoSpaces;
+    procedure setCandidatesThreeSpaces;
     property gameState_: TGameState read fGameState write fGameState;
   end;
 
@@ -53,6 +55,13 @@ function TNgTestSolver.overlapColumnMethod(gameState: TGameState; columnId: inte
   ): TGameStateChanges;
 begin
   result:=ngTestSolver.overlapColumn(gameState,columnId);
+end;
+
+function TNgTestSolver.setClueCandidatesMethod(var spaces: TGameSpaces;
+  clues: TClueCells):TGameSpaces;
+begin
+  ngTestSolver.setClueCandidatesMethod(spaces,clues);
+  result:=spaces;
 end;
 
 { TNgTestSolver }
@@ -132,6 +141,21 @@ begin
   gameState_.gameBlock[0][3].fill:=cfCross;
   AssertEquals(11,ngTestSolver.overlapRowMethod(gameState_,0).size);
 
+end;
+
+procedure TNonoSolverTests.setCandidatesThreeSpaces;
+var
+  testSpaces:TGameSpaces;
+  testClues:TClueCells;
+begin
+  testCLues:=TClueCells.create;
+  testClues.push(TClueCell.create(0,-1,2,0));
+  testClues.push(TClueCell.create(0,-1,4,1));
+  testClues.push(TClueCell.create(0,-1,1,2));
+  testSpaces:=TGameSpaces.create;
+  testSpaces.push(TGameSpace.create(0,7));
+  testSpaces.push(TGameSpace.create(9,11));
+  AssertEquals(2,ngTestSolver.setClueCandidatesMethod(testSpaces,testClues)[0].candidates.size);
 end;
 
 

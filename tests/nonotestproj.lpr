@@ -4,7 +4,7 @@ program nonotestproj;
 
 uses
   Interfaces, Forms, GuiTestRunner, nonosolvertests, nonosolver, clueCell,
-  gamestatechange, gameState, gameCell;
+  gamestatechange, gameState, gameCell, gameSpace;
 
 {$R *.res}
 
