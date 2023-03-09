@@ -192,10 +192,6 @@ var
   limits,limitsForSpace:TPoint;
   emptySpaces,spaces:TGameSpaces;
   clueSpaceIndex:integer;
-
-  //for testing
-  allowedClueId:integer;
-  allowedCluesOutput:string;
 begin
   //1 setup
   clues:=GameState.rowClues[rowId];
@@ -206,11 +202,8 @@ begin
 
   //2 Cases where there are no clues or no spaces
   if clues.size = 0 then exit;
-  //3 work out which clues can go in which spaces
 
-
-
-  //4 look at clues that can only be in one space. Work out limits
+  //3 look at clues that can only be in one space. Work out limits
   //The situation where there is only one space is a subset of this
   for clueIndex:=pred(clues.size) downto 0 do
     begin
@@ -220,13 +213,6 @@ begin
       currentSpace:= spaces[clueSpaceIndex];
       allowedCluesForCurrentSpace:=getAllowedCluesForCurrentSpace(spaces,clueSpaceIndex);
 
-      //for testing
-      allowedCluesOutput:='Allowed clues for row '+rowId.tostring+' space '+clueSpaceIndex.toString+': ';
-      for allowedClueId:=0 to pred(allowedCluesForCurrentSpace.size)do
-        begin
-        allowedCluesOutput:=allowedCluesOutput+allowedCluesForCurrentSpace[allowedClueId].index.toString+' ';
-        end;
-      writeln(allowedCluesOutput);
       limits:= clues.limits(allowedCluesForCurrentSpace,currentSpace.spaceSize, clueIndex);
       if (limits.Y <= limits.X) then
         begin
@@ -243,8 +229,6 @@ begin
             writeln('clue '+clueIndex.toString+' does not fit in space '+clueSpaceIndex.toString+' on row '+rowId.toString);
             exit;
             end;
-        //This is too simplistic as it doesn't take into account already filled cells
-
         result.concat(
         generateChanges(
           gameState,rowId,rowId,
@@ -475,7 +459,7 @@ begin
 
     if spaceFound then
       begin
-
+      writeln('clue '+clueIndex.toString+' value '+currentClue.value.toString+' will fit in space '+spaceIndex.toString+' size '+result[spaceIndex].freeSpace.toString);
       result[spaceIndex].candidates.push(currentClue);
       //create a block corresponding to this clue
       spaceClueBlock:=TSpaceClueBlock.Create(clueIndex,currentClue.value);
@@ -505,6 +489,7 @@ begin
         begin
         if clues[clueIndex].value <= result[spaceIndex].freeSpace then
           begin
+          writeln('clue '+clueIndex.toString+' value '+clues[clueIndex].value.toString+' will fit in space '+spaceIndex.toString+' size '+result[spaceIndex].freeSpace.toString);
           lastSpaceClueWillFit:=spaceIndex;
           result[spaceIndex].candidates.push(clues[clueIndex]);
           end;
