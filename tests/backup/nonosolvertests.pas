@@ -33,6 +33,7 @@ type
     procedure nonOverlapTwoCluesDifferentColour;
     procedure overlapTwoSpaces;
     procedure setCandidatesThreeSpaces;
+    procedure setCandidatesThreeSpacesDifferentColours;
     property gameState_: TGameState read fGameState write fGameState;
   end;
 
@@ -60,8 +61,7 @@ end;
 function TNgTestSolver.setClueCandidatesMethod(var spaces: TGameSpaces;
   clues: TClueCells):TGameSpaces;
 begin
-  ngTestSolver.setClueCandidatesMethod(spaces,clues);
-  result:=spaces;
+  result:= ngTestSolver.setClueCandidates(spaces,clues);
 end;
 
 { TNgTestSolver }
@@ -131,15 +131,12 @@ end;
 
 procedure TNonoSolverTests.overlapTwoSpaces;
 begin
-  //If there are two distinct spaces in a row then it should
-  //work out that the first clue can only go in the first space
-  //and the second can only go in the second
-  //The first clue overlaps a single cell in the first space
-  //and the second overlaps 10 cells in the second space
-  gameState_.rowClues[0].push(TClueCell.create(0,-1,2,0));
+  //clue 1 (first clue) can go in either space so no action
+  //clue 0 (second clue) can only go in second space
   gameState_.rowClues[0].push(TClueCell.create(0,-1,13,1));
+  gameState_.rowClues[0].push(TClueCell.create(0,-1,2,0));
   gameState_.gameBlock[0][3].fill:=cfCross;
-  AssertEquals(11,ngTestSolver.overlapRowMethod(gameState_,0).size);
+  AssertEquals(10,ngTestSolver.overlapRowMethod(gameState_,0).size);
 
 end;
 
@@ -148,8 +145,29 @@ var
   testSpaces:TGameSpaces;
   testClues:TClueCells;
 begin
+  testCLues:=TClueCells.create;
+  testClues.push(TClueCell.create(0,-1,2,0));
+  testClues.push(TClueCell.create(0,-1,4,1));
+  testClues.push(TClueCell.create(0,-1,1,2));
   testSpaces:=TGameSpaces.create;
-  testSpaces.push(TClueCell.create(0,-1,2,0);
+  testSpaces.push(TGameSpace.create(0,7));
+  testSpaces.push(TGameSpace.create(9,11));
+  AssertEquals(2,ngTestSolver.setClueCandidatesMethod(testSpaces,testClues)[0].candidates.size);
+end;
+
+procedure TNonoSolverTests.setCandidatesThreeSpacesDifferentColours;
+var
+  testSpaces:TGameSpaces;
+  testClues:TClueCells;
+begin
+  testCLues:=TClueCells.create;
+  testClues.push(TClueCell.create(0,-1,2,0));
+  testClues.push(TClueCell.create(0,-1,4,1,clRed));
+  testClues.push(TClueCell.create(0,-1,1,2));
+  testSpaces:=TGameSpaces.create;
+  testSpaces.push(TGameSpace.create(0,7));
+  testSpaces.push(TGameSpace.create(9,11));
+  AssertEquals(2,ngTestSolver.setClueCandidatesMethod(testSpaces,testClues)[0].candidates.size);
 end;
 
 

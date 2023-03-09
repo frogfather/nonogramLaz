@@ -34,6 +34,7 @@ type
     function copyGameState(initialState: TGameState):TGameState;
     function applyChanges(gameState:TGameState;gameStateChanges:TGameStateChanges):TGameState;
     function setClueCandidates(spaces: TGameSpaces;clues:TClueCells):TGameSpaces;
+    function getSpacesForGameCells(gameCells_:TGameCells):TGameSpaces;
     procedure outputCurrentGameState(gameState:TGameState);
 
     public
@@ -189,7 +190,7 @@ var
   currentSpace:TGameSpace;
   clueIndex,spaceIndex:integer;
   limits,limitsForSpace:TPoint;
-  spaces:TGameSpaces;
+  emptySpaces,spaces:TGameSpaces;
   clueSpaceIndex:integer;
 
   //for testing
@@ -200,7 +201,8 @@ begin
   clues:=GameState.rowClues[rowId];
   result:=TGameStateChanges.create;
   writeln('spaces for row '+rowId.toString);
-  spaces:= setClueCandidates(gameState.gameBlock[rowId].spaces,clues);
+  emptySpaces:=getSpacesForGameCells(gameState.gameBlock[rowId]);
+  spaces:= setClueCandidates(emptySpaces,clues);
 
   //2 Cases where there are no clues or no spaces
   if clues.size = 0 then exit;
@@ -272,7 +274,7 @@ var
   gameCells:TGameCells;
   clueIndex,clueSpaceIndex,spaceIndex:integer;
   limits,limitsForSpace:TPoint;
-  spaces:TGameSpaces;
+  emptySpaces,spaces:TGameSpaces;
   //for testing
   allowedClueId:integer;
   allowedCluesOutput:string;
@@ -281,12 +283,11 @@ begin
   gameCells:=gameState.gameBlock.getColumn(columnId);
   result:=TGameStateChanges.create;
   writeln('spaces for col '+columnId.toString);
-  spaces:=gameCells.spaces;
-
+  emptySpaces:=getSpacesForGameCells(gameCells);
 
   if clues.size = 0 then exit;
   //3 work out which clues can go in which spaces
-  setClueCandidates(spaces,clues);
+  spaces:= setClueCandidates(emptySpaces,clues);
 
   //4 look at clues that can only be in one space. Work out limits
   //The situation where there is only one space is a subset of this
@@ -455,7 +456,9 @@ var
 begin
   //1) Add clues to the first space until no more will fit then move on to the next space
   //until no more clues
-  result:=spaces;
+  result:=TGameSpaces.create;
+  for spaceIndex:=0 to pred(spaces.size) do
+    result.push(spaces[spaceIndex]);
   spaceIndex:=0;
   lastAllowedSpace:=pred(result.size);
   for clueIndex:=pred(clues.size) downto 0 do
@@ -467,11 +470,12 @@ begin
       begin
       spaceFound:= (currentClue.value <= result[spaceIndex].freeSpace);
       if not spaceFound then spaceIndex:=spaceIndex+1;
-      done:=spaceFound or (spaceIndex >= spaces.size);
+      done:=spaceFound or (spaceIndex > lastAllowedSpace);
       end;
 
     if spaceFound then
       begin
+      writeln('clue '+clueIndex.toString+' value '+currentClue.value.toString+' will fit in space '+spaceIndex.toString+' size '+result[spaceIndex].freeSpace.toString);
       result[spaceIndex].candidates.push(currentClue);
       //create a block corresponding to this clue
       spaceClueBlock:=TSpaceClueBlock.Create(clueIndex,currentClue.value);
@@ -498,11 +502,10 @@ begin
       begin
       lastSpaceClueWillFit:=clueCurrentlyAt;
       for spaceIndex:=clueCurrentlyAt + 1 to lastAllowedSpace do
-      //If the clue will fit in this space then update the candidates
-      //and the marker
         begin
         if clues[clueIndex].value <= result[spaceIndex].freeSpace then
           begin
+          writeln('clue '+clueIndex.toString+' value '+clues[clueIndex].value.toString+' will fit in space '+spaceIndex.toString+' size '+result[spaceIndex].freeSpace.toString);
           lastSpaceClueWillFit:=spaceIndex;
           result[spaceIndex].candidates.push(clues[clueIndex]);
           end;
@@ -525,6 +528,34 @@ begin
       end;
     end;
 
+end;
+
+function TNonogramSolver.getSpacesForGameCells(gameCells_: TGameCells
+  ): TGameSpaces;
+var
+  index:integer;
+  startBlock,endBlock:integer;
+begin
+  result:=TGameSpaces.create;
+  startBlock:=-1;
+  endBlock:=-1;
+  for index:=0 to gameCells_.size do
+    begin
+    if (index < gameCells_.size) and (gameCells_[index].fill <> cfCross) then
+      begin
+      if startBlock = -1 then
+        begin
+        startBlock:=index;
+        endBlock:=index;
+        end
+      else endBlock:=endBlock + 1;
+      end else if (endBlock > -1) then
+      begin
+      result.push(TGameSpace.Create(startBlock,endBlock));
+      startBlock:=-1;
+      endBlock:=-1;
+      end;
+    end;
 end;
 
 procedure TNonogramSolver.outputCurrentGameState(gameState:TGameState);

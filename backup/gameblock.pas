@@ -108,6 +108,12 @@ begin
       endBlock:=-1;
       end;
     end;
+
+  if (result.size > 0) then for index:=0 to pred(result.size) do
+    begin
+    writeln('space '+index.toString+' start '+result[index].startPos.toString+':'+result[index].endPos.ToString);
+    end;
+
 end;
 
 end.
