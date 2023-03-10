@@ -78,14 +78,26 @@ end;
 
 function TNonogramSolver.rowCluesComplete(gameState: TGameState; rowId: Integer
   ): TGameStateChanges;
+var
+  rowClues_:TClueCells;
+  rowCells_:TGameCells;
+  clueIndex,cellIndex:integer;
 begin
   result:=TGameStateChanges.create;
-  if (gameState.rowClues[rowId].clueSum = gameState.gameBlock[rowId].filledCells)
+  rowClues_:=gameState.rowClues[rowId];
+  rowCells_:=gameState.gameBlock[rowId];
+  //First, if the filled cells count matches the total of the clues we can
+  //fill in all unfilled spaces with crosses
+  if (rowClues_.clueSum = rowCells_.filledCells)
     then
       begin
       writeln('Row '+rowId.toString+' complete. Generate changes for row '+rowId.ToString);
-      result.concat(generateChanges(gameState,rowId,rowId,0,pred(gameState.gameBlock[0].size),cfCross));
+      result.concat(generateChanges(gameState,rowId,rowId,0,pred(rowCells_.size),cfCross));
       end;
+  //Next, look for clues that are the maximum size they can be
+  //Need to think about this
+  //for a given filled in cell, which clues could this be?
+  //what size is it?
 end;
 
 function TNonogramSolver.columnCluesComplete(gameState: TGameState;
@@ -176,7 +188,6 @@ begin
       result.concat(
         generateChanges(
           gameState,rowId,rowId, mustCrossStart,mustCrossEnd,cfCross));
-
       end;
     end;
 end;
@@ -186,11 +197,212 @@ function TNonogramSolver.edgeProximityColumn(gameState: TGameState;
 var
   cells:TGameCells;
   clues:TClueCells;
+  firstClue,lastClue:TClueCell;
+  firstFilledSequenceStart,firstFilledSequenceLength:integer;
+  lastFilledSequenceStart,lastFilledSequenceLength:integer;
+  mustCrossEnd,mustCrossStart:integer;
+  sequenceColour:TColor;
 begin
   result:=TGameStateChanges.create;
-  cells:= gameState.gameBlock.getColumn(columnId);
-  clues:= gameState.columnClues[columnId];
+  cells:=gameState.gameBlock.getColumn(columnId);
+  clues:=gameState.columnClues[columnId];
+  firstClue:=clues[pred(clues.size)];
+  lastClue:=clues[0];
+  firstFilledSequenceStart:=cells.firstFilled;
+  firstFilledSequenceLength:=getSequenceLength(cells, firstFilledSequenceStart);
+  lastFilledSequenceStart:=cells.lastFilled;
+  lastFilledSequenceLength:=getSequenceLength(cells,lastFilledSequenceStart,true);
+  if (firstFilledSequenceStart > -1) then
+    begin
+    sequenceColour:=cells[firstFilledSequenceStart].colour;
+    if (firstFilledSequenceStart < firstClue.value + 1)
+      and (sequenceColour = firstClue.colour) then
+      begin
+      mustCrossStart:=0;
+      mustCrossEnd:=(firstFilledSequenceStart + firstFilledSequenceLength -(firstClue.value + 1));
+      //cells that must be filled
+      result.concat(
+        generateChanges(
+          gameState,firstFilledSequenceStart, firstClue.value - 1,columnId,columnId,cfFill,sequenceColour));
+      //cells that cannot be filled
+      result.concat(
+        generateChanges(
+          gameState,mustCrossStart,mustCrossEnd,columnId,columnId,cfCross));
+      end;
+    end;
+  if (lastFilledSequenceStart > - 1) then
+    begin
+    sequenceColour:=cells[lastFilledSequenceStart].colour;
+    //sums a little more complicated here
+    if ((cells.size - (lastFilledSequenceStart + 1)) < (lastClue.value +1))
+      and (sequenceColour = lastClue.colour) then
+      begin
+      mustCrossStart:=lastFilledSequenceStart - (lastFilledSequenceLength - 1)+lastClue.value;
+      mustCrossEnd:=pred(cells.size);
+      //cells that must be filled
+      result.concat(
+        generateChanges(
+          gameState,(cells.size - lastClue.value),lastFilledSequenceStart,columnId,columnId,cfFill,sequenceColour));
+      //cells that cannot be filled
+      result.concat(
+        generateChanges(
+          gameState,mustCrossStart,mustCrossEnd,columnId,columnId,cfCross));
+      end;
+    end;
+end;
 
+function TNonogramSolver.overlapRows(gameState:TGameState): integer;
+var
+  rowIndex:integer;
+begin
+  result:=0;
+  //each row of the game block is a row of the puzzle
+  for rowIndex:=0 to pred(GameState.gameBlock.size) do
+    result:= result + processStepResult(overlapRow(gameState,rowIndex));
+end;
+
+function TNonogramSolver.overlapColumns(gameState:TGameState): integer;
+var
+  colIndex:integer;
+begin
+  result:=0;
+  if GameState.gameBlock.size = 0 then exit;
+  for colIndex:=0 to pred(GameState.gameBlock[0].size) do
+    result:= result + processStepResult(overlapColumn(gameState,colIndex));
+end;
+
+function TNonogramSolver.overlapRow(gameState:TGameState;rowId: integer): TGameStateChanges;
+var
+  clues:TClueCells;
+  allowedCluesForCurrentSpace:TClueCells;
+  currentSpace:TGameSpace;
+  clueIndex,spaceIndex:integer;
+  limits,limitsForSpace:TPoint;
+  emptySpaces,spaces:TGameSpaces;
+  clueSpaceIndex:integer;
+  colStart,colEnd:integer;
+begin
+  clues:=GameState.rowClues[rowId];
+  result:=TGameStateChanges.create;
+  writeln('spaces for row '+rowId.toString);
+  emptySpaces:=getSpacesForGameCells(gameState.gameBlock[rowId]);
+  spaces:= setClueCandidates(emptySpaces,clues);
+
+  if clues.size = 0 then exit;
+
+  for clueIndex:=pred(clues.size) downto 0 do
+    begin
+    clueSpaceIndex:=clueInSpace(spaces,clues[clueIndex]);
+    if (clueSpaceIndex > -1) then
+      begin
+      currentSpace:= spaces[clueSpaceIndex];
+      allowedCluesForCurrentSpace:=getAllowedCluesForCurrentSpace(spaces,clueSpaceIndex);
+
+      limits:= clues.limits(allowedCluesForCurrentSpace,currentSpace.spaceSize, clueIndex);
+      if (limits.Y <= limits.X) then
+        begin
+        //if the limits adjusted for the space are outside the space then quit
+        limitsForSpace:=TPoint.Create(currentSpace.startPos + limits.X - 1,currentSpace.startPos+limits.Y - 1);
+        writeln('limits for clue '+clueIndex.toString+' in space '+clueSpaceIndex.toString+' in row '+rowId.toString+' : '+limitsForSpace.X.toString+':'+limitsForSpace.Y.tostring);
+
+        if (limitsForSpace.X < currentSpace.startPos)
+          or (limitsForSpace.X > currentSpace.endPos)
+          or (limitsForSpace.Y < currentSpace.startPos)
+          or (limitsForSpace.Y > currentSpace.endPos)
+          then
+            begin
+            writeln('clue '+clueIndex.toString+' does not fit in space '+clueSpaceIndex.toString+' on row '+rowId.toString);
+            exit;
+            end;
+        colStart:=Spaces[clueSpaceIndex].startPos+limits.Y - 1;
+        colEnd:=spaces[clueSpaceIndex].startPos + limits.X - 1;
+        result.concat(
+          generateChanges(gameState,rowId,rowId,
+            colStart,colEnd,cfFill,clues[clueIndex].colour));
+        end;
+      end;
+    end;
+  //5 deal with empty spaces - ones that can have no clues
+  for spaceIndex:= 0 to pred(spaces.size) do
+    begin
+    writeln('row '+rowId.toString+' space '+spaceIndex.toString+' has candidates '+spaces[spaceIndex].candidates.join(','));
+    if (spaces[spaceIndex].candidates.size = 0) then
+      begin
+      colStart:=spaces[spaceIndex].startPos;
+      colEnd:=spaces[spaceIndex].endPos;
+      result.concat(
+        generateChanges(
+          gameState,rowId,rowId,colStart,colEnd,cfCross));
+      end;
+    end;
+end;
+
+function TNonogramSolver.overlapColumn(gameState:TGameState;columnId: integer): TGameStateChanges;
+var
+  clues:TClueCells;
+  allowedCluesForCurrentSpace:TClueCells;
+  currentSpace:TGameSpace;
+  gameCells:TGameCells;
+  clueIndex,clueSpaceIndex,spaceIndex:integer;
+  limits,limitsForSpace:TPoint;
+  emptySpaces,spaces:TGameSpaces;
+  rowStart,rowEnd:Integer;
+begin
+  clues:=GameState.columnClues[columnId];
+  gameCells:=gameState.gameBlock.getColumn(columnId);
+  result:=TGameStateChanges.create;
+  writeln('spaces for col '+columnId.toString);
+  emptySpaces:=getSpacesForGameCells(gameCells);
+
+  if clues.size = 0 then exit;
+  spaces:= setClueCandidates(emptySpaces,clues);
+
+  for clueIndex:= pred(clues.size) downto 0 do
+    begin
+    clueSpaceIndex:=clueInSpace(spaces,clues[clueIndex]);
+
+    if (clueSpaceIndex > -1) then
+      begin
+      currentSpace:= spaces[clueSpaceIndex];
+      allowedCluesForCurrentSpace:=getAllowedCluesForCurrentSpace(spaces,clueSpaceIndex);
+
+      limits:= clues.limits(allowedCluesForCurrentSpace,spaces[clueSpaceIndex].spaceSize, clueIndex);
+      if (limits.Y <= limits.X) then
+      begin
+        begin
+        //if the limits adjusted for the space are outside the space then quit
+        limitsForSpace:=TPoint.Create(currentSpace.startPos + limits.X - 1,currentSpace.startPos+limits.Y - 1);
+        writeln('limits for clue '+clueIndex.toString+' in space '+clueSpaceIndex.toString+' in column '+columnId.toString+' : '+limitsForSpace.X.toString+':'+limitsForSpace.Y.tostring);
+        if (limitsForSpace.X < currentSpace.startPos)
+          or (limitsForSpace.X > currentSpace.endPos)
+          or (limitsForSpace.Y < currentSpace.startPos)
+          or (limitsForSpace.Y > currentSpace.endPos)
+          then
+            begin
+            writeln('clue '+clueIndex.toString+' does not fit in space '+clueSpaceIndex.toString+' on column '+columnId.toString);
+            exit;
+            end;
+        rowStart:=Spaces[clueSpaceIndex].startPos+limits.Y - 1;
+        rowEnd:=spaces[clueSpaceIndex].startPos + limits.X - 1;
+        result.concat(
+          generateChanges(gameState,rowStart,
+            rowEnd,columnId,columnId, cfFill,clues[clueIndex].colour));
+        end;
+      end;
+    end;
+    end;
+  //5 deal with empty spaces - ones that can have no clues
+  for spaceIndex:= 0 to pred(spaces.size) do
+    begin
+    writeln('Column '+columnId.toString+' space '+spaceIndex.toString+' has candidates '+spaces[spaceIndex].candidates.join(','));
+    if (spaces[spaceIndex].candidates.size = 0) then
+      begin
+      rowStart:=spaces[spaceIndex].startPos;
+      rowEnd:=spaces[spaceIndex].endPos;
+      result.concat(
+        generateChanges(gameState,rowStart,rowEnd,columnId,columnId,cfCross));
+      end;
+    end;
 end;
 
 function TNonogramSolver.generateChanges(gameState: TGameState; rowStart,
@@ -259,159 +471,6 @@ begin
         then result.delete(duplicateIndex)
       end;
 end;
-
-function TNonogramSolver.overlapRows(gameState:TGameState): integer;
-var
-  rowIndex:integer;
-begin
-  result:=0;
-  //each row of the game block is a row of the puzzle
-  for rowIndex:=0 to pred(GameState.gameBlock.size) do
-    result:= result + processStepResult(overlapRow(gameState,rowIndex));
-end;
-
-function TNonogramSolver.overlapColumns(gameState:TGameState): integer;
-var
-  colIndex:integer;
-begin
-  result:=0;
-  if GameState.gameBlock.size = 0 then exit;
-  for colIndex:=0 to pred(GameState.gameBlock[0].size) do
-    result:= result + processStepResult(overlapColumn(gameState,colIndex));
-end;
-
-function TNonogramSolver.overlapRow(gameState:TGameState;rowId: integer): TGameStateChanges;
-var
-  clues:TClueCells;
-  allowedCluesForCurrentSpace:TClueCells;
-  currentSpace:TGameSpace;
-  clueIndex,spaceIndex:integer;
-  limits,limitsForSpace:TPoint;
-  emptySpaces,spaces:TGameSpaces;
-  clueSpaceIndex:integer;
-begin
-  clues:=GameState.rowClues[rowId];
-  result:=TGameStateChanges.create;
-  writeln('spaces for row '+rowId.toString);
-  emptySpaces:=getSpacesForGameCells(gameState.gameBlock[rowId]);
-  spaces:= setClueCandidates(emptySpaces,clues);
-
-  if clues.size = 0 then exit;
-
-  for clueIndex:=pred(clues.size) downto 0 do
-    begin
-    clueSpaceIndex:=clueInSpace(spaces,clues[clueIndex]);
-    if (clueSpaceIndex > -1) then
-      begin
-      currentSpace:= spaces[clueSpaceIndex];
-      allowedCluesForCurrentSpace:=getAllowedCluesForCurrentSpace(spaces,clueSpaceIndex);
-
-      limits:= clues.limits(allowedCluesForCurrentSpace,currentSpace.spaceSize, clueIndex);
-      if (limits.Y <= limits.X) then
-        begin
-        //if the limits adjusted for the space are outside the space then quit
-        limitsForSpace:=TPoint.Create(currentSpace.startPos + limits.X - 1,currentSpace.startPos+limits.Y - 1);
-        writeln('limits for clue '+clueIndex.toString+' in space '+clueSpaceIndex.toString+' in row '+rowId.toString+' : '+limitsForSpace.X.toString+':'+limitsForSpace.Y.tostring);
-
-        if (limitsForSpace.X < currentSpace.startPos)
-          or (limitsForSpace.X > currentSpace.endPos)
-          or (limitsForSpace.Y < currentSpace.startPos)
-          or (limitsForSpace.Y > currentSpace.endPos)
-          then
-            begin
-            writeln('clue '+clueIndex.toString+' does not fit in space '+clueSpaceIndex.toString+' on row '+rowId.toString);
-            exit;
-            end;
-        result.concat(
-        generateChanges(
-          gameState,rowId,rowId,
-          Spaces[clueSpaceIndex].startPos+limits.Y - 1,
-          spaces[clueSpaceIndex].startPos + limits.X - 1,cfFill,clues[clueIndex].colour));
-        end;
-      end;
-    end;
-  //5 deal with empty spaces - ones that can have no clues
-  for spaceIndex:= 0 to pred(spaces.size) do
-    begin
-    writeln('row '+rowId.toString+' space '+spaceIndex.toString+' has candidates '+spaces[spaceIndex].candidates.join(','));
-    if (spaces[spaceIndex].candidates.size = 0) then
-      begin
-      result.concat(
-        generateChanges(
-          gameState,rowId,rowId,spaces[spaceIndex].startPos,spaces[spaceIndex].endPos,cfCross));
-      end;
-    end;
-end;
-
-function TNonogramSolver.overlapColumn(gameState:TGameState;columnId: integer): TGameStateChanges;
-var
-  clues:TClueCells;
-  allowedCluesForCurrentSpace:TClueCells;
-  currentSpace:TGameSpace;
-  gameCells:TGameCells;
-  clueIndex,clueSpaceIndex,spaceIndex:integer;
-  limits,limitsForSpace:TPoint;
-  emptySpaces,spaces:TGameSpaces;
-begin
-  clues:=GameState.columnClues[columnId];
-  gameCells:=gameState.gameBlock.getColumn(columnId);
-  result:=TGameStateChanges.create;
-  writeln('spaces for col '+columnId.toString);
-  emptySpaces:=getSpacesForGameCells(gameCells);
-
-  if clues.size = 0 then exit;
-  spaces:= setClueCandidates(emptySpaces,clues);
-
-  for clueIndex:= pred(clues.size) downto 0 do
-    begin
-    clueSpaceIndex:=clueInSpace(spaces,clues[clueIndex]);
-
-    if (clueSpaceIndex > -1) then
-      begin
-      currentSpace:= spaces[clueSpaceIndex];
-      allowedCluesForCurrentSpace:=getAllowedCluesForCurrentSpace(spaces,clueSpaceIndex);
-
-      limits:= clues.limits(allowedCluesForCurrentSpace,spaces[clueSpaceIndex].spaceSize, clueIndex);
-      if (limits.Y <= limits.X) then
-      begin
-        begin
-        //if the limits adjusted for the space are outside the space then quit
-        limitsForSpace:=TPoint.Create(currentSpace.startPos + limits.X - 1,currentSpace.startPos+limits.Y - 1);
-        writeln('limits for clue '+clueIndex.toString+' in space '+clueSpaceIndex.toString+' in column '+columnId.toString+' : '+limitsForSpace.X.toString+':'+limitsForSpace.Y.tostring);
-        if (limitsForSpace.X < currentSpace.startPos)
-          or (limitsForSpace.X > currentSpace.endPos)
-          or (limitsForSpace.Y < currentSpace.startPos)
-          or (limitsForSpace.Y > currentSpace.endPos)
-          then
-            begin
-            writeln('clue '+clueIndex.toString+' does not fit in space '+clueSpaceIndex.toString+' on column '+columnId.toString);
-            exit;
-            end;
-
-        result.concat(
-        generateChanges(
-          gameState,
-          Spaces[clueSpaceIndex].startPos+limits.Y - 1,
-          spaces[clueSpaceIndex].startPos + limits.X - 1,columnId,columnId, cfFill,clues[clueIndex].colour));
-        end;
-      end;
-    end;
-    end;
-  //5 deal with empty spaces - ones that can have no clues
-  for spaceIndex:= 0 to pred(spaces.size) do
-    begin
-    writeln('Column '+columnId.toString+' space '+spaceIndex.toString+' has candidates '+spaces[spaceIndex].candidates.join(','));
-    if (spaces[spaceIndex].candidates.size = 0) then
-      begin
-      result.concat(
-        generateChanges(
-          gameState,spaces[spaceIndex].startPos,spaces[spaceIndex].endPos,columnId,columnId,cfCross));
-      end;
-    end;
-end;
-
-//2 Edge proximity: is the first or last clue positioned such that the edge cell(s) must be crosses?
-
 
 function TNonogramSolver.processStepResult(stepResult:TGameStateChanges): integer;
 var
@@ -628,6 +687,7 @@ var
   sequenceEnd:boolean;
 begin
   result:=0;
+  if (start_ = -1)or(start_ > pred(cells_.size)) then exit;
   index:=start_;
   sequenceEnd:=false;
   if (cells_[index].fill <> cfFill) then exit;
@@ -680,27 +740,51 @@ begin
     changesOnCurrentLoop:=changesOnCurrentLoop + overlapRows(solvedGameState);
     solvedGameState:=applyChanges(solvedGameState,fChanges);
     outputCurrentGameState(solvedGameState);
+
     changesOnCurrentLoop:= changesOnCurrentLoop + rowsCluesComplete(solvedGameState);
     solvedGameState:=applyChanges(solvedGameState,fChanges);
     outputCurrentGameState(solvedGameState);
-    changesOnCurrentLoop:=changesOnCurrentLoop + rowsCluesComplete(solvedGameState);
-    solvedGameState:=applyChanges(solvedGameState,fChanges);
-    outputCurrentGameState(solvedGameState);
-    changesOnCurrentLoop:= changesOnCurrentLoop + rowsCluesComplete(solvedGameState);
-    solvedGameState:=applyChanges(solvedGameState,fChanges);
-    outputCurrentGameState(solvedGameState);
-    changesOnCurrentLoop:=changesOnCurrentLoop + overlapColumns(solvedGameState);
-    solvedGameState:=applyChanges(solvedGameState,fChanges);
-    outputCurrentGameState(solvedGameState);
-    changesOnCurrentLoop:= changesOnCurrentLoop + rowsCluesComplete(solvedGameState);
-    solvedGameState:=applyChanges(solvedGameState,fChanges);
-    outputCurrentGameState(solvedGameState);
+
     changesOnCurrentLoop:=changesOnCurrentLoop + columnsCluesComplete(solvedGameState);
     solvedGameState:=applyChanges(solvedGameState,fChanges);
     outputCurrentGameState(solvedGameState);
+
+    changesOnCurrentLoop:=changesOnCurrentLoop + overlapColumns(solvedGameState);
+    solvedGameState:=applyChanges(solvedGameState,fChanges);
+    outputCurrentGameState(solvedGameState);
+
     changesOnCurrentLoop:= changesOnCurrentLoop + rowsCluesComplete(solvedGameState);
     solvedGameState:=applyChanges(solvedGameState,fChanges);
     outputCurrentGameState(solvedGameState);
+
+    changesOnCurrentLoop:=changesOnCurrentLoop + columnsCluesComplete(solvedGameState);
+    solvedGameState:=applyChanges(solvedGameState,fChanges);
+    outputCurrentGameState(solvedGameState);
+
+    changesOnCurrentLoop:= changesOnCurrentLoop + edgeProximityRows(solvedGameState);
+    solvedGameState:=applyChanges(solvedGameState,fChanges);
+    outputCurrentGameState(solvedGameState);
+
+    changesOnCurrentLoop:= changesOnCurrentLoop + rowsCluesComplete(solvedGameState);
+    solvedGameState:=applyChanges(solvedGameState,fChanges);
+    outputCurrentGameState(solvedGameState);
+
+    changesOnCurrentLoop:=changesOnCurrentLoop + columnsCluesComplete(solvedGameState);
+    solvedGameState:=applyChanges(solvedGameState,fChanges);
+    outputCurrentGameState(solvedGameState);
+
+    changesOnCurrentLoop:= changesOnCurrentLoop + edgeProximityColumns(solvedGameState);
+    solvedGameState:=applyChanges(solvedGameState,fChanges);
+    outputCurrentGameState(solvedGameState);
+
+    changesOnCurrentLoop:= changesOnCurrentLoop + rowsCluesComplete(solvedGameState);
+    solvedGameState:=applyChanges(solvedGameState,fChanges);
+    outputCurrentGameState(solvedGameState);
+
+    changesOnCurrentLoop:=changesOnCurrentLoop + columnsCluesComplete(solvedGameState);
+    solvedGameState:=applyChanges(solvedGameState,fChanges);
+    outputCurrentGameState(solvedGameState);
+
     writeln('end loop '+loopCounter.tostring+' ----------------');
     loopCounter:=loopCounter+1;
     until changesOnCurrentLoop = 0;
