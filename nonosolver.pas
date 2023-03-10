@@ -40,6 +40,7 @@ type
     function applyChanges(gameState:TGameState;gameStateChanges:TGameStateChanges):TGameState;
     function setClueCandidates(spaces: TGameSpaces;clues:TClueCells):TGameSpaces;
     function getSpacesForGameCells(gameCells_:TGameCells):TGameSpaces;
+    function getSequenceLength(cells_:TGameCells;start_:integer;backwards_:boolean=false):integer;
     procedure outputCurrentGameState(gameState:TGameState);
 
     public
@@ -99,6 +100,8 @@ begin
       end;
 end;
 
+//If the first clue is (eg) value 2 and the third cell from the edge is filled in
+//then the first cell must be empty
 function TNonogramSolver.edgeProximityRows(gameState: TGameState): integer;
 var
   rowIndex:integer;
@@ -120,15 +123,72 @@ end;
 
 function TNonogramSolver.edgeProximityRow(gameState: TGameState; rowId: integer
   ): TGameStateChanges;
+var
+  cells:TGameCells;
+  clues:TClueCells;
+  firstClue,lastClue:TClueCell;
+  firstFilledSequenceStart,firstFilledSequenceLength:integer;
+  lastFilledSequenceStart,lastFilledSequenceLength:integer;
+  mustCrossEnd,mustCrossStart:integer;
+  sequenceColour:TColor;
 begin
   result:=TGameStateChanges.create;
-
+  cells:=gameState.gameBlock[rowId];
+  clues:=gameState.rowClues[rowId];
+  firstClue:=clues[pred(clues.size)];
+  lastClue:=clues[0];
+  firstFilledSequenceStart:=cells.firstFilled;
+  firstFilledSequenceLength:=getSequenceLength(cells, firstFilledSequenceStart);
+  lastFilledSequenceStart:=cells.lastFilled;
+  lastFilledSequenceLength:=getSequenceLength(cells,lastFilledSequenceStart,true);
+  if (firstFilledSequenceStart > -1) then
+    begin
+    sequenceColour:=cells[firstFilledSequenceStart].colour;
+    if (firstFilledSequenceStart < firstClue.value + 1)
+      and (sequenceColour = firstClue.colour) then
+      begin
+      mustCrossStart:=0;
+      mustCrossEnd:=(firstFilledSequenceStart + firstFilledSequenceLength -(firstClue.value + 1));
+      //cells that must be filled
+      result.concat(
+        generateChanges(
+          gameState,rowId,rowId,firstFilledSequenceStart, firstClue.value - 1,cfFill,sequenceColour));
+      //cells that cannot be filled
+      result.concat(
+        generateChanges(
+          gameState,rowId,rowId,mustCrossStart,mustCrossEnd,cfCross));
+      end;
+    end;
+  if (lastFilledSequenceStart > - 1) then
+    begin
+    sequenceColour:=cells[lastFilledSequenceStart].colour;
+    //sums a little more complicated here
+    if ((cells.size - (lastFilledSequenceStart + 1)) < (lastClue.value +1))
+      and (sequenceColour = lastClue.colour) then
+      begin
+      mustCrossStart:=lastFilledSequenceStart - (lastFilledSequenceLength - 1)+lastClue.value;
+      mustCrossEnd:=pred(cells.size);
+      //cells that must be filled
+      result.concat(
+        generateChanges(
+          gameState,rowId,rowId, (cells.size - lastClue.value),lastFilledSequenceStart,cfFill,sequenceColour));
+      //cells that cannot be filled
+      result.concat(
+        generateChanges(
+          gameState,rowId,rowId, mustCrossStart,mustCrossEnd,cfCross));
+      end;
+    end;
 end;
 
 function TNonogramSolver.edgeProximityColumn(gameState: TGameState;
   columnId: integer): TGameStateChanges;
+var
+  cells:TGameCells;
+  clues:TClueCells;
 begin
   result:=TGameStateChanges.create;
+  cells:= gameState.gameBlock.getColumn(columnId);
+  clues:= gameState.columnClues[columnId];
 
 end;
 
@@ -558,6 +618,26 @@ begin
       endBlock:=-1;
       end;
     end;
+end;
+
+function TNonogramSolver.getSequenceLength(cells_: TGameCells; start_: integer;backwards_:boolean): integer;
+var
+  index:integer;
+  sequenceColour:TColor;
+  sequenceEnd:boolean;
+begin
+  result:=0;
+  index:=start_;
+  sequenceEnd:=false;
+  if (cells_[index].fill <> cfFill) then exit;
+  result:=result+1;
+  sequenceColour:=cells_[index].colour;
+  repeat
+  if backwards_ then index:=index-1 else index:= index+1;
+  if (index >= 0)and(index < pred(cells_.size)) and (cells_[index].fill = cfFill)
+    and (cells_[index].colour = sequenceColour)
+    then result:=result+1 else sequenceEnd:=true;
+  until sequenceEnd;
 end;
 
 procedure TNonogramSolver.outputCurrentGameState(gameState:TGameState);

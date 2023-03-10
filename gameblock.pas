@@ -19,6 +19,8 @@ type
   function push(element:TGameCell):integer;
   function indexOf(element:TGameCell):integer;
   function filledCells:integer;
+  function firstFilled:integer;
+  function lastFilled:integer;
   end;
 
   { TGameBlockArrayHelper }
@@ -80,6 +82,32 @@ begin
   result:=0;
   for index:=0 to pred(self.size) do
     if (self[index].fill = cfFill) then result:=result+1;
+end;
+
+function TGameCellsArrayHelper.firstFilled: integer;
+var
+  index:integer;
+begin
+  result:=-1;
+  for index:=0 to pred(Self.size) do
+    if self[index].fill = cfFill then
+      begin
+        result:=index;
+        exit;
+      end;
+end;
+
+function TGameCellsArrayHelper.lastFilled: integer;
+var
+  index:integer;
+begin
+  result:=-1;
+  for index:= pred(Self.size) downto 0 do
+    if self[index].fill = cfFill then
+      begin
+        result:=index;
+        exit;
+      end;
 end;
 
 end.
