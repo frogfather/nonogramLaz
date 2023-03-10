@@ -19,7 +19,6 @@ type
   function push(element:TGameCell):integer;
   function indexOf(element:TGameCell):integer;
   function filledCells:integer;
-  function spaces:TGameSpaces;
   end;
 
   { TGameBlockArrayHelper }
@@ -81,39 +80,6 @@ begin
   result:=0;
   for index:=0 to pred(self.size) do
     if (self[index].fill = cfFill) then result:=result+1;
-end;
-
-function TGameCellsArrayHelper.spaces: TGameSpaces;
-var
-  index:integer;
-  startBlock,endBlock:integer;
-begin
-  result:=TGameSpaces.create;
-  startBlock:=-1;
-  endBlock:=-1;
-  for index:=0 to self.size do
-    begin
-    if (index < self.size) and (self[index].fill <> cfCross) then
-      begin
-      if startBlock = -1 then
-        begin
-        startBlock:=index;
-        endBlock:=index;
-        end
-      else endBlock:=endBlock + 1;
-      end else if (endBlock > -1) then
-      begin
-      result.push(TGameSpace.Create(startBlock,endBlock));
-      startBlock:=-1;
-      endBlock:=-1;
-      end;
-    end;
-
-  if (result.size > 0) then for index:=0 to pred(result.size) do
-    begin
-    writeln('space '+index.toString+' start '+result[index].startPos.toString+':'+result[index].endPos.ToString);
-    end;
-
 end;
 
 end.
