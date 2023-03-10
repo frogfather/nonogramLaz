@@ -10,7 +10,7 @@ uses
 type
   
   { TSpaceClueBlock }
-
+  //used for positioning clues in spaces to work out which clues will fit where
   TSpaceClueBlock = class(TInterfacedObject)
   private
     fClueId:Integer;

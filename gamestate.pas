@@ -13,24 +13,24 @@ type
 
  TGameState = class(TInterfacedObject)
 private
-  fGameBlock: TGameBlock;
+  fGameGrid: TGameGrid;
   fRowClues: TClueBlock;
   fColumnClues:TClueBlock;
 public
-  property gameBlock:TGameBlock read fGameBlock;
+  property gameGrid:TGameGrid read fGameGrid;
   property rowClues: TClueBlock read fRowClues;
   property columnClues: TClueBlock read fColumnClues;
-  constructor create(gameBlock_:TGameBlock;rowClues_,columnClues_:TClueBlock);
+  constructor create(gameGrid_:TGameGrid;rowClues_,columnClues_:TClueBlock);
 end;
 
 implementation
 
 { TGameState }
 
-constructor TGameState.create(gameBlock_: TGameBlock; rowClues_,
+constructor TGameState.create(gameGrid_: TGameGrid; rowClues_,
   columnClues_: TClueBlock);
 begin
-  fGameBlock:=gameBlock_;
+  fGameGrid:=gameGrid_;
   fRowClues:=rowClues_;
   fColumnClues:=columnClues_;
 end;

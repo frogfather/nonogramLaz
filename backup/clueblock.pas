@@ -111,8 +111,8 @@ end;
 
 constructor TSpaceClueBlock.create(clueId_, clueSize_:integer);
 begin
-  fClueId:=clueId;
-  fClueSize:=clueSize;
+  fClueId:=clueId_;
+  fClueSize:=clueSize_;
   fSpaceLeft:=0;
   fSpaceRight:=0;
 end;

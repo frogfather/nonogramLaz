@@ -32,6 +32,12 @@ type
     function edgeProximityRow(gameState:TGameState;rowId:integer):TGameStateChanges;
     function edgeProximityColumn(gameState:TGameState;columnId:integer):TGameStateChanges;
 
+    function completeCluesRows(gameState:TGameState):integer;
+    function completeCluesColumns(gameState:TGameState):integer;
+    function completeCluesRow(gameState:TGameState;rowId:integer):TGameStateChanges;
+    function completeCluesColumn(gameState:TGameState;columnId:integer):TGameStateChanges;
+
+
     function generateChanges(gameState:TGameState;rowStart,rowEnd,colStart,colEnd:Integer;fill:ECellFillMode=cfFill;fillColour:TColor=clBlack):TGameStateChanges;
     function clueInSpace(spaces:TGameSpaces;clue:TClueCell):integer;
     function getAllowedCluesForCurrentSpace(spaces:TGameSpaces;spaceIndex:integer):TClueCells;
@@ -62,7 +68,7 @@ var
   rowIndex:integer;
 begin
   result:=0;
-  for rowIndex:=0 to pred(GameState.gameBlock.size) do
+  for rowIndex:=0 to pred(GameState.gameGrid.size) do
     result:= result + processStepResult(rowCluesComplete(gameState,rowIndex));
 end;
 
@@ -71,8 +77,8 @@ var
   colIndex:integer;
 begin
   result:=0;
-  if GameState.gameBlock.size = 0 then exit;
-  for colIndex:=0 to pred(GameState.gameBlock[0].size) do
+  if GameState.gameGrid.size = 0 then exit;
+  for colIndex:=0 to pred(GameState.gameGrid[0].size) do
     result:= result + processStepResult(columnCluesComplete(gameState,colIndex));
 end;
 
@@ -85,7 +91,7 @@ var
 begin
   result:=TGameStateChanges.create;
   rowClues_:=gameState.rowClues[rowId];
-  rowCells_:=gameState.gameBlock[rowId];
+  rowCells_:=gameState.gameGrid[rowId];
   //First, if the filled cells count matches the total of the clues we can
   //fill in all unfilled spaces with crosses
   if (rowClues_.clueSum = rowCells_.filledCells)
@@ -95,20 +101,22 @@ begin
       result.concat(generateChanges(gameState,rowId,rowId,0,pred(rowCells_.size),cfCross));
       end;
   //Next, look for clues that are the maximum size they can be
-  //Need to think about this
-  //for a given filled in cell, which clues could this be?
-  //what size is it?
+  //find blocks of filled in cells
+  //for a given block:
+  //what size is it? where is it?
+  //is there only one clue it can be?
+  //Is it the same size as the clue?
 end;
 
 function TNonogramSolver.columnCluesComplete(gameState: TGameState;
   columnId: integer): TGameStateChanges;
 begin
   result:=TGameStateChanges.create;
-  if (gameState.columnClues[columnId].clueSum = gameState.gameBlock.getColumn(columnId).filledCells)
+  if (gameState.columnClues[columnId].clueSum = gameState.gameGrid.getColumn(columnId).filledCells)
     then
       begin
       writeln('Column '+columnId.toString+' complete. Generate changes for column '+columnId.ToString);
-      result.concat(generateChanges(gameState,0,pred(gameState.gameBlock.size),columnId,columnId,cfCross));
+      result.concat(generateChanges(gameState,0,pred(gameState.gameGrid.size),columnId,columnId,cfCross));
       end;
 end;
 
@@ -119,7 +127,7 @@ var
   rowIndex:integer;
 begin
   result:=0;
-  for rowIndex:=0 to pred(GameState.gameBlock.size) do
+  for rowIndex:=0 to pred(GameState.gameGrid.size) do
     result:= result + processStepResult(edgeProximityRow(gameState,rowIndex));
 end;
 
@@ -128,8 +136,8 @@ var
   colIndex:integer;
 begin
   result:=0;
-  if GameState.gameBlock.size = 0 then exit;
-  for colIndex:=0 to pred(GameState.gameBlock[0].size) do
+  if GameState.gameGrid.size = 0 then exit;
+  for colIndex:=0 to pred(GameState.gameGrid[0].size) do
     result:= result + processStepResult(edgeProximityColumn(gameState,colIndex));
 end;
 
@@ -145,7 +153,7 @@ var
   sequenceColour:TColor;
 begin
   result:=TGameStateChanges.create;
-  cells:=gameState.gameBlock[rowId];
+  cells:=gameState.gameGrid[rowId];
   clues:=gameState.rowClues[rowId];
   firstClue:=clues[pred(clues.size)];
   lastClue:=clues[0];
@@ -204,7 +212,7 @@ var
   sequenceColour:TColor;
 begin
   result:=TGameStateChanges.create;
-  cells:=gameState.gameBlock.getColumn(columnId);
+  cells:=gameState.gameGrid.getColumn(columnId);
   clues:=gameState.columnClues[columnId];
   firstClue:=clues[pred(clues.size)];
   lastClue:=clues[0];
@@ -251,13 +259,51 @@ begin
     end;
 end;
 
+function TNonogramSolver.completeCluesRows(gameState: TGameState): integer;
+var
+  rowIndex:integer;
+begin
+  result:=0;
+  for rowIndex:=0 to pred(GameState.gameGrid.size) do
+    result:= result + processStepResult(completeCluesRow(gameState,rowIndex));
+end;
+
+function TNonogramSolver.completeCluesColumns(gameState: TGameState): integer;
+var
+  colIndex:integer;
+begin
+  result:=0;
+  if GameState.gameGrid.size = 0 then exit;
+  for colIndex:=0 to pred(GameState.gameGrid[0].size) do
+    result:= result + processStepResult(completeCluesColumn(gameState,colIndex));
+end;
+
+function TNonogramSolver.completeCluesRow(gameState: TGameState; rowId: integer
+  ): TGameStateChanges;
+var
+  gameCellIndex,clueIndex:integer;
+  blockStart,blockLength:integer;
+begin
+  result:=TGameStateChanges.create;
+  //find each filled cell and work out which candidates it can be
+  //each game cell has a rowCandidates and columnCandidates property
+
+end;
+
+function TNonogramSolver.completeCluesColumn(gameState: TGameState;
+  columnId: integer): TGameStateChanges;
+begin
+  result:=TGameStateChanges.create;
+
+end;
+
 function TNonogramSolver.overlapRows(gameState:TGameState): integer;
 var
   rowIndex:integer;
 begin
   result:=0;
   //each row of the game block is a row of the puzzle
-  for rowIndex:=0 to pred(GameState.gameBlock.size) do
+  for rowIndex:=0 to pred(GameState.gameGrid.size) do
     result:= result + processStepResult(overlapRow(gameState,rowIndex));
 end;
 
@@ -266,8 +312,8 @@ var
   colIndex:integer;
 begin
   result:=0;
-  if GameState.gameBlock.size = 0 then exit;
-  for colIndex:=0 to pred(GameState.gameBlock[0].size) do
+  if GameState.gameGrid.size = 0 then exit;
+  for colIndex:=0 to pred(GameState.gameGrid[0].size) do
     result:= result + processStepResult(overlapColumn(gameState,colIndex));
 end;
 
@@ -285,7 +331,7 @@ begin
   clues:=GameState.rowClues[rowId];
   result:=TGameStateChanges.create;
   writeln('spaces for row '+rowId.toString);
-  emptySpaces:=getSpacesForGameCells(gameState.gameBlock[rowId]);
+  emptySpaces:=getSpacesForGameCells(gameState.gameGrid[rowId]);
   spaces:= setClueCandidates(emptySpaces,clues);
 
   if clues.size = 0 then exit;
@@ -349,7 +395,7 @@ var
   rowStart,rowEnd:Integer;
 begin
   clues:=GameState.columnClues[columnId];
-  gameCells:=gameState.gameBlock.getColumn(columnId);
+  gameCells:=gameState.gameGrid.getColumn(columnId);
   result:=TGameStateChanges.create;
   writeln('spaces for col '+columnId.toString);
   emptySpaces:=getSpacesForGameCells(gameCells);
@@ -423,7 +469,7 @@ begin
   for rowIndex:= rowStart to rowEnd do
   for colIndex:= colStart to colEnd do
     begin
-    cell:=gameState.gameBlock[rowIndex][colIndex];
+    cell:=gameState.gameGrid[rowIndex][colIndex];
     if (cell.fill = cfEmpty)
       then result.push(TGameStateChange.create(ctGame,colIndex,rowIndex,
                                                      fill,cell.fill,
@@ -487,65 +533,65 @@ end;
 
 function TNonogramSolver.copyGameState(initialState: TGameState): TGameState;
 var
-  gameBlock:TGameBlock;
+  gameGrid:TGameGrid;
   gameCells:TGameCells;
   row,col:integer;
   cellId:TGUID;
   clueValue,clueIndex:integer;
   clueColour:TColor;
-  blockIndex,cellIndex:integer;
+  gridIndex,cellIndex:integer;
   rowClueBlock,columnClueBlock:TClueBlock;
   clueCells:TClueCells;
 begin
   //game cells
-  gameBlock:=TGameBlock.Create;
+  gameGrid:=TGameGrid.Create;
   gameCells:=TGameCells.Create;
-  for blockIndex:= 0 to pred(initialState.gameBlock.size) do
+  for gridIndex:= 0 to pred(initialState.gameGrid.size) do
     begin
     setLength(gameCells,0);
-    for cellIndex:=0 to Pred(initialState.gameBlock[blockIndex].size) do
+    for cellIndex:=0 to Pred(initialState.gameGrid[gridIndex].size) do
       begin
-      col:= initialState.gameBlock[blockIndex][cellIndex].col;
-      row:= initialState.gameBlock[blockIndex][cellIndex].row;
-      cellId:=initialState.gameBlock[blockIndex][cellIndex].cellId;
+      col:= initialState.gameGrid[gridIndex][cellIndex].col;
+      row:= initialState.gameGrid[gridIndex][cellIndex].row;
+      cellId:=initialState.gameGrid[gridIndex][cellIndex].cellId;
       gameCells.push(TGameCell.create(col,row,cellId,clDefault));
       end;
-    gameBlock.push(gameCells);
+    gameGrid.push(gameCells);
     end;
   //row clues
   rowClueBlock:=TClueBlock.Create;
   clueCells:=TClueCells.Create;
-  for blockIndex:=0 to pred(initialState.rowClues.size) do
+  for gridIndex:=0 to pred(initialState.rowClues.size) do
     begin
     setLength(clueCells,0);
-    for cellIndex:=0 to pred(initialState.rowClues[blockIndex].size) do
+    for cellIndex:=0 to pred(initialState.rowClues[gridIndex].size) do
       begin
-      row:=initialState.rowClues[blockIndex][cellIndex].row;
-      col:=initialState.rowClues[blockIndex][cellIndex].column;
-      clueIndex:=initialState.rowClues[blockIndex][cellIndex].index;
-      clueValue:=initialState.rowClues[blockIndex][cellIndex].value;
-      clueColour:=initialState.rowClues[blockIndex][cellIndex].colour;
+      row:=initialState.rowClues[gridIndex][cellIndex].row;
+      col:=initialState.rowClues[gridIndex][cellIndex].column;
+      clueIndex:=initialState.rowClues[gridIndex][cellIndex].index;
+      clueValue:=initialState.rowClues[gridIndex][cellIndex].value;
+      clueColour:=initialState.rowClues[gridIndex][cellIndex].colour;
       clueCells.push(TClueCell.create(row,col,clueValue,clueIndex,clueColour));
       end;
     rowClueBlock.push(clueCells);
     end;
   //column clues
   columnClueBlock:=TClueBlock.Create;
-  for blockIndex:=0 to pred(initialState.columnClues.size) do
+  for gridIndex:=0 to pred(initialState.columnClues.size) do
     begin
     setLength(clueCells,0);
-    for cellIndex:=0 to pred(initialState.columnClues[blockIndex].size) do
+    for cellIndex:=0 to pred(initialState.columnClues[gridIndex].size) do
       begin
-      row:=initialState.columnClues[blockIndex][cellIndex].row;
-      col:=initialState.columnClues[blockIndex][cellIndex].column;
-      clueIndex:=initialState.columnClues[blockIndex][cellIndex].index;
-      clueValue:=initialState.columnClues[blockIndex][cellIndex].value;
-      clueColour:=initialState.columnClues[blockIndex][cellIndex].colour;
+      row:=initialState.columnClues[gridIndex][cellIndex].row;
+      col:=initialState.columnClues[gridIndex][cellIndex].column;
+      clueIndex:=initialState.columnClues[gridIndex][cellIndex].index;
+      clueValue:=initialState.columnClues[gridIndex][cellIndex].value;
+      clueColour:=initialState.columnClues[gridIndex][cellIndex].colour;
       clueCells.push(TClueCell.create(row,col,clueValue,clueIndex,clueColour));
       end;
     columnClueBlock.push(clueCells);
     end;
-  result:=TGameState.create(gameBlock,rowClueBlock,columnClueBlock);
+  result:=TGameState.create(gameGrid,rowClueBlock,columnClueBlock);
 end;
 
 //TODO - move this somewhere common so that the game can access it
@@ -560,8 +606,8 @@ begin
     change:=gameStateChanges[index];
     if (change.cellType = ctGame) then
       begin
-      GameState.gameBlock[change.row][change.column].fill:=change.cellFillMode;
-      GameState.gameBlock[change.row][change.column].colour:=change.colour;
+      GameState.gameGrid[change.row][change.column].fill:=change.cellFillMode;
+      GameState.gameGrid[change.row][change.column].colour:=change.colour;
       end; //todo: clues
     end;
   result:=gameState;
@@ -656,26 +702,26 @@ function TNonogramSolver.getSpacesForGameCells(gameCells_: TGameCells
   ): TGameSpaces;
 var
   index:integer;
-  startBlock,endBlock:integer;
+  startSpace,endSpace:integer;
 begin
   result:=TGameSpaces.create;
-  startBlock:=-1;
-  endBlock:=-1;
+  startSpace:=-1;
+  endSpace:=-1;
   for index:=0 to gameCells_.size do
     begin
     if (index < gameCells_.size) and (gameCells_[index].fill <> cfCross) then
       begin
-      if startBlock = -1 then
+      if startSpace = -1 then
         begin
-        startBlock:=index;
-        endBlock:=index;
+        startSpace:=index;
+        endSpace:=index;
         end
-      else endBlock:=endBlock + 1;
-      end else if (endBlock > -1) then
+      else endSpace:=endSpace + 1;
+      end else if (endSpace > -1) then
       begin
-      result.push(TGameSpace.Create(startBlock,endBlock));
-      startBlock:=-1;
-      endBlock:=-1;
+      result.push(TGameSpace.Create(startSpace,endSpace));
+      startSpace:=-1;
+      endSpace:=-1;
       end;
     end;
 end;
