@@ -5,7 +5,7 @@ unit gameState;
 interface
 
 uses
-  Classes, SysUtils,gameBlock,clueCell;
+  Classes, SysUtils,gamegrid,clueCell;
 
 type 
 

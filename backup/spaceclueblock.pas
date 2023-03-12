@@ -1,4 +1,4 @@
-unit clueBlock;
+unit spaceclueblock;
 
 {$mode ObjFPC}{$H+}
 {$MODESWITCH ADVANCEDRECORDS}

@@ -5,8 +5,8 @@ unit nonosolver;
 interface
 
 uses
-  Classes, SysUtils,gameState,gameStateChanges,gameStateChange,gameBlock,gameCell,
-  enums,graphics,arrayUtils,clueCell,iNonoSolver,gameSpace,clueBlock;
+  Classes, SysUtils,gameState,gameStateChanges,gameStateChange,gamegrid,gameCell,
+  enums,graphics,arrayUtils,clueCell,iNonoSolver,gameSpace,spaceclueblock;
 type
   
   { TNonogramSolver }
@@ -281,13 +281,43 @@ end;
 function TNonogramSolver.completeCluesRow(gameState: TGameState; rowId: integer
   ): TGameStateChanges;
 var
-  gameCellIndex,clueIndex:integer;
-  blockStart,blockLength:integer;
+  cells:TGameCells;
+  cellIndex:integer;
+  filledSequenceStart,filledSequenceLength,firstCellAfterSequence:integer;
+  done:boolean;
+  clues:TClueCells;
+  clueIndex,spaceIndex:integer;
+  emptySpaces,spaces:TGameSpaces;
+  spaceFoundForSequence:boolean;
 begin
   result:=TGameStateChanges.create;
-  //find each filled cell and work out which candidates it can be
-  //each game cell has a rowCandidates and columnCandidates property
+  cells:= gameState.gamegrid[rowId];
+  clues:=gameState.rowClues[rowId];
+  emptySpaces:=getSpacesForGameCells(cells);
+  spaces:= setClueCandidates(emptySpaces,clues);
+  done:=false;
+  firstCellAfterSequence:=-1;
+  while not done do
+    begin
+    filledSequenceStart:=cells.firstFilled(firstCellAfterSequence);
+    done:=filledSequenceStart= -1;
+    if not done then
+      begin
+      filledSequenceLength:=cells.sequenceLength(filledSequenceStart);
+      firstCellAfterSequence:=filledSequenceStart + filledSequenceLength;
+      //which space is this sequence in?
+      spaceIndex:=0;
+      spaceFoundForSequence:=false;
+        while not spaceFoundForSequence do
+          begin
+          spaceFoundForSequence:=(spaces[spaceIndex].startPos <= filledSequenceStart)
+            and (spaces[spaceIndex].endPos >= filledSequenceStart + filledSequenceLength - 1);
+          if not spaceFoundForSequence then spaceIndex:=spaceIndex + 1;
+          end;
+        //now we've found the space. Which clues can be here?
 
+      end;
+    end;
 end;
 
 function TNonogramSolver.completeCluesColumn(gameState: TGameState;
@@ -343,7 +373,6 @@ begin
       begin
       currentSpace:= spaces[clueSpaceIndex];
       allowedCluesForCurrentSpace:=getAllowedCluesForCurrentSpace(spaces,clueSpaceIndex);
-
       limits:= clues.limits(allowedCluesForCurrentSpace,currentSpace.spaceSize, clueIndex);
       if (limits.Y <= limits.X) then
         begin
@@ -649,7 +678,7 @@ begin
       spaceClueBlock:=TSpaceClueBlock.Create(clueIndex,currentClue.value);
       if (clueIndex > 0) and (currentClue.colour = clues[clueIndex - 1].colour)
         then spaceClueBlock.spaceRight:=1;
-      result[spaceIndex].blocks.push(spaceClueBlock);
+      result[spaceIndex].spaceClueBlocks.push(spaceClueBlock);
       end else
       begin
       writeln('Raise an error - no space for clues');
@@ -683,13 +712,13 @@ begin
       if (lastSpaceClueWillFit <> clueCurrentlyAt) then
         begin
         //remove the clue from its last position
-        result[clueCurrentlyAt].blocks.delete(clueIndex);
+        result[clueCurrentlyAt].spaceClueBlocks.delete(clueIndex);
         //and add it to the new position
         spaceClueBlock:=TSpaceClueBlock.create(clueIndex,clues[clueIndex].value);
         //If there's a previous block of the same colour then there should be a space to its left
         if (clueIndex < pred(clues.size)) and (clues[clueIndex].colour = clues[clueIndex+1].colour)
           then spaceClueBlock.spaceLeft:=1;
-        result[lastSpaceClueWillFit].blocks.push(spaceClueBlock);
+        result[lastSpaceClueWillFit].spaceClueBlocks.push(spaceClueBlock);
 
         lastAllowedSpace:=lastSpaceClueWillFit;
         end;

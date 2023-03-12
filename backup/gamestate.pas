@@ -17,7 +17,7 @@ private
   fRowClues: TClueBlock;
   fColumnClues:TClueBlock;
 public
-  property gameBlock:TGameGrid read fGameGrid;
+  property gameGrid:TGameGrid read fGameGrid;
   property rowClues: TClueBlock read fRowClues;
   property columnClues: TClueBlock read fColumnClues;
   constructor create(gameGrid_:TGameGrid;rowClues_,columnClues_:TClueBlock);

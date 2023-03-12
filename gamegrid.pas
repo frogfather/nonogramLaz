@@ -1,4 +1,4 @@
-unit gameBlock;
+unit gamegrid;
 
 {$mode ObjFPC}{$H+}
 {$MODESWITCH ADVANCEDRECORDS}
@@ -6,7 +6,7 @@ unit gameBlock;
 interface
 
 uses
-  Classes, SysUtils,gameCell,enums,gameSpace;
+  Classes, SysUtils,gameCell,enums,graphics;
 
 type
   TGameCells = array of TGameCell; //cells for a row
@@ -19,8 +19,9 @@ type
   function push(element:TGameCell):integer;
   function indexOf(element:TGameCell):integer;
   function filledCells:integer;
-  function firstFilled:integer;
-  function lastFilled:integer;
+  function firstFilled(start_:integer=-1):integer;
+  function lastFilled(end_:integer=-1):integer;
+  function sequenceLength(start:integer):integer;
   end;
 
   { TGameGridArrayHelper }
@@ -84,12 +85,14 @@ begin
     if (self[index].fill = cfFill) then result:=result+1;
 end;
 
-function TGameCellsArrayHelper.firstFilled: integer;
+function TGameCellsArrayHelper.firstFilled(start_:integer): integer;
 var
-  index:integer;
+  index,startIndex:integer;
 begin
   result:=-1;
-  for index:=0 to pred(Self.size) do
+  if start_=-1 then startIndex:=0 else startIndex:=start_;
+  if (startIndex > pred(self.size))or(startIndex < 0)then exit;
+  for index:= startIndex to pred(Self.size) do
     if self[index].fill = cfFill then
       begin
         result:=index;
@@ -97,17 +100,42 @@ begin
       end;
 end;
 
-function TGameCellsArrayHelper.lastFilled: integer;
+function TGameCellsArrayHelper.lastFilled(end_:integer): integer;
 var
-  index:integer;
+  index,startIndex:integer;
 begin
   result:=-1;
-  for index:= pred(Self.size) downto 0 do
+  if end_=-1 then startIndex:=pred(self.size) else startIndex:=end_;
+  if (startIndex > pred(self.size))or(startIndex < 0)then exit;
+  for index:= startIndex downto 0 do
     if self[index].fill = cfFill then
       begin
         result:=index;
         exit;
       end;
+end;
+
+function TGameCellsArrayHelper.sequenceLength(start: integer): integer;
+var
+  index:integer;
+  endSeq:boolean;
+  seqColour:TColor;
+begin
+  result:=0;
+  if (start < 0) or (start > pred(self.size)) or (self[start].fill <> cfFill) then exit;
+  index:=start;
+  endSeq:=false;
+  seqColour:=self[start].colour;
+  while not endSeq do
+    begin
+    if (index < pred(self.size))and(Self[index].fill = cfFill) and (self[index].colour = seqColour)
+    then
+      begin
+      result:= result + 1;
+      index:=index+1;
+      end
+    else endSeq:=true;
+    end;
 end;
 
 end.

@@ -30,7 +30,7 @@ type
     public
     constructor create;
     constructor create(gameGrid_:TGameGrid;rowClueBlock_:TClueBlock;colClueBlock_:TClueBlock);
-    property gameBlock:TGameGrid read fGameGrid write fGameGrid;
+    property gameGrid:TGameGrid read fGameGrid write fGameGrid;
     property rowClueBlock:TClueBlock read fRowClueBlock write fRowClueBlock;
     property columnClueBlock:TClueBlock read fColumnClueBlock write fColumnClueBlock;
     property id:TGUID read fId write fId;

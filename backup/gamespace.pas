@@ -6,7 +6,7 @@ unit gameSpace;
 interface
 
 uses
-  Classes, SysUtils,clueCell,clueBlock;
+  Classes, SysUtils,clueCell,spaceclueblock;
 
 type
   
@@ -17,7 +17,7 @@ type
     fStart:integer;
     fEnd:integer;
     fCandidates:TClueCells;
-    fBlocks:TClueBlocks;
+    fBlocks:TSpaceClueBlocks;
     function getSpaceSize:integer;
     function getFreeSpace:integer;
     public
@@ -26,7 +26,7 @@ type
     property endPos:integer read fEnd;
     property spaceSize: integer read getSpaceSize;
     property candidates:TClueCells read fCandidates write fCandidates;
-    property blocks:TClueBlocks read fBlocks write fBlocks;
+    property blocks:TSpaceClueBlocks read fBlocks write fBlocks;
     property freeSpace: integer read getFreeSpace;
   end;
 
@@ -60,6 +60,7 @@ begin
   fStart:=start_;
   fEnd:=end_;
   fCandidates:=TClueCells.create;
+  fBlocks:=TSpaceClueBlocks.create;
 end;
 
 { TGameSpacesHelper }

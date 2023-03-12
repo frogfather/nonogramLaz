@@ -5,7 +5,7 @@ unit nonoDocHandler;
 interface
 
 uses
-  Classes, SysUtils,xml_doc_handler,gameBlock,gameCell,clueCell,graphics,typinfo,enums,laz2_DOM,arrayUtils;
+  Classes, SysUtils,xml_doc_handler,gamegrid,gameCell,clueCell,graphics,typinfo,enums,laz2_DOM,arrayUtils;
 type
   
   { TNonogramDocumentHandler }

@@ -528,7 +528,7 @@ begin
   result:=nil;
   if (row < 0)or(row > pred(dimensions.Y))
      or (column < 0) or (column > pred(dimensions.X)) then exit;
-  result:=fGameState.gameBlock[row][column];
+  result:=fGameState.gameGrid[row][column];
 end;
 
 function TNonogramGame.getCell(position_: TPoint): TGameCell;
