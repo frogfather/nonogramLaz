@@ -137,7 +137,7 @@ begin
   result:='';
   for index:= 0 to pred(self.size) do
     begin
-    result:=result+Self[index];
+    result:=result+Self[index].value.toString;
     if (index < pred(self.size))then result:=result+ separator;
     end;
 end;
