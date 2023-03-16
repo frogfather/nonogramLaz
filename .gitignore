@@ -3,6 +3,7 @@
 
 ### FreePascal ###
 nonoProj
+tests/nonotestproj
 *.lps
 *.compiled
 *.[oa]
