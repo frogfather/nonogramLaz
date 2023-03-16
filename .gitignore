@@ -4,6 +4,7 @@
 ### FreePascal ###
 nonoProj
 tests/nonotestproj
+backup/
 *.lps
 *.compiled
 *.[oa]
