@@ -752,8 +752,8 @@ begin
       and (gameCells[positionMarker - 1].fill = cfFill)
       and (gameCells[positionMarker - 1 ].colour = cluecolour) do
         begin
-        positionMarker:=positionMarker+1;
-        result.X:=result.X + 1;
+        positionMarker:=positionMarker-1;
+        result.Y:=result.Y - 1;
         writeln('cell '+positionMarker.tostring+' filled');
         end;
     if (count < currentClueIndex)

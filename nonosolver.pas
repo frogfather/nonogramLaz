@@ -645,9 +645,8 @@ begin
         if (clueIndex < pred(clues.size)) and (clues[clueIndex].colour = clues[clueIndex+1].colour)
           then spaceClueBlock.spaceLeft:=1;
         result[lastSpaceClueWillFit].blocks.push(spaceClueBlock);
-
-        lastAllowedSpace:=lastSpaceClueWillFit;
         end;
+      lastAllowedSpace:=lastSpaceClueWillFit;
       end;
     end;
 
