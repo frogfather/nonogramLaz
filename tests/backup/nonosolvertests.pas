@@ -31,7 +31,10 @@ type
   published
     procedure overlapSingleClue;
     procedure overlapTwoCluesSameColour;
+    procedure overlapTwoCluesSameColourFilledCellMatchesFirstClue;
     procedure nonOverlapTwoCluesDifferentColour;
+    procedure overlapTwoCluesDifferentColourFilledCellMatchesSecondClue;
+    procedure overlapTwoCluesDifferentColourFilledCellMatchesFirstClue;
     procedure overlapTwoSpaces;
     procedure setCandidatesThreeSpaces;
     procedure setCandidatesThreeSpacesDifferentColours;
@@ -128,15 +131,40 @@ end;
 
 procedure TNonoSolverTests.overlapTwoCluesSameColour;
 begin
-  gameState_.rowClues[0].push(TClueCell.create(0,-1,2,0));
   gameState_.rowClues[0].push(TClueCell.create(0,-1,9,1));
+  gameState_.rowClues[0].push(TClueCell.create(0,-1,2,0));
+  AssertEquals(1,ngTestSolver.overlapRowMethod(gameState_,0).size);
+end;
+
+procedure TNonoSolverTests.overlapTwoCluesSameColourFilledCellMatchesFirstClue;
+begin
+  gameState_.rowClues[0].push(TClueCell.create(0,-1,9,1));
+  gameState_.rowClues[0].push(TClueCell.create(0,-1,2,0));
+  gameState_.gameBlock[0][2].fill:=cfFill;
   AssertEquals(1,ngTestSolver.overlapRowMethod(gameState_,0).size);
 end;
 
 procedure TNonoSolverTests.nonOverlapTwoCluesDifferentColour;
 begin
-  gameState_.rowClues[0].push(TClueCell.create(0,-1,2,0,clBlue));
   gameState_.rowClues[0].push(TClueCell.create(0,-1,9,1));
+  gameState_.rowClues[0].push(TClueCell.create(0,-1,2,0,clBlue));
+  AssertEquals(0,ngTestSolver.overlapRowMethod(gameState_,0).size);
+end;
+
+procedure TNonoSolverTests.overlapTwoCluesDifferentColourFilledCellMatchesSecondClue;
+begin
+  gameState_.rowClues[0].push(TClueCell.create(0,-1,9,1));
+  gameState_.rowClues[0].push(TClueCell.create(0,-1,2,0,clBlue));
+  gameState_.gameBlock[0][2].fill:=cfFill;
+  AssertEquals(0,ngTestSolver.overlapRowMethod(gameState_,0).size);
+end;
+
+procedure TNonoSolverTests.overlapTwoCluesDifferentColourFilledCellMatchesFirstClue;
+begin
+  gameState_.rowClues[0].push(TClueCell.create(0,-1,9,1));
+  gameState_.rowClues[0].push(TClueCell.create(0,-1,2,0,clBlue));
+  gameState_.gameBlock[0][2].fill:=cfFill;
+  gameState_.gameBlock[0][2].colour:=clBlue;
   AssertEquals(0,ngTestSolver.overlapRowMethod(gameState_,0).size);
 end;
 
@@ -181,6 +209,9 @@ begin
   AssertEquals(3,ngTestSolver.setClueCandidatesMethod(testSpaces,testClues)[0].candidates.size);
 end;
 
+//If there is enough space between the left side of the grid and the
+//first filled cell then we cannot make any deductions about what cells
+//should be filled.
 procedure TNonoSolverTests.edgeProximityRowLeftNoAction;
 var
   changes:TGameStateChanges;
@@ -191,6 +222,9 @@ begin
   assertEquals(0,changes.size);
 end;
 
+//If the first cell is as far left as possible
+//it would cover an unfilled cell - this should
+//have been caught by previous methods
 procedure TNonoSolverTests.edgeProximityRowLeftFillOne;
 var
   changes:TGameStateChanges;
@@ -202,6 +236,8 @@ begin
   AssertEquals(5,changes[0].column);
 end;
 
+//The position of the filled cells means that cells 0 and 1 cannot
+//be filled so we mark them with crosses
 procedure TNonoSolverTests.edgeProximityRowLeftCrossTwo;
 var
   changes:TGameStateChanges;
@@ -218,6 +254,8 @@ begin
   Assert(changes[1].cellFillMode = cfCross);
 end;
 
+//The length of the filled cells exactly matches the size of the first clue
+//so all the cells before the first filled cell should be marked with crosses
 procedure TNonoSolverTests.edgeProximityRowLeftFilledCellsMatchFirstClue;
 var
   changes:TGameStateChanges;

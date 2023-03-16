@@ -31,7 +31,10 @@ type
   published
     procedure overlapSingleClue;
     procedure overlapTwoCluesSameColour;
+    procedure overlapTwoCluesSameColourFilledCellMatchesFirstClue;
     procedure nonOverlapTwoCluesDifferentColour;
+    procedure overlapTwoCluesDifferentColourFilledCellMatchesSecondClue;
+    procedure overlapTwoCluesDifferentColourFilledCellMatchesFirstClue;
     procedure overlapTwoSpaces;
     procedure setCandidatesThreeSpaces;
     procedure setCandidatesThreeSpacesDifferentColours;
@@ -128,16 +131,41 @@ end;
 
 procedure TNonoSolverTests.overlapTwoCluesSameColour;
 begin
-  gameState_.rowClues[0].push(TClueCell.create(0,-1,2,0));
   gameState_.rowClues[0].push(TClueCell.create(0,-1,9,1));
+  gameState_.rowClues[0].push(TClueCell.create(0,-1,2,0));
   AssertEquals(1,ngTestSolver.overlapRowMethod(gameState_,0).size);
+end;
+
+procedure TNonoSolverTests.overlapTwoCluesSameColourFilledCellMatchesFirstClue;
+begin
+  gameState_.rowClues[0].push(TClueCell.create(0,-1,9,1));
+  gameState_.rowClues[0].push(TClueCell.create(0,-1,2,0));
+  gameState_.gameBlock[0][2].fill:=cfFill;
+  AssertEquals(2,ngTestSolver.overlapRowMethod(gameState_,0).size);
 end;
 
 procedure TNonoSolverTests.nonOverlapTwoCluesDifferentColour;
 begin
-  gameState_.rowClues[0].push(TClueCell.create(0,-1,2,0,clBlue));
   gameState_.rowClues[0].push(TClueCell.create(0,-1,9,1));
+  gameState_.rowClues[0].push(TClueCell.create(0,-1,2,0,clBlue));
   AssertEquals(0,ngTestSolver.overlapRowMethod(gameState_,0).size);
+end;
+
+procedure TNonoSolverTests.overlapTwoCluesDifferentColourFilledCellMatchesSecondClue;
+begin
+  gameState_.rowClues[0].push(TClueCell.create(0,-1,9,1));
+  gameState_.rowClues[0].push(TClueCell.create(0,-1,2,0,clBlue));
+  gameState_.gameBlock[0][2].fill:=cfFill;
+  AssertEquals(0,ngTestSolver.overlapRowMethod(gameState_,0).size);
+end;
+
+procedure TNonoSolverTests.overlapTwoCluesDifferentColourFilledCellMatchesFirstClue;
+begin
+  gameState_.rowClues[0].push(TClueCell.create(0,-1,9,1));
+  gameState_.rowClues[0].push(TClueCell.create(0,-1,2,0,clBlue));
+  gameState_.gameBlock[0][2].fill:=cfFill;
+  gameState_.gameBlock[0][2].colour:=clBlue;
+  AssertEquals(1,ngTestSolver.overlapRowMethod(gameState_,0).size);
 end;
 
 procedure TNonoSolverTests.overlapTwoSpaces;
