@@ -276,6 +276,7 @@ var
   limitsForSpace:TPoint;
   emptySpaces,spaces:TGameSpaces;
   clueSpaceIndex:integer;
+  colStart,colEnd:integer;
 begin
   clues:=GameState.rowClues[rowId];
   result:=TGameStateChanges.create;
@@ -296,7 +297,7 @@ begin
 
       //TODO replace limits with a method in this unit called getLimits that
       //takes into account filled cells
-
+      writeln('get limits for row '+rowId.ToString+' space '+currentSpace.startPos.toString+':'+currentSpace.endPos.ToString);
       limitsForSpace:=getLimits(gameCells,clues,allowedCluesForCurrentSpace,currentSpace.startPos,currentSpace.endPos,clueIndex);
 
       if (limitsForSpace.Y <= limitsForSpace.X) then
@@ -313,9 +314,11 @@ begin
             writeln('clue '+clueIndex.toString+' does not fit in space '+clueSpaceIndex.toString+' on row '+rowId.toString);
             exit;
             end;
+        colStart:=limitsForSpace.Y;
+        colEnd:=limitsForSpace.X;
         result.concat(
           generateChanges(gameState,rowId,rowId,
-            limitsForSpace.Y,limitsForSpace.X,cfFill,clues[clueIndex].colour));
+            colStart,colEnd,cfFill,clues[clueIndex].colour));
         end;
       end;
     end;
@@ -362,6 +365,7 @@ begin
       begin
       currentSpace:= spaces[clueSpaceIndex];
       allowedCluesForCurrentSpace:=getAllowedCluesForCurrentSpace(spaces,clueSpaceIndex);
+      writeln('get limits for column '+columnId.ToString+' space '+currentSpace.startPos.toString+':'+currentSpace.endPos.ToString);
 
       limitsForSpace:=getLimits(gameCells,clues,allowedCluesForCurrentSpace,currentSpace.startPos,currentSpace.endPos,clueIndex);
 
@@ -701,27 +705,65 @@ end;
 function TNonogramSolver.getLimits(gameCells: TGameCells;
   allClues,allowedClues: TClueCells; spaceStart, spaceEnd, clueIndex: integer): TPoint;
 var
-  count, currentClueIndex:integer;
+  count, currentClueIndex,positionMarker,clueValue:integer;
+  clueColour:TColor;
 begin
   //return a point where X is the point the specified cell ends if it's as far left as possible
   //and Y is where it starts if it's as far right as it can go.
   //The allowed clues should be in order because anything else would suggest some very faulty logic elsewhere
   result:=Tpoint.Create(spaceStart-1,spaceEnd+1);
+  writeln('getLimits allowed clues: '+allowedClues.join(','));
   currentClueIndex:=allowedClues.indexOf(allClues[clueIndex]);
   if (currentClueIndex = -1) then exit;
-  for count:= currentClueIndex to pred(allowedClues.size) do
+  positionMarker:= spaceStart -1;
+  for count:= pred(allowedClues.size)  downto currentClueIndex do
     begin
-    result.X:= result.X + allowedClues[count].value;
-    if (count > (currentClueIndex))
+    clueValue:=allowedClues[count].value;
+    clueColour:=allowedClues[count].colour;
+    positionMarker:=positionMarker+ clueValue;
+    result.X:= result.X + clueValue;
+    writeln('position marker is '+positionMarker.tostring);
+    while (positionMarker < spaceEnd)
+      and (gameCells[positionMarker + 1].fill = cfFill)
+      and (gameCells[positionMarker + 1 ].colour = cluecolour) do
+        begin
+        positionMarker:=positionMarker+1;
+        result.X:=result.X + 1;
+        writeln('cell '+positionMarker.tostring+' filled');
+        end;
+    if (count > currentClueIndex)
       and (allowedClues[count].colour = allowedClues[count-1].colour)
-      then result.X:=result.X+1;
+      then
+        begin
+        result.X:=result.X+1;
+        positionMarker:=positionMarker + 1;
+        writeln('next clue same colour - marker '+positionMarker.toString);
+        end;
     end;
-  for count:=(currentClueIndex) downto 0 do
+  positionMarker:=spaceEnd + 1;
+  for count:= 0 to currentClueIndex do
     begin
-    result.Y:=result.Y-allowedClues[count].value;
+    clueValue:=allowedClues[count].value;
+    clueColour:=allowedClues[count].colour;
+    positionMarker:=positionMarker - clueValue;
+    result.Y:=result.Y-clueValue;
+    writeln('position marker is '+positionMarker.tostring);
+    while (positionMarker > spaceStart)
+      and (gameCells[positionMarker - 1].fill = cfFill)
+      and (gameCells[positionMarker - 1 ].colour = cluecolour) do
+        begin
+        positionMarker:=positionMarker+1;
+        result.X:=result.X + 1;
+        writeln('cell '+positionMarker.tostring+' filled');
+        end;
     if (count < currentClueIndex)
       and (allowedClues[count].colour = allowedClues[count+1].colour)
-      then result.Y:=result.Y-1;
+      then
+        begin
+        result.Y:=result.Y-1;
+        positionMarker:=positionMarker - 1;
+        writeln('previous clue same colour - marker '+positionMarker.toString);
+        end;
     end;
 end;
 
@@ -742,7 +784,7 @@ begin
         case currentCell.fill of
         cfEmpty: outputRow:=outputRow + '_';
         cfFill: outputRow:= outputRow + 'F';
-        cfCross: outputRow:=outputRow + 'X';
+        cfCross: outputRow:=outputRow + '.';
         end;
       end;
     writeln(outputRow + ' '+rowId.toString);
