@@ -22,6 +22,7 @@ type
   function firstFilled(start_:integer=-1):integer;
   function lastFilled(end_:integer=-1):integer;
   function sequenceLength(start:integer):integer;
+  function firstFree(start_:integer=-1):integer;
   end;
 
   { TGameGridArrayHelper }
@@ -102,7 +103,7 @@ end;
 
 function TGameCellsArrayHelper.lastFilled(end_:integer): integer;
 var
-  index:integer;
+  index,startIndex:integer;
 begin
   result:=-1;
   if end_=-1 then startIndex:=pred(self.size) else startIndex:=end_;
@@ -136,6 +137,20 @@ begin
       end
     else endSeq:=true;
     end;
+end;
+
+function TGameCellsArrayHelper.firstFree(start_: integer): integer;
+var
+  index:integer;
+begin
+  result:=-1;
+  if (start_ < 0) or (start_ > pred(self.size)) then exit;
+  for index:= 0 to pred(self.size) do
+    if (self[index].fill = cfEmpty) then
+      begin
+      result:=index;
+      exit;
+      end;
 end;
 
 end.
