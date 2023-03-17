@@ -279,8 +279,9 @@ var
   filledSequenceStart,filledSequenceLength,firstCellAfterSequence:integer;
   done:boolean;
   clues:TClueCells;
-  clueIndex:integer;
+  clueIndex,spaceIndex:integer;
   emptySpaces,spaces:TGameSpaces;
+  spaceFoundForSequence:boolean;
 begin
   result:=TGameStateChanges.create;
   cells:= gameState.gamegrid[rowId];
@@ -291,19 +292,26 @@ begin
   firstCellAfterSequence:=-1;
   while not done do
     begin
+    //Find the sequence of filled cells starting just after the last
     filledSequenceStart:=cells.firstFilled(firstCellAfterSequence);
     done:=filledSequenceStart= -1;
     if not done then
       begin
       filledSequenceLength:=cells.sequenceLength(filledSequenceStart);
-      firstCellAfterSequence:=filledSequenceStart + firstCellAfterSequence;
-      //now work out what clues this sequence could be
-      for clueIndex:=0 to pred(clues.size) do
-        begin
-        //can this clue be in this filled sequence?
+      firstCellAfterSequence:=filledSequenceStart + filledSequenceLength;
+      //which space is this sequence in?
+      spaceIndex:=0;
+      spaceFoundForSequence:=false;
+        while not spaceFoundForSequence do
+          begin
+          spaceFoundForSequence:=(spaces[spaceIndex].startPos <= filledSequenceStart)
+            and (spaces[spaceIndex].endPos >= filledSequenceStart + filledSequenceLength - 1);
+          if not spaceFoundForSequence then spaceIndex:=spaceIndex + 1;
+          end;
+        //now we've found the space. Which clues can be here?
+        //the space has a list of clues that can fit here
+        //we can eliminate clues that are shorter than the length of the sequence
 
-        end;
-      //if there is only one candidate then it definitely is this clue
       end;
     end;
 end;
@@ -363,12 +371,8 @@ begin
       begin
       currentSpace:= spaces[clueSpaceIndex];
       allowedCluesForCurrentSpace:=getAllowedCluesForCurrentSpace(spaces,clueSpaceIndex);
-      //TODO replace limits with a method in this unit called getLimits that
-      //takes into account filled cells
-      writeln('get limits for row '+rowId.ToString+' space '+currentSpace.startPos.toString+':'+currentSpace.endPos.ToString);
-      limitsForSpace:=getLimits(gameCells,clues,allowedCluesForCurrentSpace,currentSpace.startPos,currentSpace.endPos,clueIndex);
-
-      if (limitsForSpace.Y <= limitsForSpace.X) then
+      limits:= clues.limits(allowedCluesForCurrentSpace,currentSpace.spaceSize, clueIndex);
+      if (limits.Y <= limits.X) then
         begin
         //if the limits adjusted for the space are outside the space then quit
         writeln('limits for clue '+clueIndex.toString+' in space '+clueSpaceIndex.toString+' in row '+rowId.toString+' : '+limitsForSpace.X.toString+':'+limitsForSpace.Y.tostring);
@@ -712,10 +716,9 @@ begin
         //If there's a previous block of the same colour then there should be a space to its left
         if (clueIndex < pred(clues.size)) and (clues[clueIndex].colour = clues[clueIndex+1].colour)
           then spaceClueBlock.spaceLeft:=1;
-        result[lastSpaceClueWillFit].spaceClueBlocks.push(spaceClueBlock);
-
-        lastAllowedSpace:=lastSpaceClueWillFit;
+        result[lastSpaceClueWillFit].blocks.push(spaceClueBlock);
         end;
+      lastAllowedSpace:=lastSpaceClueWillFit;
       end;
     end;
 

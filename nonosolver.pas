@@ -298,6 +298,7 @@ begin
   firstCellAfterSequence:=-1;
   while not done do
     begin
+    //Find the sequence of filled cells starting just after the last
     filledSequenceStart:=cells.firstFilled(firstCellAfterSequence);
     done:=filledSequenceStart= -1;
     if not done then
@@ -314,6 +315,8 @@ begin
           if not spaceFoundForSequence then spaceIndex:=spaceIndex + 1;
           end;
         //now we've found the space. Which clues can be here?
+        //the space has a list of clues that can fit here
+        //we can eliminate clues that are shorter than the length of the sequence
 
       end;
     end;
