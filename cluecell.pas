@@ -37,8 +37,10 @@ type
   TClueCellsArrayHelper = type helper for TClueCells
   function size: integer;
   function push(element:TClueCell):integer;
+  function insertAtPosition(element:TClueCell;position:integer):integer;
   function indexOf(element:TClueCell):integer;
   function clueSum:integer;
+  function allElementsLengthLessThan(length:integer):boolean;
   function delete(clueIndex:integer):integer;
   function join(separator:String):string;
   end;
@@ -64,6 +66,14 @@ begin
   result:=self.size;
 end;
 
+function TClueCellsArrayHelper.insertAtPosition(element: TClueCell; position: integer
+  ): integer;
+begin
+  if (position < 0) or (position > pred(self.size)) then
+    push(element) else insert(element,self,position);
+  result:=self.size;
+end;
+
 function TClueCellsArrayHelper.indexOf(element: TClueCell): integer;
 begin
   for Result := 0 to High(self) do
@@ -82,6 +92,20 @@ begin
   if self.size = 0 then exit;
   for index:=0 to pred(self.size)do
     result:=result+self[index].value;
+end;
+
+function TClueCellsArrayHelper.allElementsLengthLessThan(length: integer
+  ): boolean;
+var
+  index:integer;
+begin
+  result:=true;
+  for index:= 0 to pred(self.size) do
+    if self[index].value >= length then
+      begin
+      result:=false;
+      exit;
+      end;
 end;
 
 function TClueCellsArrayHelper.delete(clueIndex: integer): integer;

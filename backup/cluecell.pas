@@ -37,10 +37,11 @@ type
   TClueCellsArrayHelper = type helper for TClueCells
   function size: integer;
   function push(element:TClueCell):integer;
+  function insertAtPosition(element:TClueCell;position:integer):integer;
   function indexOf(element:TClueCell):integer;
   function clueSum:integer;
+  function allElementsLengthLessThan(length:integer):boolean;
   function delete(clueIndex:integer):integer;
-  function limits(allowedClues:TClueCells; availableSpace,index:integer):TPoint;
   function join(separator:String):string;
   end;
 
@@ -65,6 +66,13 @@ begin
   result:=self.size;
 end;
 
+function TClueCellsArrayHelper.insertAtPosition(element: TClueCell; position: integer
+  ): integer;
+begin
+  if (position < 0) or (position > pred(self.size)) then
+    push(element) else insert(element,self,position);
+end;
+
 function TClueCellsArrayHelper.indexOf(element: TClueCell): integer;
 begin
   for Result := 0 to High(self) do
@@ -85,6 +93,20 @@ begin
     result:=result+self[index].value;
 end;
 
+function TClueCellsArrayHelper.allElementsLengthLessThan(length: integer
+  ): boolean;
+var
+  index:integer;
+begin
+  result:=true;
+  for index:= 0 to pred(self.size) do
+    if self[index].value >= length then
+      begin
+      result:=false;
+      exit;
+      end;
+end;
+
 function TClueCellsArrayHelper.delete(clueIndex: integer): integer;
 var
   index:integer;
@@ -98,36 +120,6 @@ begin
     end;
   setlength(self,self.size - 1);
   result:=self.size;
-end;
-
-function TClueCellsArrayHelper.limits(allowedClues:TClueCells;availableSpace,index: integer): TPoint;
-var
-  count, currentClueIndex:integer;
-begin
-  //return a point where X is the point the specified cell ends if it's as far left as possible
-  //and Y is where it starts if it's as far right as it can go.
-  //The allowed clues should be in order because anything else would suggest some very faulty logic elsewhere
-
-  //This needs
-
-  //The clues are in reverse order because... reasons.
-  result:=Tpoint.Create(0,availableSpace + 1);
-  currentClueIndex:=allowedClues.indexOf(self[index]);
-  if (currentClueIndex = -1) then exit;
-  for count:= currentClueIndex to pred(allowedClues.size) do
-    begin
-    result.X:= result.X + allowedClues[count].value;
-    if (count > (currentClueIndex))
-      and (allowedClues[count].colour = allowedClues[count-1].colour)
-      then result.X:=result.X+1;
-    end;
-  for count:=(currentClueIndex) downto 0 do
-    begin
-    result.Y:=result.Y-allowedClues[count].value;
-    if (count < currentClueIndex)
-      and (allowedClues[count].colour = allowedClues[count+1].colour)
-      then result.Y:=result.Y-1;
-    end;
 end;
 
 function TClueCellsArrayHelper.join(separator: String): string;

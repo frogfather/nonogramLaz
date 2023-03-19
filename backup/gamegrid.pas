@@ -19,8 +19,8 @@ type
   function push(element:TGameCell):integer;
   function indexOf(element:TGameCell):integer;
   function filledCells:integer;
-  function firstFilled(start_:integer=-1):integer;
-  function lastFilled(end_:integer=-1):integer;
+  function firstFilled(start_:integer=-1;end_:integer=-1):integer;
+  function lastFilled(end_:integer=-1;end_:integer=-1):integer;
   function sequenceLength(start:integer):integer;
   function firstFree(start_:integer=-1):integer;
   end;
@@ -86,13 +86,16 @@ begin
     if (self[index].fill = cfFill) then result:=result+1;
 end;
 
-function TGameCellsArrayHelper.firstFilled(start_:integer): integer;
+function TGameCellsArrayHelper.firstFilled(start_:integer;end_:integer): integer;
 var
-  index,startIndex:integer;
+  index,startIndex,endIndex:integer;
 begin
   result:=-1;
   if start_=-1 then startIndex:=0 else startIndex:=start_;
-  if (startIndex > pred(self.size))or(startIndex < 0)then exit;
+  if end_= -1 then endIndex:=pred(self.size)else endIndex:=end_;
+  if (startIndex > pred(self.size))or(startIndex < 0)
+  or (endIndex > pred(self.size)) or (endIndex < 0)
+  or (endIndex < startIndex) then exit;
   for index:= startIndex to pred(Self.size) do
     if self[index].fill = cfFill then
       begin
@@ -101,13 +104,16 @@ begin
       end;
 end;
 
-function TGameCellsArrayHelper.lastFilled(end_:integer): integer;
+function TGameCellsArrayHelper.lastFilled(end_:integer;end_:integer): integer;
 var
-  index,startIndex:integer;
+  index,startIndex,endIndex:integer;
 begin
   result:=-1;
   if end_=-1 then startIndex:=pred(self.size) else startIndex:=end_;
-  if (startIndex > pred(self.size))or(startIndex < 0)then exit;
+  if end_= -1 then endIndex:=pred(self.size)else endIndex:=end_;
+  if (startIndex > pred(self.size))or(startIndex < 0)
+  or (endIndex > pred(self.size)) or (endIndex < 0)
+  or (endIndex < startIndex) then exit;
   for index:= startIndex downto 0 do
     if self[index].fill = cfFill then
       begin
@@ -145,7 +151,7 @@ var
 begin
   result:=-1;
   if (start_ < 0) or (start_ > pred(self.size)) then exit;
-  for index:= 0 to pred(self.size) do
+  for index:= start_ to pred(self.size) do
     if (self[index].fill = cfEmpty) then
       begin
       result:=index;

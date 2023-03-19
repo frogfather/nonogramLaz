@@ -369,6 +369,7 @@ var
   positionMarker:integer;
   firstSequenceStart,firstSequenceLength:integer;
   nextSequenceStart,nextSequenceLength:integer;
+  combinedSequenceLength,spaceBetweenSequences:integer;
   spaceProcessed:boolean;
 begin
   result:=TGameStateChanges.create;
@@ -382,10 +383,10 @@ begin
     currentSpace:=spaces[spaceIndex];
     //What do we have in this space?
     spaceProcessed:=false;
-    positionMarker:=spaces[spaceIndex].startPos - 1;
+    positionMarker:=currentSpace.startPos - 1;
     while not spaceProcessed do
       begin
-      firstSequenceStart:=gameCells.firstFilled(positionMarker);
+      firstSequenceStart:=gameCells.firstFilled(positionMarker,currentSpace.endPos);
       firstSequenceLength:=gameCells.sequenceLength(firstSequenceStart);
       positionMarker:=gameCells.firstFree(firstSequenceStart);
       nextSequenceStart:=gameCells.firstFilled(positionMarker);
@@ -393,8 +394,11 @@ begin
       spaceProcessed:= (firstSequenceLength = 0 )or(nextSequenceLength = 0)or(positionMarker = -1);
       if not spaceProcessed  then
         begin
-        writeln('Row '+rowId.ToString+' space '+spaceIndex.ToString+' sequence1 start '+firstSequenceStart.toString+' length '+firstSequenceLength.toString);
-        writeln('sequence2 start '+nextSequenceStart.toString+' length '+nextSequenceLength.toString);
+        combinedSequenceLength:=nextSequenceStart + nextSequenceLength - firstSequenceStart;
+        spaceBetweenSequences:=nextSequenceStart - (firstSequenceStart + firstSequenceLength);
+        if currentSpace.candidates.allElementsLengthLessThan(combinedSequenceLength)
+          and (spaceBetweenSequences = 1 ) then
+          result.push(TGameStateChange.create(ctGame,nextSequenceStart -1,rowId,cfCross,cfEmpty,clBlack,clBlack));
         end;
       end;
     end;
@@ -402,8 +406,47 @@ end;
 
 function TNonogramSolver.forceSpacesColumn(gameState: TGameState;
   columnId: integer): TGameStateChanges;
+var
+  gameCells:TGameCells;
+  clues:TClueCells;
+  emptySpaces,spaces:TGameSpaces;
+  spaceIndex:integer;
+  currentSpace:TGameSpace;
+  positionMarker:integer;
+  firstSequenceStart,firstSequenceLength:integer;
+  nextSequenceStart,nextSequenceLength:integer;
+  combinedSequenceLength,spaceBetweenSequences:integer;
+  spaceProcessed:boolean;
 begin
   result:=TGameStateChanges.create;
+  gameCells:=gameState.gameGrid.getColumn(columnId);
+  clues:=gameState.columnClues[columnId];
+  emptySpaces:=getSpacesForGameCells(gameCells);
+  spaces:= setClueCandidates(emptySpaces,clues);
+  for spaceIndex:=0 to pred(spaces.size) do
+    begin
+    currentSpace:=spaces[spaceIndex];
+    spaceProcessed:=false;
+    positionMarker:=currentSpace.startPos - 1;
+    while not spaceProcessed do
+      begin
+      firstSequenceStart:=gameCells.firstFilled(positionMarker,currentSpace.endPos);
+      firstSequenceLength:=gameCells.sequenceLength(firstSequenceStart);
+      positionMarker:=gameCells.firstFree(firstSequenceStart);
+      nextSequenceStart:=gameCells.firstFilled(positionMarker);
+      nextSequenceLength:=gameCells.sequenceLength(nextSequenceStart);
+      spaceProcessed:= (firstSequenceLength = 0 )or(nextSequenceLength = 0)or(positionMarker = -1);
+      if not spaceProcessed  then
+        begin
+        combinedSequenceLength:=nextSequenceStart + nextSequenceLength - firstSequenceStart;
+        spaceBetweenSequences:=nextSequenceStart - (firstSequenceStart + firstSequenceLength);
+        if currentSpace.candidates.allElementsLengthLessThan(combinedSequenceLength)
+          and (spaceBetweenSequences = 1 )
+          then result.push(TGameStateChange.create(ctGame,columnId,nextSequenceStart -1,cfCross,cfEmpty,clBlack,clBlack));
+        end;
+      end;
+    end;
+
 
 end;
 
@@ -785,9 +828,8 @@ begin
         begin
         if clues[clueIndex].value <= result[spaceIndex].freeSpace then
           begin
-          writeln('clue '+clueIndex.toString+' value '+clues[clueIndex].value.toString+' will fit in space '+spaceIndex.toString+' size '+result[spaceIndex].freeSpace.toString);
           lastSpaceClueWillFit:=spaceIndex;
-          result[spaceIndex].candidates.push(clues[clueIndex]);
+          result[spaceIndex].candidates.insertAtPosition(clues[clueIndex],0);
           end;
         end;
       //If the last space the clue will fit is not where it currently is then
@@ -959,6 +1001,7 @@ begin
     repeat
     writeln('start loop '+loopCounter.tostring+' --------------');
     changesOnCurrentLoop:=0;
+    writeln('overlap rows');
     changesOnCurrentLoop:=changesOnCurrentLoop + overlapRows(solvedGameState);
     solvedGameState:=applyChanges(solvedGameState,fChanges);
     outputCurrentGameState(solvedGameState);
@@ -971,6 +1014,7 @@ begin
     solvedGameState:=applyChanges(solvedGameState,fChanges);
     outputCurrentGameState(solvedGameState);
 
+    writeln('overlap columns');
     changesOnCurrentLoop:=changesOnCurrentLoop + overlapColumns(solvedGameState);
     solvedGameState:=applyChanges(solvedGameState,fChanges);
     outputCurrentGameState(solvedGameState);
@@ -983,6 +1027,7 @@ begin
     solvedGameState:=applyChanges(solvedGameState,fChanges);
     outputCurrentGameState(solvedGameState);
 
+    writeln('edge proximity rows');
     changesOnCurrentLoop:= changesOnCurrentLoop + edgeProximityRows(solvedGameState);
     solvedGameState:=applyChanges(solvedGameState,fChanges);
     outputCurrentGameState(solvedGameState);
@@ -995,6 +1040,7 @@ begin
     solvedGameState:=applyChanges(solvedGameState,fChanges);
     outputCurrentGameState(solvedGameState);
 
+    writeln('edge proximity columns');
     changesOnCurrentLoop:= changesOnCurrentLoop + edgeProximityColumns(solvedGameState);
     solvedGameState:=applyChanges(solvedGameState,fChanges);
     outputCurrentGameState(solvedGameState);
@@ -1007,11 +1053,23 @@ begin
     solvedGameState:=applyChanges(solvedGameState,fChanges);
     outputCurrentGameState(solvedGameState);
 
-    writeln('*** ForceSpaces method - experimental');
+    writeln('forceSpaces rows');
     changesOnCurrentLoop:=changesOnCurrentLoop + forceSpacesRows(solvedGameState);
     solvedGameState:=applyChanges(solvedGameState,fChanges);
     outputCurrentGameState(solvedGameState);
-    writeln('End ForceSpaces ');
+
+    changesOnCurrentLoop:= changesOnCurrentLoop + rowsCluesComplete(solvedGameState);
+    solvedGameState:=applyChanges(solvedGameState,fChanges);
+    outputCurrentGameState(solvedGameState);
+
+    changesOnCurrentLoop:=changesOnCurrentLoop + columnsCluesComplete(solvedGameState);
+    solvedGameState:=applyChanges(solvedGameState,fChanges);
+    outputCurrentGameState(solvedGameState);
+
+    writeln('forceSpaces columns');
+    changesOnCurrentLoop:=changesOnCurrentLoop + forceSpacesColumns(solvedGameState);
+    solvedGameState:=applyChanges(solvedGameState,fChanges);
+    outputCurrentGameState(solvedGameState);
 
     writeln('end loop '+loopCounter.tostring+' ----------------');
     loopCounter:=loopCounter+1;
