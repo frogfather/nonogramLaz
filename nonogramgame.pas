@@ -5,7 +5,7 @@ unit nonogramGame;
 interface
 
 uses
-  Classes,forms, SysUtils,arrayUtils,gameCell,gameBlock,gameState,
+  Classes,forms, SysUtils,arrayUtils,gameCell,gamegrid,gameState,
   gameStateChange,gameStateChanges,clueCell,graphics,clickDelegate,
   updateDelegate,cluechangeddelegate,gameModeChangedDelegate,clueclickeddelegate,
   enums,nonosolver,nonoDocHandler,iNonosolver;
@@ -45,7 +45,7 @@ type
     fSelectedColour:TColor;
     fInputMode: EInputMode;
     fGameMode: EGameMode;
-    function getGameBlock:TGameBlock;
+    function getGameGrid:TGameGrid;
     function getRowClues: TClueBlock;
     function getColumnClues: TClueBlock;
     function getSelectedClueCells:TClueCells;
@@ -76,7 +76,7 @@ type
     function getCell(row,column:integer):TGameCell;
     function getCell(position_:TPoint):TGameCell;
     property colours:TColours read fColours write fColours;
-    property block:TGameBlock read getGameBlock;
+    property block:TGameGrid read getGameGrid;
     property rowClues:TClueBlock read getRowClues;
     property columnClues:TClueBlock read getColumnClues;
     property selectedCell:TGameCell read fSelectedCell write fSelectedCell;
@@ -102,7 +102,7 @@ constructor TNonogramGame.create(name: string; gameDimensions: TPoint;colours:TC
 var
   row,col:integer;
   newGameRow:TGameCells;
-  newGameBlock:TGameBlock;
+  newGameGrid:TGameGrid;
   newRowClues:TClueCells;
   newRowClueBlock:TClueBlock;
   newColumnClues:TClueCells;
@@ -117,7 +117,7 @@ begin
   if (colours.indexOf(defaultGameCellColour) > -1) then fSelectedColour:=defaultGameCellColour
     else fSelectedColour:=colours[0];
 
-  newGameBlock:=TGameBlock.create;
+  newGameGrid:=TGameGrid.create;
   newRowClueBlock:=TClueBlock.create;
   newColumnClueBlock:=TClueBlock.create;
 
@@ -137,13 +137,13 @@ begin
         newColumnClueBlock.push(newColumnClues);
         end;
       end;
-    newGameBlock.push(newGameRow);
+    newGameGrid.push(newGameRow);
     newRowClueBlock.push(newRowClues);
     end;
   fHistory:=TGameStateChangesList.create;
-  fGameState:=TGameState.create(newGameBlock,newRowClueBlock,newColumnClueBlock);
-  fInitialGameState:=TGameState.create(newGameBlock,newRowClueBlock,newColumnClueBlock);
-  fSolvedGameState:=TGameState.create(newGameBlock,newRowClueBlock,newColumnClueBlock);
+  fGameState:=TGameState.create(newGameGrid,newRowClueBlock,newColumnClueBlock);
+  fInitialGameState:=TGameState.create(newGameGrid,newRowClueBlock,newColumnClueBlock);
+  fSolvedGameState:=TGameState.create(newGameGrid,newRowClueBlock,newColumnClueBlock);
   fHistoryIndex:=-1;
   fSelectedCell:=nil;
   fSelectedRowClueSet:=-1;
@@ -156,7 +156,7 @@ end;
 constructor TNonogramGame.create(filename: String);
 var
   nonoDocHandler:TNonogramDocumentHandler;
-  newGameBlock:TGameBlock;
+  newGameGrid:TGameGrid;
   newRowClueBlock:TClueBlock;
   newColumnClueBlock:TClueBlock;
 begin
@@ -164,12 +164,12 @@ begin
   nonoDocHandler:=TNonogramDocumentHandler.Create;
   nonoDocHandler.loadFromFile(filename);
   fHistory:=TGameStateChangesList.create;
-  newGameBlock:=nonoDocHandler.gameBlock;
+  newGameGrid:=nonoDocHandler.gameGrid;
   newRowClueBlock:=nonoDocHandler.rowClueBlock;
   newColumnClueBlock:=nonoDocHandler.columnClueBlock;
-  fGameState:=TGameState.create(newGameBlock,newRowClueBlock,newColumnClueBlock);
-  fInitialGameState:=TGameState.create(newGameBlock,newRowClueBlock,newColumnClueBlock);
-  fSolvedGameState:=TGameState.create(newGameBlock,newRowClueBlock,newColumnClueBlock);
+  fGameState:=TGameState.create(newGameGrid,newRowClueBlock,newColumnClueBlock);
+  fInitialGameState:=TGameState.create(newGameGrid,newRowClueBlock,newColumnClueBlock);
+  fSolvedGameState:=TGameState.create(newGameGrid,newRowClueBlock,newColumnClueBlock);
   fName:=nonoDocHandler.name;
   fId:=nonoDocHandler.id;
   fVersion:=nonoDocHandler.version;
@@ -186,9 +186,9 @@ begin
   fSelectedColumnClueIndex:=-1;
 end;
 
-function TNonogramGame.getGameBlock: TGameBlock;
+function TNonogramGame.getGameGrid: TGameGrid;
 begin
-  result:=fGameState.gameBlock;
+  result:=fGameState.gameGrid;
 end;
 
 function TNonogramGame.getRowClues: TClueBlock;
@@ -254,12 +254,12 @@ begin
       begin
       if forward then
          begin
-         fGameState.gameBlock[change.row][change.column].fill:=change.cellFillMode;
-         fGameState.gameBlock[change.row][change.column].colour:=change.colour;
+         fGameState.gameGrid[change.row][change.column].fill:=change.cellFillMode;
+         fGameState.gameGrid[change.row][change.column].colour:=change.colour;
          end else
          begin
-         fGameState.gameBlock[change.row][change.column].fill:=change.oldCellFillMode;
-         fGameState.gameBlock[change.row][change.column].colour:=change.oldColour;
+         fGameState.gameGrid[change.row][change.column].fill:=change.oldCellFillMode;
+         fGameState.gameGrid[change.row][change.column].colour:=change.oldColour;
          end;
       end; //todo: clues
     end;
@@ -496,7 +496,7 @@ procedure TNonogramGame.saveToFile(filename: string);
 var
   docHandler:TNonogramDocumentHandler;
 begin
-  docHandler:=TNonogramDocumentHandler.create(fGameState.gameBlock,fGamestate.rowClues,fGameState.columnClues);
+  docHandler:=TNonogramDocumentHandler.create(fGameState.gameGrid,fGamestate.rowClues,fGameState.columnClues);
   docHandler.version:=gameVersion;
   docHandler.dimensions:=fDimensions;
   docHandler.colours:=fColours;
@@ -528,7 +528,7 @@ begin
   result:=nil;
   if (row < 0)or(row > pred(dimensions.Y))
      or (column < 0) or (column > pred(dimensions.X)) then exit;
-  result:=fGameState.gameBlock[row][column];
+  result:=fGameState.gameGrid[row][column];
 end;
 
 function TNonogramGame.getCell(position_: TPoint): TGameCell;

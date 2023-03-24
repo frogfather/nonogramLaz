@@ -81,9 +81,8 @@
         <UnitName Value="updateDelegate"/>
       </Unit>
       <Unit>
-        <Filename Value="gameblock.pas"/>
+        <Filename Value="gamegrid.pas"/>
         <IsPartOfProject Value="True"/>
-        <UnitName Value="gameBlock"/>
       </Unit>
       <Unit>
         <Filename Value="gamestate.pas"/>
@@ -154,11 +153,6 @@
         <Filename Value="gamespace.pas"/>
         <IsPartOfProject Value="True"/>
         <UnitName Value="gameSpace"/>
-      </Unit>
-      <Unit>
-        <Filename Value="clueblock.pas"/>
-        <IsPartOfProject Value="True"/>
-        <UnitName Value="clueBlock"/>
       </Unit>
     </Units>
   </ProjectOptions>

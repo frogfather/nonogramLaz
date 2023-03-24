@@ -12,7 +12,7 @@ type
 
   TNonogramDocumentHandler = class(TXMLDocumentHandler)
     private
-    fGameBlock:TGameBlock;
+    fGameGrid:TGameGrid;
     fRowClueBlock:TClueBlock;
     fColumnClueBlock:TClueBlock;
     fId:TGUID;
@@ -29,8 +29,8 @@ type
     procedure addColumnClue(clue:TClueCell;clueIndex:integer);
     public
     constructor create;
-    constructor create(gameBlock_:TGameBlock;rowClueBlock_:TClueBlock;colClueBlock_:TClueBlock);
-    property gameBlock:TGameBlock read fGameBlock write fGameBlock;
+    constructor create(gameGrid_:TGameGrid;rowClueBlock_:TClueBlock;colClueBlock_:TClueBlock);
+    property gameGrid:TGameGrid read fGameGrid write fGameGrid;
     property rowClueBlock:TClueBlock read fRowClueBlock write fRowClueBlock;
     property columnClueBlock:TClueBlock read fColumnClueBlock write fColumnClueBlock;
     property id:TGUID read fId write fId;
@@ -51,16 +51,16 @@ implementation
   constructor TNonogramDocumentHandler.create;
   begin
     initializeDocument;
-    fGameBlock:=nil;
+    fGameGrid:=nil;
     fRowClueBlock:=nil;
     fColumnClueBlock:=nil;
   end;
 
-  constructor TNonogramDocumentHandler.create(gameBlock_: TGameBlock;
+  constructor TNonogramDocumentHandler.create(gameGrid_: TGameGrid;
     rowClueBlock_: TClueBlock; colClueBlock_: TClueBlock);
   begin
     initializeDocument;
-    fGameBlock:=gameBlock_;
+    fGameGrid:=gameGrid_;
     fRowClueBlock:=rowClueBlock_;
     fColumnClueBlock:=colClueBlock_;
   end;
@@ -75,17 +75,17 @@ var
   fillStr:string;
   gameNode,gameBlockNode,gameCellsNode,gameCellNode,rowClueBlockNode,columnClueBlockNode,cluesNode,clueNode:TDomNode;
 begin
-  if fGameBlock.size = 0 then exit;
+  if fGameGrid.size = 0 then exit;
   attributes:=TStringArray.create('name',gameName,'id',GuidToString(gameId));
   gameNode:= attachTopLevelNode(version,attributes);//creates a top level node and attaches it to the document
 
   gameBlockNode:=createNode('game-block');
-  for row:=0 to pred(fGameBlock.size) do
+  for row:=0 to pred(fGameGrid.size) do
     begin
     gameCellsNode:=createNode('game-cells');
-    for col:=0 to pred(fGameBlock[0].size) do
+    for col:=0 to pred(fGameGrid[0].size) do
       begin
-      gameCell:=fGameBlock[row][col];
+      gameCell:=fGameGrid[row][col];
       gameCellAttributes:=TStringArray.create('cell-id',guidToString(gameCell.cellId));
       gameCellNode:=createNode('game-cell','',gameCellAttributes);
       gameCellNode.AppendChild(createNode('row',gameCell.row.ToString));
@@ -163,7 +163,7 @@ begin
   fDimensions.Y:=gameBlockNode.GetChildCount;
   if (fDimensions.Y = 0) then exit; //should raise exception
   fDimensions.X:= gameBlockNode.ChildNodes.Item[0].GetChildCount;
-  fGameBlock:=TGameBlock.create;
+  fGameGrid:=TGameGrid.create;
   for rowIndex:=0 to pred(gameBlockNode.GetChildCount) do
     begin
     newGameCells:=TGameCells.create;
@@ -186,7 +186,7 @@ begin
         end;
       newGameCells.push(TGameCell.create(colId,rowId,cellId,cellColour,fillMode));
       end;
-    fGameBlock.push(newGameCells);
+    fGameGrid.push(newGameCells);
     end;
 
   rowClueBlockNode:=getNode('row-clue-block',nil,false,gameNode);
@@ -221,11 +221,11 @@ begin
 
   columnClueBlockNode:=getNode('column-clue-block',nil,false,gameNode);
   fColumnClueBlock:=TClueBlock.Create;
-  for colIndex:= pred(columnClueBlockNode.GetChildCount) downto 0 do
+  for colIndex:=0 to pred(columnClueBlockNode.GetChildCount)do
     begin
     newColumnClues:=TClueCells.Create;
     columnCluesNode:=columnClueBlockNode.ChildNodes.Item[colIndex];
-    for clueIndex:=0 to pred(columnCluesNode.GetChildCount) do
+    for clueIndex:= pred(columnCluesNode.GetChildCount) downto 0 do
       begin
       clueNode:=columnCluesNode.ChildNodes.Item[clueIndex];
       clueIndexPosition:=clueNode.Attributes.GetNamedItem('index').TextContent.ToInteger;

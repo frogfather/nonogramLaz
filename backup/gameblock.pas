@@ -10,7 +10,7 @@ uses
 
 type
   TGameCells = array of TGameCell; //cells for a row
-  TGameBlock = array of TGameCells; //cells for the game
+  TGameGrid = array of TGameCells; //cells for the game
 
   { TGameCellsArrayHelper }
 
@@ -19,10 +19,12 @@ type
   function push(element:TGameCell):integer;
   function indexOf(element:TGameCell):integer;
   function filledCells:integer;
+  function firstFilled:integer;
+  function lastFilled:integer;
   end;
 
-  { TGameBlockArrayHelper }
-  TGameBlockArrayHelper = type helper for TGameBlock
+  { TGameGridArrayHelper }
+  TGameGridArrayHelper = type helper for TGameBlock
   function size: integer;
   function push(element:TGameCells):integer;
   function getColumn(columnId:integer):TGameCells;
@@ -32,18 +34,18 @@ implementation
 
 { TGameBlockArrayHelper }
 
-function TGameBlockArrayHelper.size: integer;
+function TGameGridArrayHelper.size: integer;
 begin
   result:=length(self);
 end;
 
-function TGameBlockArrayHelper.push(element: TGameCells): integer;
+function TGameGridArrayHelper.push(element: TGameCells): integer;
 begin
   insert(element,self,length(self));
   result:=self.size;
 end;
 
-function TGameBlockArrayHelper.getColumn(columnId: integer): TGameCells;
+function TGameGridArrayHelper.getColumn(columnId: integer): TGameCells;
 var
   rowIndex:integer;
 begin
@@ -80,6 +82,32 @@ begin
   result:=0;
   for index:=0 to pred(self.size) do
     if (self[index].fill = cfFill) then result:=result+1;
+end;
+
+function TGameCellsArrayHelper.firstFilled: integer;
+var
+  index:integer;
+begin
+  result:=-1;
+  for index:=0 to pred(Self.size) do
+    if self[index].fill = cfFill then
+      begin
+        result:=index;
+        exit;
+      end;
+end;
+
+function TGameCellsArrayHelper.lastFilled: integer;
+var
+  index:integer;
+begin
+  result:=-1;
+  for index:= pred(Self.size) downto 0 do
+    if self[index].fill = cfFill then
+      begin
+        result:=index;
+        exit;
+      end;
 end;
 
 end.

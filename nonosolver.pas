@@ -5,8 +5,8 @@ unit nonosolver;
 interface
 
 uses
-  Classes, SysUtils,gameState,gameStateChanges,gameStateChange,gameBlock,gameCell,
-  enums,graphics,arrayUtils,clueCell,iNonoSolver,gameSpace,clueBlock;
+  Classes, SysUtils,gameState,gameStateChanges,gameStateChange,gamegrid,gameCell,
+  enums,graphics,arrayUtils,clueCell,iNonoSolver,gameSpace;
 type
   
   { TNonogramSolver }
@@ -31,6 +31,16 @@ type
     function edgeProximityColumns(gameState:TGameState):integer;
     function edgeProximityRow(gameState:TGameState;rowId:integer):TGameStateChanges;
     function edgeProximityColumn(gameState:TGameState;columnId:integer):TGameStateChanges;
+
+    function forceSpacesRows(gameState:TGameState):integer;
+    function forceSpacesColumns(gameState:TGameState):integer;
+    function forceSpacesRow(gameState:TGameState;rowId:integer):TGameStateChanges;
+    function forceSpacesColumn(gameState:TGameState;columnId:integer):TGameStateChanges;
+
+    function identifyCluesRows(gameState:TGameState):integer;
+    function identifyCluesColumns(gameState:TGameState):integer;
+    function identifyCluesRow(gameState:TGameState;rowId:integer):TGameStateChanges;
+    function identifyCluesColumn(gameState:TGameState;columnId:integer):TGameStateChanges;
 
     function generateChanges(gameState:TGameState;rowStart,rowEnd,colStart,colEnd:Integer;fill:ECellFillMode=cfFill;fillColour:TColor=clBlack):TGameStateChanges;
     function clueInSpace(spaces:TGameSpaces;clue:TClueCell):integer;
@@ -63,7 +73,7 @@ var
   rowIndex:integer;
 begin
   result:=0;
-  for rowIndex:=0 to pred(GameState.gameBlock.size) do
+  for rowIndex:=0 to pred(GameState.gameGrid.size) do
     result:= result + processStepResult(rowCluesComplete(gameState,rowIndex));
 end;
 
@@ -72,8 +82,8 @@ var
   colIndex:integer;
 begin
   result:=0;
-  if GameState.gameBlock.size = 0 then exit;
-  for colIndex:=0 to pred(GameState.gameBlock[0].size) do
+  if GameState.gameGrid.size = 0 then exit;
+  for colIndex:=0 to pred(GameState.gameGrid[0].size) do
     result:= result + processStepResult(columnCluesComplete(gameState,colIndex));
 end;
 
@@ -86,12 +96,16 @@ var
 begin
   result:=TGameStateChanges.create;
   rowClues_:=gameState.rowClues[rowId];
-  rowCells_:=gameState.gameBlock[rowId];
+  rowCells_:=gameState.gameGrid[rowId];
   if (rowClues_.clueSum = rowCells_.filledCells)
     then
       begin
       writeln('Row '+rowId.toString+' complete. Generate changes for row '+rowId.ToString);
       result.concat(generateChanges(gameState,rowId,rowId,0,pred(rowCells_.size),cfCross));
+      //TODO - update apply changes method to handle clue cells
+      //Writeln('Generate changes for clue cells for row '+rowId.ToString);
+      //for clueIndex:=0 to pred(rowClues_.size) do
+      //  result.push(TGamestateChange.create(ctClue,-1,rowId,cfCross,cfEmpty,clBlack,clBlack));
       end;
 end;
 
@@ -99,11 +113,11 @@ function TNonogramSolver.columnCluesComplete(gameState: TGameState;
   columnId: integer): TGameStateChanges;
 begin
   result:=TGameStateChanges.create;
-  if (gameState.columnClues[columnId].clueSum = gameState.gameBlock.getColumn(columnId).filledCells)
+  if (gameState.columnClues[columnId].clueSum = gameState.gameGrid.getColumn(columnId).filledCells)
     then
       begin
       writeln('Column '+columnId.toString+' complete. Generate changes for column '+columnId.ToString);
-      result.concat(generateChanges(gameState,0,pred(gameState.gameBlock.size),columnId,columnId,cfCross));
+      result.concat(generateChanges(gameState,0,pred(gameState.gameGrid.size),columnId,columnId,cfCross));
       end;
 end;
 
@@ -114,7 +128,7 @@ var
   rowIndex:integer;
 begin
   result:=0;
-  for rowIndex:=0 to pred(GameState.gameBlock.size) do
+  for rowIndex:=0 to pred(GameState.gameGrid.size) do
     result:= result + processStepResult(edgeProximityRow(gameState,rowIndex));
 end;
 
@@ -123,8 +137,8 @@ var
   colIndex:integer;
 begin
   result:=0;
-  if GameState.gameBlock.size = 0 then exit;
-  for colIndex:=0 to pred(GameState.gameBlock[0].size) do
+  if GameState.gameGrid.size = 0 then exit;
+  for colIndex:=0 to pred(GameState.gameGrid[0].size) do
     result:= result + processStepResult(edgeProximityColumn(gameState,colIndex));
 end;
 
@@ -140,7 +154,7 @@ var
   sequenceColour:TColor;
 begin
   result:=TGameStateChanges.create;
-  cells:=gameState.gameBlock[rowId];
+  cells:=gameState.gameGrid[rowId];
   clues:=gameState.rowClues[rowId];
   firstClue:=clues[pred(clues.size)];
   lastClue:=clues[0];
@@ -199,7 +213,7 @@ var
   sequenceColour:TColor;
 begin
   result:=TGameStateChanges.create;
-  cells:=gameState.gameBlock.getColumn(columnId);
+  cells:=gameState.gameGrid.getColumn(columnId);
   clues:=gameState.columnClues[columnId];
   firstClue:=clues[pred(clues.size)];
   lastClue:=clues[0];
@@ -246,13 +260,164 @@ begin
     end;
 end;
 
+//Force spaces: If a given space were filled in, would it result in an
+//illegal situation. EG if two single blocks are separated by a single space
+//but there is no clue > 3
+function TNonogramSolver.forceSpacesRows(gameState: TGameState): integer;
+var
+  rowIndex:integer;
+begin
+  result:=0;
+  for rowIndex:=0 to pred(GameState.gameGrid.size) do
+    result:= result + processStepResult(forceSpacesRow(gameState,rowIndex));
+end;
+
+function TNonogramSolver.forceSpacesColumns(gameState: TGameState): integer;
+var
+  colIndex:integer;
+begin
+  result:=0;
+  if GameState.gameGrid.size = 0 then exit;
+  for colIndex:=0 to pred(GameState.gameGrid[0].size) do
+    result:= result + processStepResult(forceSpacesColumn(gameState,colIndex));
+end;
+
+//Start at the beginning of the row
+//Find the first sequence of filled cells
+//If the first cell were filled in, what would this do?
+function TNonogramSolver.forceSpacesRow(gameState: TGameState; rowId: integer
+  ): TGameStateChanges;
+var
+  gameCells:TGameCells;
+  clues:TClueCells;
+  emptySpaces,spaces:TGameSpaces;
+  spaceIndex:integer;
+  currentSpace:TGameSpace;
+  positionMarker:integer;
+  firstSequenceStart,firstSequenceLength:integer;
+  nextSequenceStart,nextSequenceLength:integer;
+  combinedSequenceLength,spaceBetweenSequences:integer;
+  spaceProcessed:boolean;
+begin
+  result:=TGameStateChanges.create;
+  gameCells:=gameState.gameGrid[rowId];
+  clues:=gameState.rowClues[rowId];
+  emptySpaces:=getSpacesForGameCells(gameCells);
+  spaces:= setClueCandidates(emptySpaces,clues);
+  //Examine each space
+  for spaceIndex:=0 to pred(spaces.size) do
+    begin
+    currentSpace:=spaces[spaceIndex];
+    //What do we have in this space?
+    spaceProcessed:=false;
+    positionMarker:=currentSpace.startPos - 1;
+    while not spaceProcessed do
+      begin
+      firstSequenceStart:=gameCells.firstFilled(positionMarker,currentSpace.endPos);
+      firstSequenceLength:=gameCells.sequenceLength(firstSequenceStart);
+      positionMarker:=gameCells.firstFree(firstSequenceStart);
+      nextSequenceStart:=gameCells.firstFilled(positionMarker);
+      nextSequenceLength:=gameCells.sequenceLength(nextSequenceStart);
+      spaceProcessed:= (firstSequenceLength = 0 )or(nextSequenceLength = 0)or(positionMarker = -1);
+      if not spaceProcessed  then
+        begin
+        combinedSequenceLength:=nextSequenceStart + nextSequenceLength - firstSequenceStart;
+        spaceBetweenSequences:=nextSequenceStart - (firstSequenceStart + firstSequenceLength);
+        if currentSpace.candidates.allElementsLengthLessThan(combinedSequenceLength)
+          and (spaceBetweenSequences = 1 ) then
+          result.push(TGameStateChange.create(ctGame,nextSequenceStart -1,rowId,cfCross,cfEmpty,clBlack,clBlack));
+        end;
+      end;
+    end;
+end;
+
+function TNonogramSolver.forceSpacesColumn(gameState: TGameState;
+  columnId: integer): TGameStateChanges;
+var
+  gameCells:TGameCells;
+  clues:TClueCells;
+  emptySpaces,spaces:TGameSpaces;
+  spaceIndex:integer;
+  currentSpace:TGameSpace;
+  positionMarker:integer;
+  firstSequenceStart,firstSequenceLength:integer;
+  nextSequenceStart,nextSequenceLength:integer;
+  combinedSequenceLength,spaceBetweenSequences:integer;
+  spaceProcessed:boolean;
+begin
+  result:=TGameStateChanges.create;
+  gameCells:=gameState.gameGrid.getColumn(columnId);
+  clues:=gameState.columnClues[columnId];
+  emptySpaces:=getSpacesForGameCells(gameCells);
+  spaces:= setClueCandidates(emptySpaces,clues);
+  for spaceIndex:=0 to pred(spaces.size) do
+    begin
+    currentSpace:=spaces[spaceIndex];
+    spaceProcessed:=false;
+    positionMarker:=currentSpace.startPos - 1;
+    while not spaceProcessed do
+      begin
+      firstSequenceStart:=gameCells.firstFilled(positionMarker,currentSpace.endPos);
+      firstSequenceLength:=gameCells.sequenceLength(firstSequenceStart);
+      positionMarker:=gameCells.firstFree(firstSequenceStart);
+      nextSequenceStart:=gameCells.firstFilled(positionMarker);
+      nextSequenceLength:=gameCells.sequenceLength(nextSequenceStart);
+      spaceProcessed:= (firstSequenceLength = 0 )or(nextSequenceLength = 0)or(positionMarker = -1);
+      if not spaceProcessed  then
+        begin
+        combinedSequenceLength:=nextSequenceStart + nextSequenceLength - firstSequenceStart;
+        spaceBetweenSequences:=nextSequenceStart - (firstSequenceStart + firstSequenceLength);
+        if currentSpace.candidates.allElementsLengthLessThan(combinedSequenceLength)
+          and (spaceBetweenSequences = 1 )
+          then result.push(TGameStateChange.create(ctGame,columnId,nextSequenceStart -1,cfCross,cfEmpty,clBlack,clBlack));
+        end;
+      end;
+    end;
+
+
+end;
+
+function TNonogramSolver.identifyCluesRows(gameState: TGameState): integer;
+var
+  rowIndex:integer;
+begin
+  result:=0;
+  for rowIndex:=0 to pred(GameState.gameGrid.size) do
+    result:= result + processStepResult(identifyCluesRow(gameState,rowIndex));
+end;
+
+function TNonogramSolver.identifyCluesColumns(gameState: TGameState): integer;
+var
+  colIndex:integer;
+begin
+  result:=0;
+  if GameState.gameGrid.size = 0 then exit;
+  for colIndex:=0 to pred(GameState.gameGrid[0].size) do
+    result:= result + processStepResult(identifyCluesColumn(gameState,colIndex));
+end;
+
+function TNonogramSolver.identifyCluesRow(gameState: TGameState; rowId: integer
+  ): TGameStateChanges;
+begin
+  result:=TGameStateChanges.create;
+  //Start at column0 and work along this row.
+  //If we find a filled cell can we determine that it can only be one clue
+  //If so, can we extend or complete it?
+end;
+
+function TNonogramSolver.identifyCluesColumn(gameState: TGameState;
+  columnId: integer): TGameStateChanges;
+begin
+  result:=TGameStateChanges.create;
+end;
+
 function TNonogramSolver.overlapRows(gameState:TGameState): integer;
 var
   rowIndex:integer;
 begin
   result:=0;
   //each row of the game block is a row of the puzzle
-  for rowIndex:=0 to pred(GameState.gameBlock.size) do
+  for rowIndex:=0 to pred(GameState.gameGrid.size) do
     result:= result + processStepResult(overlapRow(gameState,rowIndex));
 end;
 
@@ -261,8 +426,8 @@ var
   colIndex:integer;
 begin
   result:=0;
-  if GameState.gameBlock.size = 0 then exit;
-  for colIndex:=0 to pred(GameState.gameBlock[0].size) do
+  if GameState.gameGrid.size = 0 then exit;
+  for colIndex:=0 to pred(GameState.gameGrid[0].size) do
     result:= result + processStepResult(overlapColumn(gameState,colIndex));
 end;
 
@@ -280,7 +445,7 @@ var
 begin
   clues:=GameState.rowClues[rowId];
   result:=TGameStateChanges.create;
-  gameCells:=gameState.gameBlock[rowId];
+  gameCells:=gameState.gameGrid[rowId];
   writeln('spaces for row '+rowId.toString);
   emptySpaces:=getSpacesForGameCells(gameCells);
   spaces:= setClueCandidates(emptySpaces,clues);
@@ -294,9 +459,6 @@ begin
       begin
       currentSpace:= spaces[clueSpaceIndex];
       allowedCluesForCurrentSpace:=getAllowedCluesForCurrentSpace(spaces,clueSpaceIndex);
-
-      //TODO replace limits with a method in this unit called getLimits that
-      //takes into account filled cells
       writeln('get limits for row '+rowId.ToString+' space '+currentSpace.startPos.toString+':'+currentSpace.endPos.ToString);
       limitsForSpace:=getLimits(gameCells,clues,allowedCluesForCurrentSpace,currentSpace.startPos,currentSpace.endPos,clueIndex);
 
@@ -349,7 +511,7 @@ var
   rowStart,rowEnd:Integer;
 begin
   clues:=GameState.columnClues[columnId];
-  gameCells:=gameState.gameBlock.getColumn(columnId);
+  gameCells:=gameState.gameGrid.getColumn(columnId);
   result:=TGameStateChanges.create;
   writeln('spaces for col '+columnId.toString);
   emptySpaces:=getSpacesForGameCells(gameCells);
@@ -424,7 +586,7 @@ begin
   for rowIndex:= rowStart to rowEnd do
   for colIndex:= colStart to colEnd do
     begin
-    cell:=gameState.gameBlock[rowIndex][colIndex];
+    cell:=gameState.gameGrid[rowIndex][colIndex];
     if (cell.fill = cfEmpty)
       then result.push(TGameStateChange.create(ctGame,colIndex,rowIndex,
                                                      fill,cell.fill,
@@ -488,65 +650,65 @@ end;
 
 function TNonogramSolver.copyGameState(initialState: TGameState): TGameState;
 var
-  gameBlock:TGameBlock;
+  gameGrid:TGameGrid;
   gameCells:TGameCells;
   row,col:integer;
   cellId:TGUID;
   clueValue,clueIndex:integer;
   clueColour:TColor;
-  blockIndex,cellIndex:integer;
+  gridIndex,cellIndex:integer;
   rowClueBlock,columnClueBlock:TClueBlock;
   clueCells:TClueCells;
 begin
   //game cells
-  gameBlock:=TGameBlock.Create;
+  gameGrid:=TGameGrid.Create;
   gameCells:=TGameCells.Create;
-  for blockIndex:= 0 to pred(initialState.gameBlock.size) do
+  for gridIndex:= 0 to pred(initialState.gameGrid.size) do
     begin
     setLength(gameCells,0);
-    for cellIndex:=0 to Pred(initialState.gameBlock[blockIndex].size) do
+    for cellIndex:=0 to Pred(initialState.gameGrid[gridIndex].size) do
       begin
-      col:= initialState.gameBlock[blockIndex][cellIndex].col;
-      row:= initialState.gameBlock[blockIndex][cellIndex].row;
-      cellId:=initialState.gameBlock[blockIndex][cellIndex].cellId;
+      col:= initialState.gameGrid[gridIndex][cellIndex].col;
+      row:= initialState.gameGrid[gridIndex][cellIndex].row;
+      cellId:=initialState.gameGrid[gridIndex][cellIndex].cellId;
       gameCells.push(TGameCell.create(col,row,cellId,clDefault));
       end;
-    gameBlock.push(gameCells);
+    gameGrid.push(gameCells);
     end;
   //row clues
   rowClueBlock:=TClueBlock.Create;
   clueCells:=TClueCells.Create;
-  for blockIndex:=0 to pred(initialState.rowClues.size) do
+  for gridIndex:=0 to pred(initialState.rowClues.size) do
     begin
     setLength(clueCells,0);
-    for cellIndex:=0 to pred(initialState.rowClues[blockIndex].size) do
+    for cellIndex:=0 to pred(initialState.rowClues[gridIndex].size) do
       begin
-      row:=initialState.rowClues[blockIndex][cellIndex].row;
-      col:=initialState.rowClues[blockIndex][cellIndex].column;
-      clueIndex:=initialState.rowClues[blockIndex][cellIndex].index;
-      clueValue:=initialState.rowClues[blockIndex][cellIndex].value;
-      clueColour:=initialState.rowClues[blockIndex][cellIndex].colour;
+      row:=initialState.rowClues[gridIndex][cellIndex].row;
+      col:=initialState.rowClues[gridIndex][cellIndex].column;
+      clueIndex:=initialState.rowClues[gridIndex][cellIndex].index;
+      clueValue:=initialState.rowClues[gridIndex][cellIndex].value;
+      clueColour:=initialState.rowClues[gridIndex][cellIndex].colour;
       clueCells.push(TClueCell.create(row,col,clueValue,clueIndex,clueColour));
       end;
     rowClueBlock.push(clueCells);
     end;
   //column clues
   columnClueBlock:=TClueBlock.Create;
-  for blockIndex:=0 to pred(initialState.columnClues.size) do
+  for gridIndex:=0 to pred(initialState.columnClues.size) do
     begin
     setLength(clueCells,0);
-    for cellIndex:=0 to pred(initialState.columnClues[blockIndex].size) do
+    for cellIndex:=0 to pred(initialState.columnClues[gridIndex].size) do
       begin
-      row:=initialState.columnClues[blockIndex][cellIndex].row;
-      col:=initialState.columnClues[blockIndex][cellIndex].column;
-      clueIndex:=initialState.columnClues[blockIndex][cellIndex].index;
-      clueValue:=initialState.columnClues[blockIndex][cellIndex].value;
-      clueColour:=initialState.columnClues[blockIndex][cellIndex].colour;
+      row:=initialState.columnClues[gridIndex][cellIndex].row;
+      col:=initialState.columnClues[gridIndex][cellIndex].column;
+      clueIndex:=initialState.columnClues[gridIndex][cellIndex].index;
+      clueValue:=initialState.columnClues[gridIndex][cellIndex].value;
+      clueColour:=initialState.columnClues[gridIndex][cellIndex].colour;
       clueCells.push(TClueCell.create(row,col,clueValue,clueIndex,clueColour));
       end;
     columnClueBlock.push(clueCells);
     end;
-  result:=TGameState.create(gameBlock,rowClueBlock,columnClueBlock);
+  result:=TGameState.create(gameGrid,rowClueBlock,columnClueBlock);
 end;
 
 //TODO - move this somewhere common so that the game can access it
@@ -561,8 +723,8 @@ begin
     change:=gameStateChanges[index];
     if (change.cellType = ctGame) then
       begin
-      GameState.gameBlock[change.row][change.column].fill:=change.cellFillMode;
-      GameState.gameBlock[change.row][change.column].colour:=change.colour;
+      GameState.gameGrid[change.row][change.column].fill:=change.cellFillMode;
+      GameState.gameGrid[change.row][change.column].colour:=change.colour;
       end; //todo: clues
     end;
   result:=gameState;
@@ -572,7 +734,6 @@ function TNonogramSolver.setClueCandidates(spaces: TGameSpaces;
   clues: TClueCells):TGameSpaces;
 var
   clueIndex,spaceIndex,clueCurrentlyAt,lastSpaceClueWillFit:integer;
-  spaceClueBlock:TSpaceClueBlock;
   lastAllowedSpace:integer;
   currentClue:TClueCell;
   spaceFound,done:boolean;
@@ -581,7 +742,11 @@ begin
   //until no more clues
   result:=TGameSpaces.create;
   for spaceIndex:=0 to pred(spaces.size) do
+    begin
+    writeln('space '+spaceIndex.toString+' has size '+spaces[spaceIndex].spaceSize.toString);
     result.push(spaces[spaceIndex]);
+
+    end;
   spaceIndex:=0;
   lastAllowedSpace:=pred(result.size);
   for clueIndex:=pred(clues.size) downto 0 do
@@ -591,28 +756,21 @@ begin
     //find a space it'll fit in
     while not done do
       begin
-      spaceFound:= (currentClue.value <= result[spaceIndex].freeSpace);
+      spaceFound:= spaces[spaceIndex].clueWillFit(currentClue,false);
       if not spaceFound then spaceIndex:=spaceIndex+1;
       done:=spaceFound or (spaceIndex > lastAllowedSpace);
       end;
 
     if spaceFound then
       begin
-      writeln('clue '+clueIndex.toString+' value '+currentClue.value.toString+' will fit in space '+spaceIndex.toString+' size '+result[spaceIndex].freeSpace.toString);
+      writeln('clue '+clueindex.toString+' value '+currentClue.value.toString+' will fit in space '+spaceIndex.toString);
       result[spaceIndex].candidates.push(currentClue);
-      //create a block corresponding to this clue
-      spaceClueBlock:=TSpaceClueBlock.Create(clueIndex,currentClue.value);
-      if (clueIndex > 0) and (currentClue.colour = clues[clueIndex - 1].colour)
-        then spaceClueBlock.spaceRight:=1;
-      result[spaceIndex].blocks.push(spaceClueBlock);
       end else
       begin
       writeln('Raise an error - no space for clues');
       end;
     end;
 
-  //now we find the last clue block and move it to the right until we get
-  //to the last space that can hold it.
   for clueIndex:=0 to pred(clues.size) do
     begin
     //Find the space that has that clue in it
@@ -620,31 +778,17 @@ begin
     while result[clueCurrentlyAt].candidates.indexOf(clues[clueIndex]) = -1 do
       clueCurrentlyAt:=clueCurrentlyAt -1;
 
-    //If there are further spaces, see if the clue will fit
     if clueCurrentlyAt < lastAllowedSpace then
       begin
       lastSpaceClueWillFit:=clueCurrentlyAt;
       for spaceIndex:=clueCurrentlyAt + 1 to lastAllowedSpace do
         begin
-        if clues[clueIndex].value <= result[spaceIndex].freeSpace then
+        if spaces[spaceIndex].clueWillFit(clues[clueIndex]) then
           begin
-          writeln('clue '+clueIndex.toString+' value '+clues[clueIndex].value.toString+' will fit in space '+spaceIndex.toString+' size '+result[spaceIndex].freeSpace.toString);
+          writeln('clue '+clueIndex.toString+' size '+clues[clueIndex].value.toString+' will fit in space '+spaceIndex.toString+' size '+spaces[spaceIndex].spaceSize.toString);
           lastSpaceClueWillFit:=spaceIndex;
-          result[spaceIndex].candidates.push(clues[clueIndex]);
-          end;
-        end;
-      //If the last space the clue will fit is not where it currently is then
-      //remove it from the old position and add it to the new one
-      if (lastSpaceClueWillFit <> clueCurrentlyAt) then
-        begin
-        //remove the clue from its last position
-        result[clueCurrentlyAt].blocks.delete(clueIndex);
-        //and add it to the new position
-        spaceClueBlock:=TSpaceClueBlock.create(clueIndex,clues[clueIndex].value);
-        //If there's a previous block of the same colour then there should be a space to its left
-        if (clueIndex < pred(clues.size)) and (clues[clueIndex].colour = clues[clueIndex+1].colour)
-          then spaceClueBlock.spaceLeft:=1;
-        result[lastSpaceClueWillFit].blocks.push(spaceClueBlock);
+          result[spaceIndex].candidates.insertAtPosition(clues[clueIndex],0);
+          end else writeln('clue '+clueIndex.toString+' size '+clues[clueIndex].value.toString+' will not fit in space '+spaceIndex.toString+' size '+spaces[spaceIndex].spaceSize.toString);
         end;
       lastAllowedSpace:=lastSpaceClueWillFit;
       end;
@@ -656,26 +800,26 @@ function TNonogramSolver.getSpacesForGameCells(gameCells_: TGameCells
   ): TGameSpaces;
 var
   index:integer;
-  startBlock,endBlock:integer;
+  startSpace,endSpace:integer;
 begin
   result:=TGameSpaces.create;
-  startBlock:=-1;
-  endBlock:=-1;
+  startSpace:=-1;
+  endSpace:=-1;
   for index:=0 to gameCells_.size do
     begin
     if (index < gameCells_.size) and (gameCells_[index].fill <> cfCross) then
       begin
-      if startBlock = -1 then
+      if startSpace = -1 then
         begin
-        startBlock:=index;
-        endBlock:=index;
+        startSpace:=index;
+        endSpace:=index;
         end
-      else endBlock:=endBlock + 1;
-      end else if (endBlock > -1) then
+      else endSpace:=endSpace + 1;
+      end else if (endSpace > -1) then
       begin
-      result.push(TGameSpace.Create(startBlock,endBlock));
-      startBlock:=-1;
-      endBlock:=-1;
+      result.push(TGameSpace.Create(startSpace,endSpace));
+      startSpace:=-1;
+      endSpace:=-1;
       end;
     end;
 end;
@@ -774,12 +918,12 @@ var
 begin
   writeLn('');
   writeln('Current game state');
-  for rowId:=0 to pred(gameState.gameBlock.size) do
+  for rowId:=0 to pred(gameState.gameGrid.size) do
     begin
     outputRow:='';
-    for colId:= 0 to pred(gameState.gameBlock[rowId].size) do
+    for colId:= 0 to pred(gameState.gameGrid[rowId].size) do
       begin
-      currentCell:=gameState.gameBlock[rowId][colId];
+      currentCell:=gameState.gameGrid[rowId][colId];
         case currentCell.fill of
         cfEmpty: outputRow:=outputRow + '_';
         cfFill: outputRow:= outputRow + 'F';
@@ -802,6 +946,7 @@ begin
     repeat
     writeln('start loop '+loopCounter.tostring+' --------------');
     changesOnCurrentLoop:=0;
+    writeln('overlap rows');
     changesOnCurrentLoop:=changesOnCurrentLoop + overlapRows(solvedGameState);
     solvedGameState:=applyChanges(solvedGameState,fChanges);
     outputCurrentGameState(solvedGameState);
@@ -814,6 +959,7 @@ begin
     solvedGameState:=applyChanges(solvedGameState,fChanges);
     outputCurrentGameState(solvedGameState);
 
+    writeln('overlap columns');
     changesOnCurrentLoop:=changesOnCurrentLoop + overlapColumns(solvedGameState);
     solvedGameState:=applyChanges(solvedGameState,fChanges);
     outputCurrentGameState(solvedGameState);
@@ -826,6 +972,7 @@ begin
     solvedGameState:=applyChanges(solvedGameState,fChanges);
     outputCurrentGameState(solvedGameState);
 
+    writeln('edge proximity rows');
     changesOnCurrentLoop:= changesOnCurrentLoop + edgeProximityRows(solvedGameState);
     solvedGameState:=applyChanges(solvedGameState,fChanges);
     outputCurrentGameState(solvedGameState);
@@ -838,6 +985,7 @@ begin
     solvedGameState:=applyChanges(solvedGameState,fChanges);
     outputCurrentGameState(solvedGameState);
 
+    writeln('edge proximity columns');
     changesOnCurrentLoop:= changesOnCurrentLoop + edgeProximityColumns(solvedGameState);
     solvedGameState:=applyChanges(solvedGameState,fChanges);
     outputCurrentGameState(solvedGameState);
@@ -847,6 +995,24 @@ begin
     outputCurrentGameState(solvedGameState);
 
     changesOnCurrentLoop:=changesOnCurrentLoop + columnsCluesComplete(solvedGameState);
+    solvedGameState:=applyChanges(solvedGameState,fChanges);
+    outputCurrentGameState(solvedGameState);
+
+    writeln('forceSpaces rows');
+    changesOnCurrentLoop:=changesOnCurrentLoop + forceSpacesRows(solvedGameState);
+    solvedGameState:=applyChanges(solvedGameState,fChanges);
+    outputCurrentGameState(solvedGameState);
+
+    changesOnCurrentLoop:= changesOnCurrentLoop + rowsCluesComplete(solvedGameState);
+    solvedGameState:=applyChanges(solvedGameState,fChanges);
+    outputCurrentGameState(solvedGameState);
+
+    changesOnCurrentLoop:=changesOnCurrentLoop + columnsCluesComplete(solvedGameState);
+    solvedGameState:=applyChanges(solvedGameState,fChanges);
+    outputCurrentGameState(solvedGameState);
+
+    writeln('forceSpaces columns');
+    changesOnCurrentLoop:=changesOnCurrentLoop + forceSpacesColumns(solvedGameState);
     solvedGameState:=applyChanges(solvedGameState,fChanges);
     outputCurrentGameState(solvedGameState);
 
