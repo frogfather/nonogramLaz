@@ -6,7 +6,7 @@ interface
 
 uses
   Classes, SysUtils,gameState,gameStateChanges,gameStateChange,gamegrid,gameCell,
-  enums,graphics,arrayUtils,clueCell,iNonoSolver,gameSpace,spaceclueblock;
+  enums,graphics,arrayUtils,clueCell,iNonoSolver,gameSpace;
 type
   
   { TNonogramSolver }
@@ -32,17 +32,10 @@ type
     function edgeProximityRow(gameState:TGameState;rowId:integer):TGameStateChanges;
     function edgeProximityColumn(gameState:TGameState;columnId:integer):TGameStateChanges;
 
-    //TODO function name does not describe what this does. Rename!
-    function completeCluesRows(gameState:TGameState):integer;
-    function completeCluesColumns(gameState:TGameState):integer;
-    function completeCluesRow(gameState:TGameState;rowId:integer):TGameStateChanges;
-    function completeCluesColumn(gameState:TGameState;columnId:integer):TGameStateChanges;
-
     function forceSpacesRows(gameState:TGameState):integer;
     function forceSpacesColumns(gameState:TGameState):integer;
     function forceSpacesRow(gameState:TGameState;rowId:integer):TGameStateChanges;
     function forceSpacesColumn(gameState:TGameState;columnId:integer):TGameStateChanges;
-
 
     function generateChanges(gameState:TGameState;rowStart,rowEnd,colStart,colEnd:Integer;fill:ECellFillMode=cfFill;fillColour:TColor=clBlack):TGameStateChanges;
     function clueInSpace(spaces:TGameSpaces;clue:TClueCell):integer;
@@ -262,77 +255,6 @@ begin
     end;
 end;
 
-function TNonogramSolver.completeCluesRows(gameState: TGameState): integer;
-var
-  rowIndex:integer;
-begin
-  result:=0;
-  for rowIndex:=0 to pred(GameState.gameGrid.size) do
-    result:= result + processStepResult(completeCluesRow(gameState,rowIndex));
-end;
-
-function TNonogramSolver.completeCluesColumns(gameState: TGameState): integer;
-var
-  colIndex:integer;
-begin
-  result:=0;
-  if GameState.gameGrid.size = 0 then exit;
-  for colIndex:=0 to pred(GameState.gameGrid[0].size) do
-    result:= result + processStepResult(completeCluesColumn(gameState,colIndex));
-end;
-
-function TNonogramSolver.completeCluesRow(gameState: TGameState; rowId: integer
-  ): TGameStateChanges;
-var
-  cells:TGameCells;
-  cellIndex:integer;
-  filledSequenceStart,filledSequenceLength,firstCellAfterSequence:integer;
-  done:boolean;
-  clues:TClueCells;
-  clueIndex,spaceIndex:integer;
-  emptySpaces,spaces:TGameSpaces;
-  spaceFoundForSequence:boolean;
-begin
-  result:=TGameStateChanges.create;
-  cells:= gameState.gamegrid[rowId];
-  clues:=gameState.rowClues[rowId];
-  emptySpaces:=getSpacesForGameCells(cells);
-  spaces:= setClueCandidates(emptySpaces,clues);
-  done:=false;
-  firstCellAfterSequence:=-1;
-  while not done do
-    begin
-    //Find the sequence of filled cells starting just after the last
-    filledSequenceStart:=cells.firstFilled(firstCellAfterSequence);
-    done:=filledSequenceStart= -1;
-    if not done then
-      begin
-      filledSequenceLength:=cells.sequenceLength(filledSequenceStart);
-      firstCellAfterSequence:=filledSequenceStart + filledSequenceLength;
-      //which space is this sequence in?
-      spaceIndex:=0;
-      spaceFoundForSequence:=false;
-        while not spaceFoundForSequence do
-          begin
-          spaceFoundForSequence:=(spaces[spaceIndex].startPos <= filledSequenceStart)
-            and (spaces[spaceIndex].endPos >= filledSequenceStart + filledSequenceLength - 1);
-          if not spaceFoundForSequence then spaceIndex:=spaceIndex + 1;
-          end;
-        //now we've found the space. Which clues can be here?
-        //the space has a list of clues that can fit here
-        //we can eliminate clues that are shorter than the length of the sequence
-
-      end;
-    end;
-end;
-
-function TNonogramSolver.completeCluesColumn(gameState: TGameState;
-  columnId: integer): TGameStateChanges;
-begin
-  result:=TGameStateChanges.create;
-
-end;
-
 //Force spaces: If a given space were filled in, would it result in an
 //illegal situation. EG if two single blocks are separated by a single space
 //but there is no clue > 3
@@ -420,7 +342,7 @@ var
 begin
   result:=TGameStateChanges.create;
   gameCells:=gameState.gameGrid.getColumn(columnId);
-  clues:=gameState.rowClues[columnId];
+  clues:=gameState.columnClues[columnId];
   emptySpaces:=getSpacesForGameCells(gameCells);
   spaces:= setClueCandidates(emptySpaces,clues);
   for spaceIndex:=0 to pred(spaces.size) do
@@ -773,7 +695,6 @@ function TNonogramSolver.setClueCandidates(spaces: TGameSpaces;
   clues: TClueCells):TGameSpaces;
 var
   clueIndex,spaceIndex,clueCurrentlyAt,lastSpaceClueWillFit:integer;
-  spaceClueBlock:TSpaceClueBlock;
   lastAllowedSpace:integer;
   currentClue:TClueCell;
   spaceFound,done:boolean;
@@ -782,7 +703,11 @@ begin
   //until no more clues
   result:=TGameSpaces.create;
   for spaceIndex:=0 to pred(spaces.size) do
+    begin
+    writeln('space '+spaceIndex.toString+' has size '+spaces[spaceIndex].spaceSize.toString);
     result.push(spaces[spaceIndex]);
+
+    end;
   spaceIndex:=0;
   lastAllowedSpace:=pred(result.size);
   for clueIndex:=pred(clues.size) downto 0 do
@@ -792,27 +717,21 @@ begin
     //find a space it'll fit in
     while not done do
       begin
-      spaceFound:= (currentClue.value <= result[spaceIndex].freeSpace);
+      spaceFound:= spaces[spaceIndex].clueWillFit(currentClue,false);
       if not spaceFound then spaceIndex:=spaceIndex+1;
       done:=spaceFound or (spaceIndex > lastAllowedSpace);
       end;
 
     if spaceFound then
       begin
+      writeln('clue '+clueindex.toString+' value '+currentClue.value.toString+' will fit in space '+spaceIndex.toString);
       result[spaceIndex].candidates.push(currentClue);
-      //create a block corresponding to this clue
-      spaceClueBlock:=TSpaceClueBlock.Create(clueIndex,currentClue.value);
-      if (clueIndex > 0) and (currentClue.colour = clues[clueIndex - 1].colour)
-        then spaceClueBlock.spaceRight:=1;
-      result[spaceIndex].spaceClueBlocks.push(spaceClueBlock);
       end else
       begin
       writeln('Raise an error - no space for clues');
       end;
     end;
 
-  //now we find the last clue block and move it to the right until we get
-  //to the last space that can hold it.
   for clueIndex:=0 to pred(clues.size) do
     begin
     //Find the space that has that clue in it
@@ -820,30 +739,17 @@ begin
     while result[clueCurrentlyAt].candidates.indexOf(clues[clueIndex]) = -1 do
       clueCurrentlyAt:=clueCurrentlyAt -1;
 
-    //If there are further spaces, see if the clue will fit
     if clueCurrentlyAt < lastAllowedSpace then
       begin
       lastSpaceClueWillFit:=clueCurrentlyAt;
       for spaceIndex:=clueCurrentlyAt + 1 to lastAllowedSpace do
         begin
-        if clues[clueIndex].value <= result[spaceIndex].freeSpace then
+        if spaces[spaceIndex].clueWillFit(clues[clueIndex]) then
           begin
+          writeln('clue '+clueIndex.toString+' size '+clues[clueIndex].value.toString+' will fit in space '+spaceIndex.toString+' size '+spaces[spaceIndex].spaceSize.toString);
           lastSpaceClueWillFit:=spaceIndex;
           result[spaceIndex].candidates.insertAtPosition(clues[clueIndex],0);
-          end;
-        end;
-      //If the last space the clue will fit is not where it currently is then
-      //remove it from the old position and add it to the new one
-      if (lastSpaceClueWillFit <> clueCurrentlyAt) then
-        begin
-        //remove the clue from its last position
-        result[clueCurrentlyAt].spaceClueBlocks.delete(clueIndex);
-        //and add it to the new position
-        spaceClueBlock:=TSpaceClueBlock.create(clueIndex,clues[clueIndex].value);
-        //If there's a previous block of the same colour then there should be a space to its left
-        if (clueIndex < pred(clues.size)) and (clues[clueIndex].colour = clues[clueIndex+1].colour)
-          then spaceClueBlock.spaceLeft:=1;
-        result[lastSpaceClueWillFit].spaceClueBlocks.push(spaceClueBlock);
+          end else writeln('clue '+clueIndex.toString+' size '+clues[clueIndex].value.toString+' will not fit in space '+spaceIndex.toString+' size '+spaces[spaceIndex].spaceSize.toString);
         end;
       lastAllowedSpace:=lastSpaceClueWillFit;
       end;

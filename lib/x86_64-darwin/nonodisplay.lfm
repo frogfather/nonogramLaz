@@ -1,8 +1,0 @@
-object fNonogram: TfNonogram
-  Left = 240
-  Height = 397
-  Top = 170
-  Width = 689
-  Caption = 'Nonogram'
-  LCLVersion = '2.2.2.0'
-end

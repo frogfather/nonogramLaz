@@ -71,6 +71,7 @@ function TClueCellsArrayHelper.insertAtPosition(element: TClueCell; position: in
 begin
   if (position < 0) or (position > pred(self.size)) then
     push(element) else insert(element,self,position);
+  result:=self.size;
 end;
 
 function TClueCellsArrayHelper.indexOf(element: TClueCell): integer;

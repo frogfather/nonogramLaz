@@ -14,8 +14,7 @@ uses
   clickDelegate, clueCell, updateDelegate, gamegrid, gameState,
   gamestatechange, enums, gameStateChanges, drawingUtils, nonosolver,
   xml_doc_handler, nonodochandler, gamemodechangeddelegate, cluechangeddelegate,
-  clueclickeddelegate, newgamedialog, fileUtilities, iNonoSolver, gameSpace,
-  spaceclueblock;
+  clueclickeddelegate, newgamedialog, fileUtilities, iNonoSolver, gameSpace;
 
 {$R *.res}
 

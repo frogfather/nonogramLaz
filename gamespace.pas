@@ -6,7 +6,7 @@ unit gameSpace;
 interface
 
 uses
-  Classes, SysUtils,clueCell,spaceclueblock;
+  Classes, SysUtils,clueCell;
 
 type
   
@@ -17,17 +17,14 @@ type
     fStart:integer;
     fEnd:integer;
     fCandidates:TClueCells;
-    fSpaceClueBlocks:TSpaceClueBlocks;
     function getSpaceSize:integer;
-    function getFreeSpace:integer;
     public
     constructor create(start_,end_:integer);
+    function clueWillFit(clueCell:TClueCell;left:boolean=true):boolean;
     property startPos:integer read fStart;
     property endPos:integer read fEnd;
     property spaceSize: integer read getSpaceSize;
     property candidates:TClueCells read fCandidates write fCandidates;
-    property spaceClueBlocks:TSpaceClueBlocks read fSpaceClueBlocks write fSpaceClueBlocks;
-    property freeSpace: integer read getFreeSpace;
   end;
 
  TGameSpaces = array of TGameSpace;
@@ -49,10 +46,25 @@ begin
   result:= 1 + self.endPos - self.startPos;
 end;
 
-//The free space once any blocks are counted
-function TGameSpace.getFreeSpace: integer;
+function TGameSpace.clueWillFit(clueCell: TClueCell;left:boolean): boolean;
+var
+  clueId,clueSizeTotal:integer;
 begin
-  result:=self.spaceSize - spaceClueBlocks.totalBlockSize;
+  clueSizeTotal:=0;
+  for clueId:=0 to pred(self.candidates.size) do
+    begin
+    clueSizeTotal:=clueSizeTotal + self.candidates[clueId].value;
+    if (clueId < pred(self.candidates.size))
+    and (Self.candidates[clueId].colour = self.candidates[clueId+1].colour)
+      then clueSizeTotal:=clueSizeTotal+1;
+    end;
+  //add the current clue to the total
+  clueSizeTotal:=clueSizeTotal+clueCell.value;
+  if (Self.candidates.size > 0)
+  and (((left = true) and (clueCell.colour = self.candidates[0].colour))
+  or ((left = false) and (clueCell.colour = self.candidates[pred(self.candidates.size)].colour)))
+    then clueSizeTotal:=clueSizeTotal+1;
+  result:=Self.spaceSize >= clueSizeTotal;
 end;
 
 constructor TGameSpace.create(start_, end_: integer);
@@ -60,7 +72,6 @@ begin
   fStart:=start_;
   fEnd:=end_;
   fCandidates:=TClueCells.create;
-  fSpaceClueBlocks:=TSpaceClueBlocks.create;
 end;
 
 { TGameSpacesHelper }
