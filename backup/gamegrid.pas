@@ -20,7 +20,7 @@ type
   function indexOf(element:TGameCell):integer;
   function filledCells:integer;
   function firstFilled(start_:integer=-1;end_:integer=-1):integer;
-  function lastFilled(end_:integer=-1;end_:integer=-1):integer;
+  function lastFilled(top_:integer=-1;bottom_:integer=-1):integer;
   function sequenceLength(start:integer):integer;
   function firstFree(start_:integer=-1):integer;
   end;
@@ -104,17 +104,17 @@ begin
       end;
 end;
 
-function TGameCellsArrayHelper.lastFilled(end_:integer;end_:integer): integer;
+function TGameCellsArrayHelper.lastFilled(top_:integer;bottom_:integer): integer;
 var
-  index,startIndex,endIndex:integer;
+  index,topLimit,bottomLimit:integer;
 begin
   result:=-1;
-  if end_=-1 then startIndex:=pred(self.size) else startIndex:=end_;
-  if end_= -1 then endIndex:=pred(self.size)else endIndex:=end_;
-  if (startIndex > pred(self.size))or(startIndex < 0)
-  or (endIndex > pred(self.size)) or (endIndex < 0)
-  or (endIndex < startIndex) then exit;
-  for index:= startIndex downto 0 do
+  if top_=-1 then topLimit:=pred(self.size) else topLimit:=top_;
+  if bottom_= -1 then bottomLimit:= 0 else bottomLimit:= bottom_;
+  if (topLimit > pred(self.size))or(topLimit < 0)
+  or (bottomLimit > pred(self.size)) or (bottomLimit < 0)
+  or (bottomLimit > topLimit) then exit;
+  for index:= topLimit downto bottomLimit do
     if self[index].fill = cfFill then
       begin
         result:=index;

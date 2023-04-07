@@ -11,10 +11,11 @@ uses
   {$ENDIF}
   Interfaces, // this includes the LCL widgetset
   Forms, nonoForm, nonogramGame, gameCell, gameDisplay, arrayUtils, anysort,
-  clickDelegate, clueCell, updateDelegate, gamegrid, gameState,
-  gamestatechange, enums, gameStateChanges, drawingUtils, nonosolver,
-  xml_doc_handler, nonodochandler, gamemodechangeddelegate, cluechangeddelegate,
-  clueclickeddelegate, newgamedialog, fileUtilities, iNonoSolver, gameSpace;
+  clickDelegate, clueCell, updateDelegate, gamegrid, gameState, gamestatechange,
+  enums, gameStateChanges, drawingUtils, nonosolver, xml_doc_handler,
+  nonodochandler, gamemodechangeddelegate, cluechangeddelegate,
+  clueclickeddelegate, newgamedialog, fileUtilities, iNonoSolver, gameSpace,
+  clueOption;
 
 {$R *.res}
 

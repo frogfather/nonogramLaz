@@ -43,6 +43,7 @@ type
   function allElementsLengthLessThan(length:integer):boolean;
   function delete(clueIndex:integer):integer;
   function join(separator:String):string;
+  function totalClueLength:integer;
   end;
 
   { TClueBlockArrayHelper }
@@ -132,6 +133,19 @@ begin
     begin
     result:=result+Self[index].value.toString;
     if (index < pred(self.size))then result:=result+ separator;
+    end;
+end;
+
+function TClueCellsArrayHelper.totalClueLength: integer;
+var
+  index:integer;
+begin
+  result:=0;
+  for index:= pred(self.size) downto 0 do
+    begin
+    result:=Result+self[index].value;
+    if (index > 0) and (self[index].colour = self[index -1].colour)
+      then result:=result+1;
     end;
 end;
 

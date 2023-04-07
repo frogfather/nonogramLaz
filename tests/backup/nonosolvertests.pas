@@ -18,6 +18,7 @@ type
     function overlapColumnMethod(gameState:TGameState;columnId:integer):TGameStateChanges;
     function setClueCandidatesMethod(var spaces: TGameSpaces;clues: TClueCells):TGameSpaces;
     function edgeProximityRowMethod(gameState: TGameState; rowId: integer):TGameStateChanges;
+    function identifyCluesRowMethod(gameState: TGameState; rowId: integer):TGameStateChanges;
   end;
 
   { TNonoSolverTests }
@@ -43,6 +44,10 @@ type
     procedure edgeProximityRowLeftFillOne;
     procedure edgeProximityRowLeftCrossTwo;
     procedure edgeProximityRowLeftFilledCellsMatchFirstClue;
+    procedure identifyCluesRowNoResults;
+    procedure identifyCluesRowThreeOverlap;
+    procedure identifyCluesRowTwoClues;
+    procedure identifyCluesRowTwoCluesTwoColours;
     property gameState_: TGameState read fGameState write fGameState;
   end;
 
@@ -77,6 +82,12 @@ function TNgTestSolver.edgeProximityRowMethod(gameState: TGameState;
   rowId: integer): TGameStateChanges;
 begin
   result:=ngTestSolver.edgeProximityRow(gameState,rowId);
+end;
+
+function TNgTestSolver.identifyCluesRowMethod(gameState: TGameState;
+  rowId: integer): TGameStateChanges;
+begin
+  result:=ngTestSolver.identifyCluesRow(gameState,rowId);
 end;
 
 { TNgTestSolver }
@@ -193,7 +204,7 @@ begin
   gameState_.gameGrid[0][17].fill:=cfCross;
   gameState_.gameGrid[0][18].fill:=cfCross;
   gameState_.gameGrid[0][19].fill:=cfCross;
-  AssertEquals(2,ngTestSolver.overlapRowMethod(gameState_,0).size);
+  AssertEquals(3,ngTestSolver.overlapRowMethod(gameState_,0).size);
 end;
 
 procedure TNonoSolverTests.setCandidatesThreeSpaces;
@@ -285,6 +296,65 @@ begin
   gameState_.rowClues[0].push(TClueCell.create(0,-1,5,0));
   changes:= ngTestSolver.edgeProximityRowMethod(gameState_,0);
   assertEquals(4,changes.size);
+end;
+
+procedure TNonoSolverTests.identifyCluesRowNoResults;
+var
+  changes:TGameStateChanges;
+begin
+  //short clues - no cells are identified
+  gameState_.gameGrid[0][4].fill:=cfFill;
+  gameState_.gameGrid[0][5].fill:=cfFill;
+  gameState_.gameGrid[0][6].fill:=cfFill;
+  gameState_.gameGrid[0][7].fill:=cfFill;
+  gameState_.gameGrid[0][8].fill:=cfFill;
+  gameState_.rowClues[0].push(TClueCell.create(0,-1,5,0));
+  changes:=ngTestSolver.identifyCluesRowMethod(gameState_,0);
+  assertEquals(0, changes.size);
+end;
+
+procedure TNonoSolverTests.identifyCluesRowThreeOverlap;
+var
+  changes:TGameStateChanges;
+begin
+  gameState_.gameGrid[0][4].fill:=cfFill;
+  gameState_.gameGrid[0][5].fill:=cfFill;
+  gameState_.gameGrid[0][6].fill:=cfFill;
+  gameState_.gameGrid[0][7].fill:=cfFill;
+  gameState_.gameGrid[0][8].fill:=cfFill;
+  gameState_.gameGrid[0][9].fill:=cfCross;
+  gameState_.gameGrid[0][14].fill:=cfCross;
+  gameState_.rowClues[0].push(TClueCell.create(0,-1,6,0));
+  changes:=ngTestSolver.identifyCluesRowMethod(gameState_,0);
+  assertEquals(3, changes.size);
+end;
+
+procedure TNonoSolverTests.identifyCluesRowTwoClues;
+var
+  changes:TGameStateChanges;
+begin
+  gameState_.gameGrid[0][12].fill:=cfCross;
+  gameState_.gameGrid[0][14].fill:=cfCross;
+  gameState_.gameGrid[0][16].fill:=cfCross;
+  gameState_.gameGrid[0][18].fill:=cfCross;
+  gameState_.rowClues[0].push(TClueCell.create(0,-1,3,0));
+  gameState_.rowClues[0].push(TClueCell.create(0,-1,5,1));
+  changes:=ngTestSolver.identifyCluesRowMethod(gameState_,0);
+  assertEquals(2, changes.size);
+end;
+
+procedure TNonoSolverTests.identifyCluesRowTwoCluesTwoColours;
+var
+  changes:TGameStateChanges;
+begin
+  gameState_.gameGrid[0][12].fill:=cfCross;
+  gameState_.gameGrid[0][14].fill:=cfCross;
+  gameState_.gameGrid[0][16].fill:=cfCross;
+  gameState_.gameGrid[0][18].fill:=cfCross;
+  gameState_.rowClues[0].push(TClueCell.create(0,-1,3,0,clRed));
+  gameState_.rowClues[0].push(TClueCell.create(0,-1,5,1));
+  changes:=ngTestSolver.identifyCluesRowMethod(gameState_,0);
+  assertEquals(1, changes.size);
 end;
 
 

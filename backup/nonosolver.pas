@@ -6,7 +6,7 @@ interface
 
 uses
   Classes, SysUtils,gameState,gameStateChanges,gameStateChange,gamegrid,gameCell,
-  enums,graphics,arrayUtils,clueCell,iNonoSolver,gameSpace;
+  enums,graphics,arrayUtils,clueCell,iNonoSolver,gameSpace,clueOption;
 type
   
   { TNonogramSolver }
@@ -37,6 +37,13 @@ type
     function forceSpacesRow(gameState:TGameState;rowId:integer):TGameStateChanges;
     function forceSpacesColumn(gameState:TGameState;columnId:integer):TGameStateChanges;
 
+    function identifyCluesRows(gameState:TGameState):integer;
+    function identifyCluesColumns(gameState:TGameState):integer;
+    function identifyCluesRow(gameState:TGameState;rowId:integer):TGameStateChanges;
+    function identifyCluesColumn(gameState:TGameState;columnId:integer):TGameStateChanges;
+
+    function getFirstMovableClue(entry:TClueOptionEntry):integer;
+    function getAllClueOptionPermutations(gameCells:TGameCells;space:TGameSpace;allowedCluesForCurrentSpace:TClueCells):TClueOptionFrame;
     function generateChanges(gameState:TGameState;rowStart,rowEnd,colStart,colEnd:Integer;fill:ECellFillMode=cfFill;fillColour:TColor=clBlack):TGameStateChanges;
     function clueInSpace(spaces:TGameSpaces;clue:TClueCell):integer;
     function getAllowedCluesForCurrentSpace(spaces:TGameSpaces;spaceIndex:integer):TClueCells;
@@ -369,6 +376,169 @@ begin
       end;
     end;
 
+
+end;
+
+function TNonogramSolver.identifyCluesRows(gameState: TGameState): integer;
+var
+  rowIndex:integer;
+begin
+  result:=0;
+  for rowIndex:=0 to pred(GameState.gameGrid.size) do
+    result:= result + processStepResult(identifyCluesRow(gameState,rowIndex));
+end;
+
+function TNonogramSolver.identifyCluesColumns(gameState: TGameState): integer;
+var
+  colIndex:integer;
+begin
+  result:=0;
+  if GameState.gameGrid.size = 0 then exit;
+  for colIndex:=0 to pred(GameState.gameGrid[0].size) do
+    result:= result + processStepResult(identifyCluesColumn(gameState,colIndex));
+end;
+
+function TNonogramSolver.identifyCluesRow(gameState: TGameState; rowId: integer
+  ): TGameStateChanges;
+var
+  gameCells:TGameCells;
+  clues:TClueCells;
+  allowedCluesForCurrentSpace:TClueCells;
+  emptySpaces,spaces:TGameSpaces;
+  currentSpace:TGameSpace;
+  spaceId:integer;
+  permutations,permutationId:integer;
+  frame:TClueOptionFrame;
+  optionsForSpace:TClueOptionEntry;
+  index,offset:integer;
+begin
+  result:=TGameStateChanges.create;
+  gameCells:=gameState.gameGrid[rowId];
+  clues:=gameState.rowClues[rowId];
+  emptySpaces:=getSpacesForGameCells(gameCells);
+  spaces:= setClueCandidates(emptySpaces,clues);
+  for spaceId:=0 to pred(spaces.size) do
+    begin
+    currentSpace:=spaces[spaceId];
+    allowedCluesForCurrentSpace:=getAllowedCluesForCurrentSpace(spaces,spaceId);
+    offset:=currentSpace.startPos;
+    frame:=getAllClueOptionPermutations(gameCells,currentSpace,allowedCluesForCurrentSpace);
+    optionsForSpace:=frame.combine;
+    //any entries that are not cfEmpty must be that value
+    //Game state changes do not hold information about clue id
+    for index:= 0 to pred(optionsForSpace.size) do
+      begin
+      if (optionsForSpace[index].fill <> cfEmpty)and(gameCells[index+offset].fill = cfEmpty) then
+        begin
+        result.push(TGameStateChange.create(ctGame,index+offset,rowId,optionsForSpace[index].fill,cfEmpty,optionsForSpace[index].colour,clBlack));
+        end;
+      end;
+    end;
+end;
+
+function TNonogramSolver.identifyCluesColumn(gameState: TGameState;
+  columnId: integer): TGameStateChanges;
+var
+  gameCells:TGameCells;
+  clues:TClueCells;
+  allowedCluesForCurrentSpace:TClueCells;
+  emptySpaces,spaces:TGameSpaces;
+  currentSpace:TGameSpace;
+  spaceId:integer;
+  permutations,permutationId:integer;
+  frame:TClueOptionFrame;
+  optionsForSpace:TClueOptionEntry;
+  index,offset:integer;
+begin
+  result:=TGameStateChanges.create;
+  gameCells:=gameState.gameGrid.getColumn(columnId);
+  clues:=gameState.columnClues[columnId];
+  emptySpaces:=getSpacesForGameCells(gameCells);
+  spaces:= setClueCandidates(emptySpaces,clues);
+  for spaceId:=0 to pred(spaces.size) do
+    begin
+    currentSpace:=spaces[spaceId];
+    allowedCluesForCurrentSpace:=getAllowedCluesForCurrentSpace(spaces,spaceId);
+    offset:=currentSpace.startPos;
+    //TODO: Method clueOptionEntryPermutations which creates a clueOptionEntry for each
+    //possible permutation
+    frame:=getAllClueOptionPermutations(gameCells,currentSpace,allowedCluesForCurrentSpace);
+    optionsForSpace:=frame.combine;
+    for index:= 0 to pred(optionsForSpace.size) do
+      begin
+      if (optionsForSpace[index].fill <> cfEmpty)and (gameCells[index+offset].fill = cfEmpty) then
+        begin
+        result.push(TGameStateChange.create(ctGame,columnId,index+offset,optionsForSpace[index].fill,cfEmpty,optionsForSpace[index].colour,clBlack));
+        end;
+      end;
+    end;
+end;
+
+function TNonogramSolver.getFirstMovableClue(entry: TClueOptionEntry): integer;
+var
+  index:integer;
+begin
+  result:=-1;
+  //find the first clue that has a space after it
+  for index:=0 to pred(entry.size) do
+    if (entry[index].fill = cfEmpty) then
+      begin
+      result:=index;
+      exit;
+      end;
+end;
+
+function TNonogramSolver.getAllClueOptionPermutations(gameCells: TGameCells;
+  space: TGameSpace; allowedCluesForCurrentSpace: TClueCells): TClueOptionFrame;
+var
+  entry:TClueOptionEntry;
+  cells:TGameCells;
+  cellId,clueId:integer;
+  clueColour:TColor;
+  clueIndex:integer;
+  moreOptions:boolean;
+  moveableClue:integer;
+begin
+  result:=TClueOptionFrame.create;
+  entry:=TClueOptionEntry.create;
+  cells:=TGameCells.create;
+  for cellId:=space.startPos to space.endPos do
+    cells.push(gameCells[cellId]);
+  //Setup: start with all clues as close to the start as possible
+  for clueId:=allowedCluesForCurrentSpace.size downto 0 do
+    begin
+    for cellId:=0 to pred(allowedCluesForCurrentSpace[clueId].value) do
+      begin
+      clueColour:=allowedCluesForCurrentSpace[clueId].colour;
+      clueIndex:=allowedCluesForCurrentSpace[clueId].index;
+      entry.push(TClueOption.create(clueColour,cfFill,clueIndex));
+      end;
+    if (clueId > 0)
+    and (allowedCluesForCurrentSpace[clueId].colour
+      = allowedCluesForCurrentSpace[clueId -1].colour)
+       then entry.push(TClueOption.create(clBlack,cfCross,-1));
+    end;
+  //Fill in the rest of the space with empty cells
+  while (entry.size < space.spaceSize) do
+    entry.push(TClueOption.create(clBlack,cfEmpty,-1));
+
+  //Now find all sane arrangements and add them to the result
+  //TODO: method to add a space at a specified point returning true if the
+  //operation is possible
+  moreOptions:=true;
+  while moreOptions do
+    begin
+    moveableClue:=getFirstMovableClue(entry);
+    moreOptions:=(moveableClue > -1);
+    //can we move the first clue?
+    //if so, move by 1
+    //if not, are there more clues?
+    //if so, can we move the next clue?
+    //check valid
+    //add if valid
+
+
+    end;
 
 end;
 
@@ -974,6 +1144,33 @@ begin
 
     writeln('forceSpaces columns');
     changesOnCurrentLoop:=changesOnCurrentLoop + forceSpacesColumns(solvedGameState);
+    solvedGameState:=applyChanges(solvedGameState,fChanges);
+    outputCurrentGameState(solvedGameState);
+
+
+    writeln('identifyCluesRows ');
+    changesOnCurrentLoop:=changesOnCurrentLoop + identifyCluesRows(solvedGameState);
+    solvedGameState:=applyChanges(solvedGameState,fChanges);
+    outputCurrentGameState(solvedGameState);
+
+    changesOnCurrentLoop:= changesOnCurrentLoop + rowsCluesComplete(solvedGameState);
+    solvedGameState:=applyChanges(solvedGameState,fChanges);
+    outputCurrentGameState(solvedGameState);
+
+    changesOnCurrentLoop:=changesOnCurrentLoop + columnsCluesComplete(solvedGameState);
+    solvedGameState:=applyChanges(solvedGameState,fChanges);
+    outputCurrentGameState(solvedGameState);
+
+    writeln('identifyCluesColumns ');
+    changesOnCurrentLoop:=changesOnCurrentLoop + identifyCluesColumns(solvedGameState);
+    solvedGameState:=applyChanges(solvedGameState,fChanges);
+    outputCurrentGameState(solvedGameState);
+
+    changesOnCurrentLoop:= changesOnCurrentLoop + rowsCluesComplete(solvedGameState);
+    solvedGameState:=applyChanges(solvedGameState,fChanges);
+    outputCurrentGameState(solvedGameState);
+
+    changesOnCurrentLoop:=changesOnCurrentLoop + columnsCluesComplete(solvedGameState);
     solvedGameState:=applyChanges(solvedGameState,fChanges);
     outputCurrentGameState(solvedGameState);
 
