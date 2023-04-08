@@ -84,6 +84,7 @@ function TClueOptionEntryHelper.delete(index: integer): TClueOption;
 var
   i:integer;
 begin
+  result:=nil;
   if (index < 0 ) or (index >= self.size) then exit;
   result:=self[index];
   for i:=index to pred(pred(self.size)) do
@@ -99,6 +100,7 @@ begin
   element:=self.delete(index);
   if not assigned(element) then exit;
   insert(element,self,0);
+  result:=true;
 end;
 
 { TClueOptionFrameHelper }

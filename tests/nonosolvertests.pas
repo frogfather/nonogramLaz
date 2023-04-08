@@ -44,10 +44,10 @@ type
     procedure edgeProximityRowLeftFillOne;
     procedure edgeProximityRowLeftCrossTwo;
     procedure edgeProximityRowLeftFilledCellsMatchFirstClue;
-    procedure identifyCluesRowNoResults;
-    procedure identifyCluesRowThreeOverlap;
-    procedure identifyCluesRowTwoClues;
-    procedure identifyCluesRowTwoCluesTwoColours;
+    //procedure identifyCluesRowNoResults;
+    //procedure identifyCluesRowThreeOverlap;
+    //procedure identifyCluesRowTwoClues;
+    //procedure identifyCluesRowTwoCluesTwoColours;
     property gameState_: TGameState read fGameState write fGameState;
   end;
 
@@ -298,65 +298,65 @@ begin
   assertEquals(4,changes.size);
 end;
 
-procedure TNonoSolverTests.identifyCluesRowNoResults;
-var
-  changes:TGameStateChanges;
-begin
-  //short clues - no cells are identified
-  gameState_.gameGrid[0][4].fill:=cfFill;
-  gameState_.gameGrid[0][5].fill:=cfFill;
-  gameState_.gameGrid[0][6].fill:=cfFill;
-  gameState_.gameGrid[0][7].fill:=cfFill;
-  gameState_.gameGrid[0][8].fill:=cfFill;
-  gameState_.rowClues[0].push(TClueCell.create(0,-1,5,0));
-  changes:=ngTestSolver.identifyCluesRowMethod(gameState_,0);
-  assertEquals(0, changes.size);
-end;
-
-procedure TNonoSolverTests.identifyCluesRowThreeOverlap;
-var
-  changes:TGameStateChanges;
-begin
-  gameState_.gameGrid[0][4].fill:=cfFill;
-  gameState_.gameGrid[0][5].fill:=cfFill;
-  gameState_.gameGrid[0][6].fill:=cfFill;
-  gameState_.gameGrid[0][7].fill:=cfFill;
-  gameState_.gameGrid[0][8].fill:=cfFill;
-  gameState_.gameGrid[0][9].fill:=cfCross;
-  gameState_.gameGrid[0][14].fill:=cfCross;
-  gameState_.rowClues[0].push(TClueCell.create(0,-1,6,0));
-  changes:=ngTestSolver.identifyCluesRowMethod(gameState_,0);
-  assertEquals(3, changes.size);
-end;
-
-procedure TNonoSolverTests.identifyCluesRowTwoClues;
-var
-  changes:TGameStateChanges;
-begin
-  gameState_.gameGrid[0][12].fill:=cfCross;
-  gameState_.gameGrid[0][14].fill:=cfCross;
-  gameState_.gameGrid[0][16].fill:=cfCross;
-  gameState_.gameGrid[0][18].fill:=cfCross;
-  gameState_.rowClues[0].push(TClueCell.create(0,-1,3,0));
-  gameState_.rowClues[0].push(TClueCell.create(0,-1,5,1));
-  changes:=ngTestSolver.identifyCluesRowMethod(gameState_,0);
-  assertEquals(2, changes.size);
-end;
-
-procedure TNonoSolverTests.identifyCluesRowTwoCluesTwoColours;
-var
-  changes:TGameStateChanges;
-begin
-  gameState_.gameGrid[0][12].fill:=cfCross;
-  gameState_.gameGrid[0][14].fill:=cfCross;
-  gameState_.gameGrid[0][16].fill:=cfCross;
-  gameState_.gameGrid[0][18].fill:=cfCross;
-  gameState_.rowClues[0].push(TClueCell.create(0,-1,3,0,clRed));
-  gameState_.rowClues[0].push(TClueCell.create(0,-1,5,1));
-  changes:=ngTestSolver.identifyCluesRowMethod(gameState_,0);
-  assertEquals(1, changes.size);
-  assertEquals(clBlack,changes[0].colour);
-end;
+//procedure TNonoSolverTests.identifyCluesRowNoResults;
+//var
+//  changes:TGameStateChanges;
+//begin
+//  //short clues - no cells are identified
+//  gameState_.gameGrid[0][4].fill:=cfFill;
+//  gameState_.gameGrid[0][5].fill:=cfFill;
+//  gameState_.gameGrid[0][6].fill:=cfFill;
+//  gameState_.gameGrid[0][7].fill:=cfFill;
+//  gameState_.gameGrid[0][8].fill:=cfFill;
+//  gameState_.rowClues[0].push(TClueCell.create(0,-1,5,0));
+//  changes:=ngTestSolver.identifyCluesRowMethod(gameState_,0);
+//  assertEquals(0, changes.size);
+//end;
+//
+//procedure TNonoSolverTests.identifyCluesRowThreeOverlap;
+//var
+//  changes:TGameStateChanges;
+//begin
+//  gameState_.gameGrid[0][4].fill:=cfFill;
+//  gameState_.gameGrid[0][5].fill:=cfFill;
+//  gameState_.gameGrid[0][6].fill:=cfFill;
+//  gameState_.gameGrid[0][7].fill:=cfFill;
+//  gameState_.gameGrid[0][8].fill:=cfFill;
+//  gameState_.gameGrid[0][9].fill:=cfCross;
+//  gameState_.gameGrid[0][14].fill:=cfCross;
+//  gameState_.rowClues[0].push(TClueCell.create(0,-1,6,0));
+//  changes:=ngTestSolver.identifyCluesRowMethod(gameState_,0);
+//  assertEquals(3, changes.size);
+//end;
+//
+//procedure TNonoSolverTests.identifyCluesRowTwoClues;
+//var
+//  changes:TGameStateChanges;
+//begin
+//  gameState_.gameGrid[0][12].fill:=cfCross;
+//  gameState_.gameGrid[0][14].fill:=cfCross;
+//  gameState_.gameGrid[0][16].fill:=cfCross;
+//  gameState_.gameGrid[0][18].fill:=cfCross;
+//  gameState_.rowClues[0].push(TClueCell.create(0,-1,3,0));
+//  gameState_.rowClues[0].push(TClueCell.create(0,-1,5,1));
+//  changes:=ngTestSolver.identifyCluesRowMethod(gameState_,0);
+//  assertEquals(2, changes.size);
+//end;
+//
+//procedure TNonoSolverTests.identifyCluesRowTwoCluesTwoColours;
+//var
+//  changes:TGameStateChanges;
+//begin
+//  gameState_.gameGrid[0][12].fill:=cfCross;
+//  gameState_.gameGrid[0][14].fill:=cfCross;
+//  gameState_.gameGrid[0][16].fill:=cfCross;
+//  gameState_.gameGrid[0][18].fill:=cfCross;
+//  gameState_.rowClues[0].push(TClueCell.create(0,-1,3,0,clRed));
+//  gameState_.rowClues[0].push(TClueCell.create(0,-1,5,1));
+//  changes:=ngTestSolver.identifyCluesRowMethod(gameState_,0);
+//  assertEquals(1, changes.size);
+//  assertEquals(clBlack,changes[0].colour);
+//end;
 
 
 

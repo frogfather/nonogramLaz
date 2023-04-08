@@ -355,6 +355,7 @@ begin
   gameState_.rowClues[0].push(TClueCell.create(0,-1,5,1));
   changes:=ngTestSolver.identifyCluesRowMethod(gameState_,0);
   assertEquals(1, changes.size);
+  assertEquals(clBlack,changes[0].colour);
 end;
 
 
